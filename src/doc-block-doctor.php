@@ -908,7 +908,7 @@ do {
         $newlyCalculatedThrowsForFunc = array_values(array_unique(array_merge($currentIterationBaseThrows, $throwsFromCallees)));
         sort($newlyCalculatedThrowsForFunc);
         $previouslyStoredResolvedThrows = GlobalCache::$resolvedThrows[$funcKey] ?? [];
-        if ($newlyCalculatedThrowsForFunc != $previouslyStoredResolvedThrows) {
+        if ($newlyCalculatedThrowsForFunc !== $previouslyStoredResolvedThrows) {
             GlobalCache::$resolvedThrows[$funcKey] = $newlyCalculatedThrowsForFunc;
             $changedInThisGlobalIteration = true;
         }
