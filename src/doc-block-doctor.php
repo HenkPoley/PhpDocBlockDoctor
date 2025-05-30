@@ -456,7 +456,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
      */
     public function enterNode($node)
     {
-        if (!($node instanceof Node\Stmt\Function_ || $node instanceof Node\Stmt\ClassMethod)) {
+        if (!$node instanceof Node\Stmt\Function_ && !$node instanceof Node\Stmt\ClassMethod) {
             return null;
         }
         $key = $this->astUtils->getNodeKey($node, $this->currentNamespace);
@@ -641,7 +641,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
      */
     public function leaveNode($node)
     {
-        if (!($node instanceof Node\Stmt\Function_ || $node instanceof Node\Stmt\ClassMethod)) {
+        if (!$node instanceof Node\Stmt\Function_ && !$node instanceof Node\Stmt\ClassMethod) {
             return null;
         }
         $nodeKey = $this->astUtils->getNodeKey($node, $this->currentNamespace);
