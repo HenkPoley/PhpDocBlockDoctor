@@ -470,7 +470,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         $currentAnnotatedThrowsFqcns = [];
 
         $docComment = $node->getDocComment();
-        if ($docComment) {
+        if ($docComment !== null) {
             $docText = $docComment->getText();
             $docLines = preg_split('/\R/u', $docText);
             $currentThrowsFqcnForDesc = null;
@@ -662,7 +662,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
         $newDocBlockContentLines = [];
         $hasAnyContentForNewDocBlock = false;
 
-        if ($docCommentNode) {
+        if ($docCommentNode !== null) {
             $originalLines = preg_split('/\R/u', $docCommentNode->getText());
             $currentGenericTagLines = [];
             $isInsideGenericTag = false;
@@ -755,7 +755,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
         }
 
         $originalNormalizedDocText = null;
-        if ($docCommentNode) {
+        if ($docCommentNode !== null) {
             $originalDocText = $docCommentNode->getText();
             $originalContentOnlyLines = [];
             $lines = preg_split('/\R/u', $originalDocText);
@@ -791,7 +791,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                     $patchEnd = $docCommentNode->getEndFilePos();
                 }
             }
-            if ($patchType) {
+            if ($patchType !== '' && $patchType !== '0') {
                 echo "Scheduling DocBlock " . strtoupper($patchType) . " for " . $this->getNodeSignatureForMessage($node) . "\n";
                 $this->pendingPatches[] = [
                     'type' => $patchType, 'node' => $node,

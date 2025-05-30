@@ -27,7 +27,7 @@ class Example
      */
     public function two(): void
     {
-        if (random_int(0, 1)) {
+        if (random_int(0, 1) !== 0) {
             throw new LogicException();
         }
     }
