@@ -13,7 +13,7 @@ class Example
      * @throws \Exception
      * @throws \LogicException
      */
-    public function one()
+    public function one(): void
     {
         $this->two();
         $this->three('input');
@@ -25,7 +25,7 @@ class Example
      *
      * @throws \LogicException
      */
-    public function two()
+    public function two(): void
     {
         if (random_int(0, 1)) {
             throw new LogicException();
