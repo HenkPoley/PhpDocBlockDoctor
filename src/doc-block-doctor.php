@@ -414,7 +414,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         }
         GlobalCache::$fileNamespaces[$this->filePath] = $this->currentNamespace;
 
-        foreach ($this->nodeFinder->find($nodes, function (Node $n) {
+        foreach ($this->nodeFinder->find($nodes, function (Node $n): bool {
             return $n instanceof Node\Stmt\Use_ || $n instanceof Node\Stmt\GroupUse;
         }) as $useNode) {
             if ($useNode instanceof Node\Stmt\Use_) {
@@ -536,7 +536,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                 }
             }
         }
-        return array_values(array_filter($fqcns, function ($fqcn) {
+        return array_values(array_filter($fqcns, function ($fqcn): bool {
             return class_exists($fqcn) || interface_exists($fqcn);
         }));
     }
@@ -594,7 +594,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                 }
             }
         }
-        if (!$hasMeaningfulContent && empty(array_filter($actualContent, function ($l) {
+        if (!$hasMeaningfulContent && empty(array_filter($actualContent, function ($l): bool {
                 return trim($l) !== "";
             }))) {
             return null;
@@ -651,7 +651,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
 
         $analyzedThrowsFqcns = GlobalCache::$resolvedThrows[$nodeKey] ?? [];
         // Filter out any classes or interfaces that don’t actually exist
-        $analyzedThrowsFqcns = array_filter($analyzedThrowsFqcns, function ($fqcn) {
+        $analyzedThrowsFqcns = array_filter($analyzedThrowsFqcns, function ($fqcn): bool {
             return class_exists($fqcn) || interface_exists($fqcn);
         });
         $analyzedThrowsFqcns = array_values($analyzedThrowsFqcns);
@@ -823,7 +823,7 @@ $phpFilePaths = [];
 $rii = new \RecursiveIteratorIterator(
     new \RecursiveCallbackFilterIterator(
         new \RecursiveDirectoryIterator($rootDir, \RecursiveDirectoryIterator::SKIP_DOTS | \RecursiveDirectoryIterator::FOLLOW_SYMLINKS),
-        function ($file, $key, $iterator) {
+        function ($file, $key, $iterator): bool {
             $filename = $file->getFilename();
             if ($iterator->hasChildren()) {
                 return !in_array($filename, ['vendor', '.git', 'node_modules', '.history', 'tests', 'cache']);
@@ -965,7 +965,7 @@ foreach ($phpFilePaths as $filePath) {
             $newCode = $codeAtStartOfThisIteration; // Start with the code from the beginning of this file pass
             $patches = $useSimplifierSurgical->pendingPatches;
             // Sort patches by start position in descending order to apply them correctly
-            usort($patches, function ($a, $b) {
+            usort($patches, function ($a, $b): int {
                 return $b['startPos'] <=> $a['startPos'];
             });
             foreach ($patches as $patch) {
@@ -994,7 +994,7 @@ foreach ($phpFilePaths as $filePath) {
             $originalFileLinesForIndent = explode("\n", $currentFileContentForPatching);
 
             $patchesForFile = $docBlockUpdater->pendingPatches;
-            usort($patchesForFile, function ($a, $b) {
+            usort($patchesForFile, function ($a, $b): int {
                 return $b['patchStart'] <=> $a['patchStart'];
             });
             $newFileContent = $currentFileContentForPatching; // Work on a copy
