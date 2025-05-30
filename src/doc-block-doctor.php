@@ -5,8 +5,8 @@ require 'vendor/autoload.php';
 
 use PhpParser\Error;
 use PhpParser\Node;
-use PhpParser\NodeFinder;
 use PhpParser\Node\Expr\Assign;
+use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\NodeVisitor\ParentConnectingVisitor;
@@ -189,9 +189,7 @@ class AstUtils
             } else {
                 $calleeKey = $this->resolveNameNodeToFqcn($funcNameNode, $callerNamespace, $callerUseMap, true);
             }
-        }
-
-        // --- handle constructor calls as calls to ClassName::__construct ---
+        } // --- handle constructor calls as calls to ClassName::__construct ---
         elseif ($callNode instanceof \PhpParser\Node\Expr\New_
             && $callNode->class instanceof \PhpParser\Node\Name
         ) {
@@ -245,8 +243,11 @@ class AstUtils
 class UseStatementSimplifierSurgical extends NodeVisitorAbstract
 {
     /** @var array<int, array{startPos: int, length: int, replacementText: string}> */
-    public array $pendingPatches = [];
-    private PrettyPrinter\Standard $printer;
+    public $pendingPatches = [];
+    /**
+     * @var \PhpParser\PrettyPrinter\Standard
+     */
+    private $printer;
 
     public function __construct()
     {
@@ -254,13 +255,16 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
     }
 
     /** @param Node[] $nodes */
-    public function beforeTraverse(array $nodes): ?array
+    public function beforeTraverse($nodes): ?array
     {
         $this->pendingPatches = [];
         return null;
     }
 
-    public function leaveNode(Node $node): ?int // Return type indicates no AST modification by traverser
+    /**
+     * @param \PhpParser\Node $node
+     */
+    public function leaveNode($node): ?int // Return type indicates no AST modification by traverser
     {
         if ($node instanceof Node\Stmt\GroupUse && count($node->uses) === 1) {
             $originalUse = $node->uses[0];
@@ -291,17 +295,17 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
             $phpPrefixSpace = "<?php "; // Note: nikic/php-parser often uses "\<\?php \n" (with space)
             $phpPrefixSpaceNewline = "<?php \n";
 
-            if (str_starts_with($replacementCode, $phpPrefixSpaceNewline)) {
+            if (strncmp($replacementCode, $phpPrefixSpaceNewline, strlen($phpPrefixSpaceNewline)) === 0) {
                 $replacementCode = substr($replacementCode, strlen($phpPrefixSpaceNewline));
-            } elseif (str_starts_with($replacementCode, $phpPrefixNewline)) {
+            } elseif (strncmp($replacementCode, $phpPrefixNewline, strlen($phpPrefixNewline)) === 0) {
                 $replacementCode = substr($replacementCode, strlen($phpPrefixNewline));
-            } elseif (str_starts_with($replacementCode, $phpPrefixSpace)) {
+            } elseif (strncmp($replacementCode, $phpPrefixSpace, strlen($phpPrefixSpace)) === 0) {
                 $replacementCode = substr($replacementCode, strlen($phpPrefixSpace));
             }
 
             // Ensure it ends with a newline, as use statements are typically on their own line.
             // prettyPrint() on an array of statements usually adds this.
-            if (!str_ends_with($replacementCode, "\n")) {
+            if (substr_compare($replacementCode, "\n", -strlen("\n")) !== 0) {
                 $replacementCode .= "\n";
             }
 
@@ -436,7 +440,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                     } else {
                         $prefixStr = $useNode->prefix->toString();
                         if ($useNode->prefix->hasAttribute('resolvedName')) {
-                            $prefixStr = $useNode->prefix->getAttribute('resolvedName')?->toString() ?? '';
+                            $prefixStr = (($nullsafeVariable1 = $useNode->prefix->getAttribute('resolvedName')) ? $nullsafeVariable1->toString() : null) ?? '';
                         }
                         $this->useMap[$alias] = $this->astUtils->resolveStringToFqcn($prefixStr . '\\' . $useUse->name->toString(), '', []);
                     }
@@ -532,7 +536,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                 }
             }
         }
-        return array_values(array_filter($fqcns, function($fqcn) {
+        return array_values(array_filter($fqcns, function ($fqcn) {
             return class_exists($fqcn) || interface_exists($fqcn);
         }));
     }
@@ -647,7 +651,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
 
         $analyzedThrowsFqcns = GlobalCache::$resolvedThrows[$nodeKey] ?? [];
         // Filter out any classes or interfaces that don’t actually exist
-        $analyzedThrowsFqcns = array_filter($analyzedThrowsFqcns, function($fqcn) {
+        $analyzedThrowsFqcns = array_filter($analyzedThrowsFqcns, function ($fqcn) {
             return class_exists($fqcn) || interface_exists($fqcn);
         });
         $analyzedThrowsFqcns = array_values($analyzedThrowsFqcns);
