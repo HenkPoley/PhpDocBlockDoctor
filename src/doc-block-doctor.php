@@ -965,7 +965,7 @@ foreach ($phpFilePaths as $filePath) {
             $newCode = $codeAtStartOfThisIteration; // Start with the code from the beginning of this file pass
             $patches = $useSimplifierSurgical->pendingPatches;
             // Sort patches by start position in descending order to apply them correctly
-            usort($patches, function ($a, $b): int {
+            usort($patches, function (array $a, array $b): int {
                 return $b['startPos'] <=> $a['startPos'];
             });
             foreach ($patches as $patch) {
@@ -994,7 +994,7 @@ foreach ($phpFilePaths as $filePath) {
             $originalFileLinesForIndent = explode("\n", $currentFileContentForPatching);
 
             $patchesForFile = $docBlockUpdater->pendingPatches;
-            usort($patchesForFile, function ($a, $b): int {
+            usort($patchesForFile, function (array $a, array $b): int {
                 return $b['patchStart'] <=> $a['patchStart'];
             });
             $newFileContent = $currentFileContentForPatching; // Work on a copy
