@@ -196,7 +196,8 @@ class AstUtils
         }
 
         // === 1) Instance method on $this: $this->foo() ===> ClassName::foo ===
-        if ($callNode instanceof Node\Expr\MethodCall
+        if (
+            $callNode instanceof Node\Expr\MethodCall
             && $callNode->var instanceof Node\Expr\Variable
             && $callNode->var->name === 'this'
             && $callNode->name instanceof Node\Identifier
@@ -208,7 +209,8 @@ class AstUtils
         }
 
         // === 2) StaticCall: handle self::, static::, parent::, and fully qualified names ===
-        if ($callNode instanceof Node\Expr\StaticCall
+        if (
+            $callNode instanceof Node\Expr\StaticCall
             && $callNode->class instanceof Node\Name
             && $callNode->name instanceof Node\Identifier
         ) {
@@ -234,7 +236,8 @@ class AstUtils
                 }
                 // As a fallback, attempt to fetch the parent from the AST:
                 $classNode = $callerFuncOrMethodNode->getAttribute('parent');
-                if ($classNode instanceof Node\Stmt\Class_
+                if (
+                    $classNode instanceof Node\Stmt\Class_
                     && $classNode->extends instanceof Node\Name
                 ) {
                     $parentFqcn = $this->resolveNameNodeToFqcn(
@@ -259,7 +262,8 @@ class AstUtils
         }
 
         // === 3) Free (global) function call: foo() ===> resolves to a namespaced or fully qualified function name ===
-        if ($callNode instanceof Node\Expr\FuncCall
+        if (
+            $callNode instanceof Node\Expr\FuncCall
             && $callNode->name instanceof Node\Name
         ) {
             $functionFqcn = $this->resolveNameNodeToFqcn(
@@ -272,7 +276,8 @@ class AstUtils
         }
 
         // === 4) "new ClassName()" → treat as ClassName::__construct ===
-        if ($callNode instanceof Node\Expr\New_
+        if (
+            $callNode instanceof Node\Expr\New_
             && $callNode->class instanceof Node\Name
         ) {
             $classFqcn = $this->resolveNameNodeToFqcn(
