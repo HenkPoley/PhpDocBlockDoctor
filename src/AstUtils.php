@@ -120,8 +120,7 @@ class AstUtils
         if ($callNode instanceof Node\Expr\MethodCall && $callNode->name instanceof Node\Identifier) {
             if ($callNode->var instanceof Node\Expr\Variable) {
                 $varName = $callNode->var->name;
-                if ($varName === 'this' && $callerContextClassName) {
-                } else {
+                if (!($varName === 'this' && $callerContextClassName)) {
                     // try to infer $var’s class from a “new” assignment in this method
                     $finder = new NodeFinder();
                     $stmts = $callerFuncOrMethodNode->stmts ?? [];
@@ -157,13 +156,9 @@ class AstUtils
             } else {
                 $resolvedClassName = $this->resolveNameNodeToFqcn($classNameNode, $callerNamespace, $callerUseMap, false);
             }
-
-            if ($resolvedClassName) {
-            }
         } elseif ($callNode instanceof Node\Expr\FuncCall && $callNode->name instanceof Node\Name) {
             $funcNameNode = $callNode->name;
-            if ($funcNameNode->hasAttribute('resolvedName') && $funcNameNode->getAttribute('resolvedName') instanceof Node\Name) {
-            } else {
+            if (!($funcNameNode->hasAttribute('resolvedName') && $funcNameNode->getAttribute('resolvedName') instanceof Node\Name)) {
             }
         } // --- handle constructor calls as calls to ClassName::__construct ---
         elseif ($callNode instanceof \PhpParser\Node\Expr\New_
