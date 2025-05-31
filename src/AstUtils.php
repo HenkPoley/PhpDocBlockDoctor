@@ -382,13 +382,45 @@ class AstUtils
             return ltrim($functionFqcn, '\\');
         }
 
-        // === 4) "new ClassName()" → treat as ClassName::__construct ===
+        // === 4) "new ClassName()" or "new self()/static()/parent()" → treat as ClassName::__construct ===
         if (
             $callNode instanceof Node\Expr\New_
             && $callNode->class instanceof Node\Name
         ) {
+            $classNameNode = $callNode->class;
+            $lower         = strtolower($classNameNode->toString());
+
+            // 4a) "new self()" or "new static()" → current class
+            if ($lower === 'self' || $lower === 'static') {
+                $callerClass = $this->getContextClassName($callerFuncOrMethodNode, $callerNamespace);
+                if ($callerClass) {
+                    return $callerClass . '::__construct';
+                }
+                return null;
+            }
+
+            // 4b) "new parent()" → parent class of current class, if it exists
+            if ($lower === 'parent') {
+                // Attempt to find the AST Class_ node that contains this method/function:
+                $classNode = $callerFuncOrMethodNode->getAttribute('parent');
+                if ($classNode instanceof Node\Stmt\Class_ && $classNode->extends instanceof Node\Name) {
+                    // Resolve parent’s FQCN using useMap + namespace:
+                    $parentFqcn = $this->resolveNameNodeToFqcn(
+                        $classNode->extends,
+                        $callerNamespace,
+                        $callerUseMap,
+                        false
+                    );
+                    if ($parentFqcn) {
+                        return ltrim($parentFqcn, '\\') . '::__construct';
+                    }
+                }
+                return null;
+            }
+
+            // 4c) Otherwise a normal "new SomeClass()" → resolve via useMap / namespace:
             $classFqcn = $this->resolveNameNodeToFqcn(
-                $callNode->class,
+                $classNameNode,
                 $callerNamespace,
                 $callerUseMap,
                 false
