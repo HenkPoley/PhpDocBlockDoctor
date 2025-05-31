@@ -196,6 +196,10 @@ class Application
 
                 if (!empty($docBlockUpdater->pendingPatches)) {
                     $currentFileContentForPatching = file_get_contents($filePath);
+                    if(!is_string($currentFileContentForPatching)) {
+                        echo 'Could not read file contents for patching: ' . $filePath . PHP_EOL;
+                        continue;
+                    }
                     $originalFileLinesForIndent = explode("\n", $currentFileContentForPatching);
 
                     $patchesForFile = $docBlockUpdater->pendingPatches;
