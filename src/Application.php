@@ -16,7 +16,10 @@ use RecursiveIteratorIterator;
 
 class Application
 {
-    public function run(array $argv): int
+    /**
+     * @param mixed[] $argv
+     */
+    public function run($argv): int
     {
         // --- Main Script ---
         $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 1));
