@@ -27,8 +27,11 @@ class AstUtils
                 return $node->name->getAttribute('resolvedName')->toString();
             }
             $fnName = $node->name->toString();
-            return ($currentNamespace && strncmp($fnName, '\\', strlen('\\')) !== 0 ? $currentNamespace . '\\' : '') . $fnName;
+            return ($currentNamespace && strncmp($fnName, '\\', strlen('\\')) !== 0
+                    ? $currentNamespace . '\\'
+                    : '') . $fnName;
         }
+
         return null;
     }
 
@@ -40,7 +43,11 @@ class AstUtils
     {
         $current = $nodeContext;
         while ($current = $current->getAttribute('parent')) {
-            if ($current instanceof Node\Stmt\Class_ || $current instanceof Node\Stmt\Interface_ || $current instanceof Node\Stmt\Trait_) {
+            if (
+                $current instanceof Node\Stmt\Class_
+                || $current instanceof Node\Stmt\Interface_
+                || $current instanceof Node\Stmt\Trait_
+            ) {
                 if ($current->hasAttribute('namespacedName') && $current->getAttribute('namespacedName') instanceof Node\Name) {
                     return $current->getAttribute('namespacedName')->toString();
                 }
@@ -65,19 +72,24 @@ class AstUtils
         if ($nameNode->hasAttribute('resolvedName') && $nameNode->getAttribute('resolvedName') instanceof Node\Name\FullyQualified) {
             return $nameNode->getAttribute('resolvedName')->toString();
         }
+
         $name = $nameNode->toString();
         if ($nameNode->isFullyQualified()) {
             return ltrim($name, '\\');
         }
+
         $parts = $nameNode->getParts();
-        if (!$isFunctionContext && isset($useMap[$parts[0]])) { // Check first part against use map for classes/namespaces
+        if (!$isFunctionContext && isset($useMap[$parts[0]])) {
+            // First‐part resolution via `use`‐map (for classes/namespaces)
             $baseFqcnFromUse = $useMap[$parts[0]];
             array_shift($parts);
             return $baseFqcnFromUse . (count($parts) > 0 ? '\\' . implode('\\', $parts) : '');
         }
+
         if ($currentNamespace) {
             return $currentNamespace . '\\' . $name;
         }
+
         return $name;
     }
 
@@ -94,15 +106,18 @@ class AstUtils
         if (strncmp($name, '\\', strlen('\\')) === 0) {
             return ltrim($name, '\\');
         }
+
         $parts = explode('\\', $name);
         if (isset($useMap[$parts[0]])) {
             $baseFqcnFromUse = $useMap[$parts[0]];
             array_shift($parts);
             return $baseFqcnFromUse . (count($parts) > 0 ? '\\' . implode('\\', $parts) : '');
         }
+
         if ($currentNamespace) {
             return $currentNamespace . '\\' . $name;
         }
+
         return $name;
     }
 
@@ -114,53 +129,96 @@ class AstUtils
      */
     public function getCalleeKey($callNode, $callerNamespace, $callerUseMap, $callerFuncOrMethodNode): ?string
     {
-        $callerContextClassName = $this->getContextClassName($callerFuncOrMethodNode, $callerNamespace);
-
-
-        if ($callNode instanceof Node\Expr\MethodCall && $callNode->name instanceof Node\Identifier) {
-            if ($callNode->var instanceof Node\Expr\Variable) {
-                $varName = $callNode->var->name;
-                if (!($varName === 'this' && $callerContextClassName)) {
-                    // try to infer $var’s class from a “new” assignment in this method
-                    $finder = new NodeFinder();
-                    $stmts = $callerFuncOrMethodNode->stmts ?? [];
-                    $assigns = $finder->findInstanceOf($stmts, Assign::class);
-                    foreach ($assigns as $assign) {
-                        if ($assign->var instanceof Node\Expr\Variable
-                            && $assign->var->name === $varName
-                            && $assign->expr instanceof Node\Expr\New_
-                            && $assign->expr->class instanceof Node\Name) {
-                            break;
-                        }
-                    }
-                }
-            }
-        } elseif ($callNode instanceof Node\Expr\StaticCall && $callNode->class instanceof Node\Name && $callNode->name instanceof Node\Identifier) {
-            $classNameNode = $callNode->class;
-            $classNameString = $classNameNode->toString();
-
-            if (strtolower($classNameString) === 'parent') {
-                $classNode = $callerFuncOrMethodNode->getAttribute('parent');
-                if ($classNode instanceof Node\Stmt\Class_ && $classNode->extends && (!$classNode->extends->hasAttribute('resolvedName') || !$classNode->extends->getAttribute('resolvedName') instanceof Node\Name\FullyQualified)) {
-                    $this->resolveNameNodeToFqcn($classNode->extends, $callerNamespace, $callerUseMap, false);
-                }
-            }
-        } elseif (!$callNode instanceof Node\Expr\FuncCall || !$callNode->name instanceof Node\Name) {
-            if ($callNode instanceof \PhpParser\Node\Expr\New_
-                && $callNode->class instanceof \PhpParser\Node\Name
-            ) {
-                // --- handle constructor calls as calls to ClassName::__construct ---
-                $classFqcn = $this->resolveNameNodeToFqcn(
-                    $callNode->class,
-                    $callerNamespace,
-                    $callerUseMap,
-                    false
-                );
-                $calleeKey = $classFqcn . '::__construct';
-                return ltrim($calleeKey, '\\');
+        // === 1) Instance method on $this: $this->foo() ===> ClassName::foo ===
+        if ($callNode instanceof Node\Expr\MethodCall
+            && $callNode->var instanceof Node\Expr\Variable
+            && $callNode->var->name === 'this'
+            && $callNode->name instanceof Node\Identifier
+        ) {
+            $callerClass = $this->getContextClassName($callerFuncOrMethodNode, $callerNamespace);
+            if ($callerClass) {
+                return $callerClass . '::' . $callNode->name->toString();
             }
         }
 
+        // === 2) StaticCall: handle self::, static::, parent::, and fully qualified names ===
+        if ($callNode instanceof Node\Expr\StaticCall
+            && $callNode->class instanceof Node\Name
+            && $callNode->name instanceof Node\Identifier
+        ) {
+            $classNameNode = $callNode->class;
+            $lower = strtolower($classNameNode->toString());
+
+            // 2a) "self::method()" or "static::method()" → use the current class
+            if ($lower === 'self' || $lower === 'static') {
+                $callerClass = $this->getContextClassName($callerFuncOrMethodNode, $callerNamespace);
+                if ($callerClass) {
+                    return $callerClass . '::' . $callNode->name->toString();
+                }
+                return null;
+            }
+
+            // 2b) "parent::method()" → use the parent class (NameResolver should have attached a resolvedName attribute already)
+            if ($lower === 'parent') {
+                // We rely on NameResolver having already resolved "parent" to a fully qualified name in $callNode->class
+                $resolvedParent = $classNameNode->getAttribute('resolvedName');
+                if ($resolvedParent instanceof Node\Name\FullyQualified) {
+                    $parentFqcn = $resolvedParent->toString();
+                    return ltrim($parentFqcn, '\\') . '::' . $callNode->name->toString();
+                }
+                // As a fallback, attempt to fetch the parent from the AST:
+                $classNode = $callerFuncOrMethodNode->getAttribute('parent');
+                if ($classNode instanceof Node\Stmt\Class_
+                    && $classNode->extends instanceof Node\Name
+                ) {
+                    $parentFqcn = $this->resolveNameNodeToFqcn(
+                        $classNode->extends,
+                        $callerNamespace,
+                        $callerUseMap,
+                        false
+                    );
+                    return ltrim($parentFqcn, '\\') . '::' . $callNode->name->toString();
+                }
+                return null;
+            }
+
+            // 2c) "SomeClass::method()" (generic static call) → resolve via useMap / namespace
+            $classFqcn = $this->resolveNameNodeToFqcn(
+                $classNameNode,
+                $callerNamespace,
+                $callerUseMap,
+                false
+            );
+            return ltrim($classFqcn, '\\') . '::' . $callNode->name->toString();
+        }
+
+        // === 3) Free (global) function call: foo() ===> resolves to a namespaced or fully qualified function name ===
+        if ($callNode instanceof Node\Expr\FuncCall
+            && $callNode->name instanceof Node\Name
+        ) {
+            $functionFqcn = $this->resolveNameNodeToFqcn(
+                $callNode->name,
+                $callerNamespace,
+                $callerUseMap,
+                true
+            );
+            return ltrim($functionFqcn, '\\');
+        }
+
+        // === 4) "new ClassName()" → treat as ClassName::__construct ===
+        if ($callNode instanceof Node\Expr\New_
+            && $callNode->class instanceof Node\Name
+        ) {
+            $classFqcn = $this->resolveNameNodeToFqcn(
+                $callNode->class,
+                $callerNamespace,
+                $callerUseMap,
+                false
+            );
+            return ltrim($classFqcn, '\\') . '::__construct';
+        }
+
+        // No recognized callee form → return null
         return null;
     }
 
@@ -171,29 +229,51 @@ class AstUtils
      * @param string $currentNamespace
      * @param mixed[] $useMap
      */
-    public function isExceptionCaught($throwNode, $thrownFqcn, $boundaryNode, $currentNamespace, $useMap): bool
-    {
+    public function isExceptionCaught(
+        $throwNode,
+        $thrownFqcn,
+        $boundaryNode,
+        $currentNamespace,
+        $useMap
+    ): bool {
         $parent = $throwNode->getAttribute('parent');
         while ($parent && $parent !== $boundaryNode->getAttribute('parent')) {
             if ($parent instanceof Node\Stmt\TryCatch) {
                 foreach ($parent->catches as $catchClause) {
                     foreach ($catchClause->types as $typeNode) {
-                        $caughtTypeFqcn = $this->resolveNameNodeToFqcn($typeNode, $currentNamespace, $useMap, false);
+                        $caughtTypeFqcn = $this->resolveNameNodeToFqcn(
+                            $typeNode,
+                            $currentNamespace,
+                            $useMap,
+                            false
+                        );
                         if (class_exists($thrownFqcn, true) && class_exists($caughtTypeFqcn, true)) {
-                            if ($thrownFqcn === $caughtTypeFqcn || is_subclass_of($thrownFqcn, $caughtTypeFqcn)) {
+                            if ($thrownFqcn === $caughtTypeFqcn
+                                || is_subclass_of($thrownFqcn, $caughtTypeFqcn)
+                            ) {
                                 return true;
                             }
-                        } elseif ($thrownFqcn === $caughtTypeFqcn) { // Fallback if classes not autoloadable during analysis
+                        } elseif ($thrownFqcn === $caughtTypeFqcn) {
+                            // Fallback if classes not autoloadable during analysis
                             return true;
                         }
                     }
                 }
             }
-            if (($parent instanceof Node\Stmt\Function_ || $parent instanceof Node\Stmt\ClassMethod || $parent instanceof Node\Expr\Closure) && $parent !== $boundaryNode) {
-                break; // Do not cross into other function/method/closure boundaries
+
+            if (
+                ($parent instanceof Node\Stmt\Function_
+                    || $parent instanceof Node\Stmt\ClassMethod
+                    || $parent instanceof Node\Expr\Closure)
+                && $parent !== $boundaryNode
+            ) {
+                // Do not cross into another function/method/closure boundary
+                break;
             }
+
             $parent = $parent->getAttribute('parent');
         }
+
         return false;
     }
 }
