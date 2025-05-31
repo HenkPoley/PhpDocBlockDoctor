@@ -114,7 +114,6 @@ class AstUtils
      */
     public function getCalleeKey($callNode, $callerNamespace, $callerUseMap, $callerFuncOrMethodNode): ?string
     {
-        $calleeKey = null;
         $callerContextClassName = $this->getContextClassName($callerFuncOrMethodNode, $callerNamespace);
 
 
@@ -122,8 +121,6 @@ class AstUtils
             if ($callNode->var instanceof Node\Expr\Variable) {
                 $varName = $callNode->var->name;
                 if ($varName === 'this' && $callerContextClassName) {
-                    // existing this->method() logic
-                    $calleeKey = $callerContextClassName . '::' . $callNode->name->toString();
                 } else {
                     // try to infer $var’s class from a “new” assignment in this method
                     $finder = new NodeFinder();
@@ -134,13 +131,6 @@ class AstUtils
                             && $assign->var->name === $varName
                             && $assign->expr instanceof Node\Expr\New_
                             && $assign->expr->class instanceof Node\Name) {
-                            $resolvedClass = $this->resolveNameNodeToFqcn(
-                                $assign->expr->class,
-                                $callerNamespace,
-                                $callerUseMap,
-                                false
-                            );
-                            $calleeKey = $resolvedClass . '::' . $callNode->name->toString();
                             break;
                         }
                     }
@@ -169,14 +159,11 @@ class AstUtils
             }
 
             if ($resolvedClassName) {
-                $calleeKey = $resolvedClassName . '::' . $callNode->name->toString();
             }
         } elseif ($callNode instanceof Node\Expr\FuncCall && $callNode->name instanceof Node\Name) {
             $funcNameNode = $callNode->name;
             if ($funcNameNode->hasAttribute('resolvedName') && $funcNameNode->getAttribute('resolvedName') instanceof Node\Name) {
-                $calleeKey = $funcNameNode->getAttribute('resolvedName')->toString();
             } else {
-                $calleeKey = $this->resolveNameNodeToFqcn($funcNameNode, $callerNamespace, $callerUseMap, true);
             }
         } // --- handle constructor calls as calls to ClassName::__construct ---
         elseif ($callNode instanceof \PhpParser\Node\Expr\New_

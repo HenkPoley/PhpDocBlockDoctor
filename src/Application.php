@@ -139,7 +139,6 @@ class Application
                 }
                 $modifiedInThisSpecificPassIteration = false;
                 $codeAtStartOfThisIteration = file_get_contents($filePath);
-                $currentAST = null;
 
                 try {
                     $currentNameResolver = new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]);
@@ -180,7 +179,6 @@ class Application
                     if ($newCode !== $codeAtStartOfThisIteration) {
                         file_put_contents($filePath, $newCode);
                         echo "Surgically simplified use statements in {$filePath}\n";
-                        $modifiedInThisSpecificPassIteration = true;
                         $fileOverallModified = true;
                         continue; // Re-process the file from start due to textual modification, ensuring next ops see this change
                     }
@@ -205,9 +203,6 @@ class Application
                     $newFileContent = $currentFileContentForPatching; // Work on a copy
 
                     foreach ($patchesForFile as $patch) {
-                        $replacementText = '';
-                        $currentAppliedPatchStartPos = $patch['patchStart']; // Start with scheduled position
-                        $currentAppliedOriginalLength = 0;
                         $baseIndent = ''; // Indentation for the docblock lines themselves
 
                         if ($patch['type'] === 'add' || $patch['type'] === 'update') {
@@ -265,7 +260,6 @@ class Application
 
                             // Refined logic to remove the whole line if the docblock was alone on it.
                             // This needs to operate on $newFileContent as it might have been changed by prior patches in this loop.
-                            $startPosOfDocBlockLine = -1;
                             if ($currentAppliedPatchStartPos > 0) {
                                 $startPosOfDocBlockLine = strrpos(substr($newFileContent, 0, $currentAppliedPatchStartPos), "\n");
                                 $startPosOfDocBlockLine = ($startPosOfDocBlockLine === false) ? 0 : $startPosOfDocBlockLine + 1;
