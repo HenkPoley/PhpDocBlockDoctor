@@ -141,10 +141,8 @@ class AstUtils
 
             if (strtolower($classNameString) === 'parent') {
                 $classNode = $callerFuncOrMethodNode->getAttribute('parent');
-                if ($classNode instanceof Node\Stmt\Class_ && $classNode->extends) {
-                    if (!$classNode->extends->hasAttribute('resolvedName') || !$classNode->extends->getAttribute('resolvedName') instanceof Node\Name\FullyQualified) {
-                        $this->resolveNameNodeToFqcn($classNode->extends, $callerNamespace, $callerUseMap, false);
-                    }
+                if ($classNode instanceof Node\Stmt\Class_ && $classNode->extends && (!$classNode->extends->hasAttribute('resolvedName') || !$classNode->extends->getAttribute('resolvedName') instanceof Node\Name\FullyQualified)) {
+                    $this->resolveNameNodeToFqcn($classNode->extends, $callerNamespace, $callerUseMap, false);
                 }
             }
         } elseif (!$callNode instanceof Node\Expr\FuncCall || !$callNode->name instanceof Node\Name) {
