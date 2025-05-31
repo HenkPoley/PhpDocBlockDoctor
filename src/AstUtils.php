@@ -139,23 +139,21 @@ class AstUtils
             $classNameNode = $callNode->class;
             $classNameString = $classNameNode->toString();
 
-            if (strtolower($classNameString) === 'self' || strtolower($classNameString) === 'static') {
-            } elseif (strtolower($classNameString) === 'parent') {
-                $classNode = $callerFuncOrMethodNode->getAttribute('parent');
-                if ($classNode instanceof Node\Stmt\Class_ && $classNode->extends) {
-                    if ($classNode->extends->hasAttribute('resolvedName') && $classNode->extends->getAttribute('resolvedName') instanceof Node\Name\FullyQualified) {
-                    } else {
-                        $this->resolveNameNodeToFqcn($classNode->extends, $callerNamespace, $callerUseMap, false);
+            if (strtolower($classNameString) !== 'self' && strtolower($classNameString) !== 'static') {
+                if (strtolower($classNameString) === 'parent') {
+                    $classNode = $callerFuncOrMethodNode->getAttribute('parent');
+                    if ($classNode instanceof Node\Stmt\Class_ && $classNode->extends) {
+                        if (!$classNode->extends->hasAttribute('resolvedName') || !$classNode->extends->getAttribute('resolvedName') instanceof Node\Name\FullyQualified) {
+                            $this->resolveNameNodeToFqcn($classNode->extends, $callerNamespace, $callerUseMap, false);
+                        }
                     }
                 }
-            } elseif ($classNameNode->hasAttribute('resolvedName') && $classNameNode->getAttribute('resolvedName') instanceof Node\Name\FullyQualified) {
-            } else {
             }
         } elseif ($callNode instanceof Node\Expr\FuncCall && $callNode->name instanceof Node\Name) {
-        } // --- handle constructor calls as calls to ClassName::__construct ---
-        elseif ($callNode instanceof \PhpParser\Node\Expr\New_
+        } elseif ($callNode instanceof \PhpParser\Node\Expr\New_
             && $callNode->class instanceof \PhpParser\Node\Name
         ) {
+            // --- handle constructor calls as calls to ClassName::__construct ---
             $classFqcn = $this->resolveNameNodeToFqcn(
                 $callNode->class,
                 $callerNamespace,
