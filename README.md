@@ -37,7 +37,7 @@ It may run down to PHP 7.1, made sure using Rector 2.0.17 (`php composer global 
 
 ## Backstory
 
-Had a crashing "single"-sign-on system that uses costomisations of [SimpleSAMLphp](https://github.com/simplesamlphp/simplesamlphp). Found out that the project has the common PHP problem that the `@throws` annotations were not maintained, and thus the developers were not able to properly catching exceptions. After grappling it for a bit, I wrote this to clean ithatt up, and then thought it might be useful for others.
+Had a crashing "single"-sign-on system that uses costomisations of [SimpleSAMLphp](https://github.com/simplesamlphp/simplesamlphp). Found out that the project has the common PHP problem that the `@throws` annotations were not maintained, and thus the developers were not able to properly catching exceptions. After grappling it for a bit, I wrote this to clean that up, and then thought it might be useful for others.
 
 ## TODO
 
