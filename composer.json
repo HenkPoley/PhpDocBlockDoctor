@@ -21,6 +21,7 @@
 		}
 	],
 	"require-dev": {
-		"vimeo/psalm": "^6.12"
+		"vimeo/psalm": "^6.12",
+		"rector/rector": "^2.0"
 	}
 }
