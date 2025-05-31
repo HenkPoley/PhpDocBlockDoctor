@@ -17,7 +17,7 @@ use RecursiveIteratorIterator;
 class Application
 {
     /**
-     * @param mixed[] $argv
+     * @param string[] $argv
      */
     public function run($argv): int
     {
