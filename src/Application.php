@@ -51,6 +51,7 @@ class Application
         $nameResolverForPass1 = new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]);
         $parentConnectorForPass1 = new ParentConnectingVisitor();
         foreach ($phpFilePaths as $filePath) {
+            echo 'Processing: ' . $filePath . PHP_EOL;
             $code = file_get_contents($filePath);
             try {
                 $ast = $parser->parse($code);
