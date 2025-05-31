@@ -149,19 +149,20 @@ class AstUtils
                     }
                 }
             }
-        } elseif ($callNode instanceof Node\Expr\FuncCall && $callNode->name instanceof Node\Name) {
-        } elseif ($callNode instanceof \PhpParser\Node\Expr\New_
-            && $callNode->class instanceof \PhpParser\Node\Name
-        ) {
-            // --- handle constructor calls as calls to ClassName::__construct ---
-            $classFqcn = $this->resolveNameNodeToFqcn(
-                $callNode->class,
-                $callerNamespace,
-                $callerUseMap,
-                false
-            );
-            $calleeKey = $classFqcn . '::__construct';
-            return ltrim($calleeKey, '\\');
+        } elseif (!$callNode instanceof Node\Expr\FuncCall || !$callNode->name instanceof Node\Name) {
+            if ($callNode instanceof \PhpParser\Node\Expr\New_
+                && $callNode->class instanceof \PhpParser\Node\Name
+            ) {
+                // --- handle constructor calls as calls to ClassName::__construct ---
+                $classFqcn = $this->resolveNameNodeToFqcn(
+                    $callNode->class,
+                    $callerNamespace,
+                    $callerUseMap,
+                    false
+                );
+                $calleeKey = $classFqcn . '::__construct';
+                return ltrim($calleeKey, '\\');
+            }
         }
 
         return null;
