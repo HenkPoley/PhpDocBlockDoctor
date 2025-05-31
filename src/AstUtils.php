@@ -7,6 +7,9 @@ use PhpParser\Node\Stmt\Property;
 use PhpParser\Node\Stmt\PropertyProperty;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\Variable;
+use PhpParser\NodeFinder;
+use PhpParser\Node\Stmt\Return_;
+use HenkPoley\DocBlockDoctor\GlobalCache;
 
 /**
  * Utility Class for AST operations and Name Resolution
@@ -131,7 +134,59 @@ class AstUtils
      */
     public function getCalleeKey($callNode, $callerNamespace, $callerUseMap, $callerFuncOrMethodNode): ?string
     {
-        // First, check: is this a MethodCall on $this->someProperty? If so, read the @var of that property.
+        // If this is a MethodCall whose “var” is itself another MethodCall, try to follow the returned object.
+        if (
+            $callNode instanceof Node\Expr\MethodCall
+            && $callNode->var instanceof Node\Expr\MethodCall
+        ) {
+            // 1) First, resolve the “inner” call (e.g. OneMoreClass::nonStaticFunction)
+            $innerKey = $this->getCalleeKey(
+                $callNode->var,
+                $callerNamespace,
+                $callerUseMap,
+                $callerFuncOrMethodNode
+            );
+
+            if ($innerKey) {
+                // 2) Look up that inner method's AST node from the GlobalCache
+                $innerNode     = GlobalCache::$astNodeMap[$innerKey] ?? null;
+                $innerFilePath = GlobalCache::$nodeKeyToFilePath[$innerKey] ?? null;
+
+                if ($innerNode instanceof Node\Stmt\ClassMethod && $innerFilePath) {
+                    // 3) Find any “return new SomeClass();” inside that method
+                    $finder = new NodeFinder();
+                    $returns = $finder->findInstanceOf(
+                        $innerNode->stmts ?? [],
+                        Return_::class
+                    );
+
+                    foreach ($returns as $returnStmt) {
+                        if (
+                            $returnStmt->expr instanceof Node\Expr\New_
+                            && $returnStmt->expr->class instanceof Node\Name
+                        ) {
+                            // Resolve the FQCN of the returned class:
+                            $innerNamespace = GlobalCache::$fileNamespaces[$innerFilePath] ?? '';
+                            $innerUseMap    = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
+                            $returnedFqcn   = $this->resolveNameNodeToFqcn(
+                                $returnStmt->expr->class,
+                                $innerNamespace,
+                                $innerUseMap,
+                                false
+                            );
+
+                            if ($returnedFqcn) {
+                                // 4) Synthesize “ReturnedClass::outerMethod”
+                                return ltrim($returnedFqcn, '\\') . '::' . $callNode->name->toString();
+                            }
+                        }
+                    }
+                }
+            }
+            // If we can’t follow it, we just “fall through” to the existing logic below.
+        }
+
+        // MethodCall on $this->property → translate “$this->prop->foo()” → “ClassName::foo”
         if (
             $callNode instanceof Node\Expr\MethodCall
             // Make sure the var is a PropertyFetch on $this:

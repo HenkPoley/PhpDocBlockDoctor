@@ -19,4 +19,16 @@ class OneMoreClass
     {
         throw new \LogicException();
     }
+
+    /** Does not throw any exception by itself */
+    public function nonStaticFunction() {
+        return new ThirdExampleClass();
+    }
+
+    /**
+     * @throws \UnderflowException
+     */
+    public function nonStaticFunctionThatThrows() {
+        throw new \UnderflowException();
+    }
 }

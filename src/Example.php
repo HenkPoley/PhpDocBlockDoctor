@@ -9,6 +9,9 @@ use LogicException;
 
 class Example
 {
+    /** @var OneMoreClass */
+    private $externalClass;
+
     /**
      * @throws \Exception
      * @throws \LogicException
@@ -43,5 +46,21 @@ class Example
     public function three($input)
     {
         throw new Exception();
+    }
+
+    /**
+     * @throws \ErrorException
+     */
+    function usesFunctionOnObjectReturnedFromCallToClassVariable()
+    {
+        $this->externalClass->nonStaticFunction()->someOtherNonStaticFunction();
+    }
+
+    /**
+     * @throws \UnderflowException
+     */
+    function usesFunctionOnClassVariable()
+    {
+        $this->externalClass->nonStaticFunctionThatThrows();
     }
 }
