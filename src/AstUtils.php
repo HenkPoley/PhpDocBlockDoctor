@@ -11,10 +11,6 @@ use PhpParser\NodeFinder;
  */
 class AstUtils
 {
-    public function __construct()
-    {
-    }
-
     /**
      * @param \PhpParser\Node $node
      * @param string $currentNamespace
