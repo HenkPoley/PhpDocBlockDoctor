@@ -254,7 +254,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                     $patchEnd = $docCommentNode->getEndFilePos();
                 }
             }
-            if ($patchType !== '' && $patchType !== '0') {
+            if ($patchType !== '') {
                 echo "Scheduling DocBlock " . strtoupper($patchType) . " for " . $this->getNodeSignatureForMessage($node) . "\n";
                 $this->pendingPatches[] = [
                     'type' => $patchType, 'node' => $node,
