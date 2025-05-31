@@ -45,7 +45,7 @@ class AstUtils
                     return $current->getAttribute('namespacedName')->toString();
                 }
 
-                if (isset($current->name) && $current->name instanceof Node\Identifier) {
+                if (isset($current->name)) {
                     return ($currentNamespace ? $currentNamespace . '\\' : '') . $current->name->toString();
                 }
                 return null;
