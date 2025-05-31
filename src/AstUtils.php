@@ -138,26 +138,20 @@ class AstUtils
         } elseif ($callNode instanceof Node\Expr\StaticCall && $callNode->class instanceof Node\Name && $callNode->name instanceof Node\Identifier) {
             $classNameNode = $callNode->class;
             $classNameString = $classNameNode->toString();
-            $resolvedClassName = null;
 
             if (strtolower($classNameString) === 'self' || strtolower($classNameString) === 'static') {
-                $resolvedClassName = $callerContextClassName;
             } elseif (strtolower($classNameString) === 'parent') {
                 $classNode = $callerFuncOrMethodNode->getAttribute('parent');
                 if ($classNode instanceof Node\Stmt\Class_ && $classNode->extends) {
                     if ($classNode->extends->hasAttribute('resolvedName') && $classNode->extends->getAttribute('resolvedName') instanceof Node\Name\FullyQualified) {
-                        $resolvedClassName = $classNode->extends->getAttribute('resolvedName')->toString();
                     } else {
-                        $resolvedClassName = $this->resolveNameNodeToFqcn($classNode->extends, $callerNamespace, $callerUseMap, false);
+                        $this->resolveNameNodeToFqcn($classNode->extends, $callerNamespace, $callerUseMap, false);
                     }
                 }
             } elseif ($classNameNode->hasAttribute('resolvedName') && $classNameNode->getAttribute('resolvedName') instanceof Node\Name\FullyQualified) {
-                $resolvedClassName = $classNameNode->getAttribute('resolvedName')->toString();
             } else {
-                $resolvedClassName = $this->resolveNameNodeToFqcn($classNameNode, $callerNamespace, $callerUseMap, false);
             }
         } elseif ($callNode instanceof Node\Expr\FuncCall && $callNode->name instanceof Node\Name) {
-            $funcNameNode = $callNode->name;
         } // --- handle constructor calls as calls to ClassName::__construct ---
         elseif ($callNode instanceof \PhpParser\Node\Expr\New_
             && $callNode->class instanceof \PhpParser\Node\Name
