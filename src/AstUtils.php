@@ -1,10 +1,12 @@
 <?php
-
 namespace HenkPoley\DocBlockDoctor;
 
 use PhpParser\Node;
-use PhpParser\Node\Expr\Assign;
-use PhpParser\NodeFinder;
+use PhpParser\Node\Stmt\Class_;
+use PhpParser\Node\Stmt\Property;
+use PhpParser\Node\Stmt\PropertyProperty;
+use PhpParser\Node\Expr\PropertyFetch;
+use PhpParser\Node\Expr\Variable;
 
 /**
  * Utility Class for AST operations and Name Resolution
@@ -129,6 +131,70 @@ class AstUtils
      */
     public function getCalleeKey($callNode, $callerNamespace, $callerUseMap, $callerFuncOrMethodNode): ?string
     {
+        // First, check: is this a MethodCall on $this->someProperty? If so, read the @var of that property.
+        if (
+            $callNode instanceof Node\Expr\MethodCall
+            // Make sure the var is a PropertyFetch on $this:
+            && $callNode->var instanceof PropertyFetch
+            && $callNode->var->var instanceof Variable
+            && $callNode->var->var->name === 'this'
+            // And that the “->name” is actually an Identifier (not an ArrayDimFetch, etc.):
+            && $callNode->var->name instanceof Node\Identifier
+            && $callNode->name instanceof Node\Identifier
+        ) {
+            // The property name, e.g. "translator"
+            $propertyName = $callNode->var->name->toString();
+            // The method name, e.g. "getLanguage"
+            $methodName = $callNode->name->toString();
+
+            // Walk up from the current method/function node to find the enclosing Class_ node.
+            $parent = $callerFuncOrMethodNode;
+            while ($parent !== null && !($parent instanceof Class_)) {
+                $parent = $parent->getAttribute('parent');
+            }
+
+            if ($parent instanceof Class_) {
+                /** @var Class_ $classNode */
+                $classNode = $parent;
+
+                // Look through all properties of this class to find one named `$propertyName`
+                foreach ($classNode->stmts as $stmt) {
+                    if (!($stmt instanceof Property)) {
+                        continue;
+                    }
+
+                    /** @var PropertyProperty $propElem */
+                    foreach ($stmt->props as $propElem) {
+                        if ($propElem->name->toString() === $propertyName) {
+                            // Found something like “private Translate $translator;”
+                            $docComment = $stmt->getDocComment();
+                            if ($docComment instanceof \PhpParser\Comment\Doc) {
+                                $text = $docComment->getText();
+                                // Look for “@var Some\Fqcn” in the doc block.
+                                if (preg_match('/@var\s+([^\s]+)/', $text, $m)) {
+                                    $annotatedType = $m[1];
+                                    // e.g. “\SimpleSAML\Locale\Translate” or “Translate”
+
+                                    // Resolve to a fully qualified class name, using use‐map + namespace
+                                    $fqcn = $this->resolveStringToFqcn(
+                                        $annotatedType,
+                                        $callerNamespace,
+                                        $callerUseMap
+                                    );
+
+                                    if ($fqcn !== '') {
+                                        // Return “TranslateClassName::methodName”
+                                        return ltrim($fqcn, '\\') . '::' . $methodName;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // If we didn’t find a matching @var or couldn’t resolve it, fall through:
+        }
+
         // === 1) Instance method on $this: $this->foo() ===> ClassName::foo ===
         if ($callNode instanceof Node\Expr\MethodCall
             && $callNode->var instanceof Node\Expr\Variable
