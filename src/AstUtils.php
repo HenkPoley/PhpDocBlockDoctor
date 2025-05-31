@@ -139,13 +139,11 @@ class AstUtils
             $classNameNode = $callNode->class;
             $classNameString = $classNameNode->toString();
 
-            if (strtolower($classNameString) !== 'self' && strtolower($classNameString) !== 'static') {
-                if (strtolower($classNameString) === 'parent') {
-                    $classNode = $callerFuncOrMethodNode->getAttribute('parent');
-                    if ($classNode instanceof Node\Stmt\Class_ && $classNode->extends) {
-                        if (!$classNode->extends->hasAttribute('resolvedName') || !$classNode->extends->getAttribute('resolvedName') instanceof Node\Name\FullyQualified) {
-                            $this->resolveNameNodeToFqcn($classNode->extends, $callerNamespace, $callerUseMap, false);
-                        }
+            if (strtolower($classNameString) === 'parent') {
+                $classNode = $callerFuncOrMethodNode->getAttribute('parent');
+                if ($classNode instanceof Node\Stmt\Class_ && $classNode->extends) {
+                    if (!$classNode->extends->hasAttribute('resolvedName') || !$classNode->extends->getAttribute('resolvedName') instanceof Node\Name\FullyQualified) {
+                        $this->resolveNameNodeToFqcn($classNode->extends, $callerNamespace, $callerUseMap, false);
                     }
                 }
             }
