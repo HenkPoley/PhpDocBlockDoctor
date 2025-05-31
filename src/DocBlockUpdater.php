@@ -186,6 +186,8 @@ class DocBlockUpdater extends NodeVisitorAbstract
                 $newDocBlockContentLines[] = "";
             }
             foreach ($analyzedThrowsFqcns as $fqcn) {
+                // This foreach() is not dead code.
+                // tombstone("ERROR: NoValue - src/DocBlockUpdater.php:188:46 - All possible types for this assignment were invalidated - This may be dead code (see https://psalm.dev/179)");
                 $fqcnWithBackslash = '\\' . ltrim((string)$fqcn, '\\');
                 $description = $originalNodeDescriptions[$fqcn] ?? ($originalNodeDescriptions[ltrim((string)$fqcn, '\\')] ?? '');
                 $throwsLine = '@throws ' . $fqcnWithBackslash;

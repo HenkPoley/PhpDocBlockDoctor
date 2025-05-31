@@ -2,9 +2,23 @@
 <?php
 
 require 'vendor/autoload.php';
+require 'vendor/scheb/tombstone-logger/tombstone-function.php';
 
 use HenkPoley\DocBlockDoctor\Application;
+use Scheb\Tombstone\Logger\Graveyard\GraveyardBuilder;
+use Scheb\Tombstone\Logger\Handler\AnalyzerLogHandler;
+use Scheb\Tombstone\Logger\Handler\StreamHandler;
+
+$streamHandler = new StreamHandler('logs/tombstones.log');
+$analyzerLogHandler = new AnalyzerLogHandler('logs/tombstones');
+
+(new GraveyardBuilder())
+    ->rootDirectory(__DIR__.'/src')
+    ->autoRegister()
+    ->withHandler($streamHandler)
+    ->withHandler($analyzerLogHandler)  // You can add as many as you want
+    ->build();
 
 $app = new Application();
-$exitCode= $app->run($argv);
+$exitCode = $app->run($argv);
 exit($exitCode);
