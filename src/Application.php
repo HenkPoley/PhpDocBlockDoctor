@@ -168,7 +168,7 @@ class Application
                 // Traverse the AST. The visitor collects patches but does not modify the AST itself.
                 $traverserUseSurgical->traverse($currentAST);
 
-                if (!empty($useSimplifierSurgical->pendingPatches)) {
+                if ($useSimplifierSurgical->pendingPatches !== []) {
                     $newCode = $codeAtStartOfThisIteration; // Start with the code from the beginning of this file pass
                     $patches = $useSimplifierSurgical->pendingPatches;
                     // Sort patches by start position in descending order to apply them correctly
@@ -194,7 +194,7 @@ class Application
                 $traverserDocBlock->addVisitor($docBlockUpdater);
                 $traverserDocBlock->traverse($currentAST);
 
-                if (!empty($docBlockUpdater->pendingPatches)) {
+                if ($docBlockUpdater->pendingPatches !== []) {
                     $currentFileContentForPatching = file_get_contents($filePath);
                     if(!is_string($currentFileContentForPatching)) {
                         echo 'Could not read file contents for patching: ' . $filePath . PHP_EOL;

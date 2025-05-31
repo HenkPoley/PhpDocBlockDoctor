@@ -82,7 +82,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
             array_pop($actualContent);
         }
 
-        if (empty($actualContent)) {
+        if ($actualContent === []) {
             return null;
         }
 
@@ -136,7 +136,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                 $trimmedLineContent = trim((string)$lineContent);
 
                 if (preg_match('/^@throws\s/i', $trimmedLineContent)) {
-                    if (!empty($currentGenericTagLines)) {
+                    if ($currentGenericTagLines !== []) {
                         // TODO: [EA] 'array_merge(...)' is used in a loop and is a resources greedy construction.
                         $newDocBlockContentLines = array_merge($newDocBlockContentLines, $currentGenericTagLines);
                         $currentGenericTagLines = [];
@@ -150,7 +150,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                 }
 
                 if (preg_match('/^@\w+/', $trimmedLineContent)) {
-                    if (!empty($currentGenericTagLines)) {
+                    if ($currentGenericTagLines !== []) {
                         // TODO: [EA] 'array_merge(...)' is used in a loop and is a resources greedy construction.
                         $newDocBlockContentLines = array_merge($newDocBlockContentLines, $currentGenericTagLines);
                     }
@@ -163,7 +163,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                         $hasAnyContentForNewDocBlock = true;
                     }
                 } elseif ($trimmedLineContent !== '') {
-                    if (!empty($currentGenericTagLines)) {
+                    if ($currentGenericTagLines !== []) {
                         // TODO: [EA] 'array_merge(...)' is used in a loop and is a resources greedy construction.
                         $newDocBlockContentLines = array_merge($newDocBlockContentLines, $currentGenericTagLines);
                         $currentGenericTagLines = [];
@@ -171,18 +171,18 @@ class DocBlockUpdater extends NodeVisitorAbstract
                     $newDocBlockContentLines[] = $lineContent;
                     $hasAnyContentForNewDocBlock = true;
                     $isInsideGenericTag = false;
-                } elseif (!empty($newDocBlockContentLines) && trim((string)end($newDocBlockContentLines)) !== "") {
+                } elseif ($newDocBlockContentLines !== [] && trim((string)end($newDocBlockContentLines)) !== "") {
                     $newDocBlockContentLines[] = "";
                 }
             }
-            if (!empty($currentGenericTagLines)) {
+            if ($currentGenericTagLines !== []) {
                 $newDocBlockContentLines = array_merge($newDocBlockContentLines, $currentGenericTagLines);
             }
         }
 
-        if (!empty($analyzedThrowsFqcns)) {
+        if ($analyzedThrowsFqcns !== []) {
             $hasAnyContentForNewDocBlock = true;
-            if (!empty($newDocBlockContentLines) && trim((string)end($newDocBlockContentLines)) !== "") {
+            if ($newDocBlockContentLines !== [] && trim((string)end($newDocBlockContentLines)) !== "") {
                 $newDocBlockContentLines[] = "";
             }
             foreach ($analyzedThrowsFqcns as $fqcn) {
@@ -205,7 +205,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
         }
 
         $finalNormalizedNewDocText = null;
-        if ($hasAnyContentForNewDocBlock || !empty($newDocBlockContentLines)) {
+        if ($hasAnyContentForNewDocBlock || $newDocBlockContentLines !== []) {
             while (count($newDocBlockContentLines) > 0 && trim((string)$newDocBlockContentLines[0]) === "") {
                 array_shift($newDocBlockContentLines);
             }
@@ -213,7 +213,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                 array_pop($newDocBlockContentLines);
             }
 
-            if (!empty($newDocBlockContentLines)) {
+            if ($newDocBlockContentLines !== []) {
                 $textToNormalize = implode("\n", $newDocBlockContentLines);
                 $finalNormalizedNewDocText = $this->normalizeDocBlockString($textToNormalize);
             }
