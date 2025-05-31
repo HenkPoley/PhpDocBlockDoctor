@@ -3,6 +3,7 @@
 namespace HenkPoley\DocBlockDoctor;
 
 use PhpParser\Error;
+use PhpParser\Node;
 use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
