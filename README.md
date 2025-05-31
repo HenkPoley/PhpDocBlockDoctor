@@ -4,11 +4,15 @@ It cleans up the `@throws` exception PhpDoc annotations for functions throughout
 
 Something of a longstanding gap in the PHP tooling. The best tooling would not bubble exceptions through the call chain once it encountered a super class such as \Throwable, that everything inherits from. Since inheritance _kind of_ means you may ignore specialisation. Except of course, highly specific exceptions can be useful to properly inform the end user. Specific cases can be notified of fixed. Very generic cases have no solution except noting that something failed. Don't know what, but it's broken. PhpStorm has a habit of dumping duplicates in your docblock if multiple calls throw the same exception class. Which you then tediously need to clean up. This effectively meant nearly nobody really properly uses exceptions in the PHP ecosystem.
 
-Willed this into existence with Google Gemini Pro 2.5, and OpenAI o4-mini-high, and of course some experience with PHP. Code is probably a mess.
+Oh, and it also cleans up `use Foo\Bar\{Baz};` statements to `use Foo\Bar\Baz;`.
+
+Vibe coded this into existence with Google Gemini Pro 2.5, and OpenAI o4-mini-high, and of course some experience with PHP. Code is probably a mess.
 
 ## Commandline syntax
 
-php src/doc-block-doctor.php <path>
+```shell
+php vendor/bin/doc-block-doctor <path>
+```
 
 ## Result
 
@@ -27,11 +31,17 @@ It cannot track runtime dynamically attached class functions. To compensate it j
 
 ## Dependencies
 
-If you copy doc-block-doctor.php into your own project so it knows your composer classes, you need to run `php composer require nikic/php-parser` to add the `nikic/php-parser` dependency.
+Uses `nikic/php-parser` AST parser for PHP.
 
-It should run down to PHP 7.1, made sure using Rector 2.0.17 (`php composer global require rector/rector 2.0.17`), end of May 2025.
+It may run down to PHP 7.1, made sure using Rector 2.0.17 (`php composer global require rector/rector 2.0.17`), end of May 2025. But then you need to use php-parser 4.x.
 
-# TODO:
+## Backstory
+
+Had a crashing "single"-sign-on system that uses costomisations of [SimpleSAMLphp](https://github.com/simplesamlphp/simplesamlphp). Found out that the project has the common PHP problem that the `@throws` annotations were not maintained, and thus the developers were not able to properly catching exceptions. After grappling it for a bit, I wrote this to clean ithatt up, and then thought it might be useful for others.
+
+## TODO
 
 * Handle PHP 'magic' such as Laravel Facades.
-* Make it a proper PHP command, if possible (your project's vendored classes?).
+* Make an option to ignore existing `@throws` annotations (apart from the multi-line comments), so it can clean up the docblocks. Erasing 'Laravel Facade'-like `@throws` of course.
+* Maybe put the `use` statement cleaning behind some commandline option.
+* Propagate (full function-wide) `catch(\Specific\Exception $e)` through the call chain. We can be fairly sure that part of the code won't emit that exception. So you have at least some basic way to clean up the `@throws` annotations.
