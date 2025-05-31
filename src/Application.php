@@ -84,7 +84,8 @@ class Application
                     function ($file, $key, $iterator): bool {
                         $filename = $file->getFilename();
                         if ($iterator->hasChildren()) {
-                            return !in_array($filename, ['vendor', '.git', 'node_modules', '.history', 'tests', 'cache'], true);
+                            // removed 'vendor' from this exclusion list so we read vendor/ now
+                            return !in_array($filename, ['.git', 'node_modules', '.history', 'tests', 'cache'], true);
                         }
                         return $file->isFile() && $file->getExtension() === 'php';
                     }
@@ -110,10 +111,16 @@ class Application
         }
 
         GlobalCache::clear();
+
+        // Keep track of every file we try to read
+        $filesRead = [];
+
+        // Pass 1 visitors
         $nameResolverForPass1    = new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]);
         $parentConnectorForPass1 = new ParentConnectingVisitor();
 
         foreach ($phpFilePaths as $filePath) {
+            $filesRead[] = $filePath; // record that we read this file
             if ($verbose) {
                 echo "  • Processing: {$filePath}\n";
             }
@@ -214,16 +221,26 @@ class Application
         echo "Global Throws Resolution Complete.\n";
 
         // ------------------------------------------------------------
-        // 5) Pass 2: Update files
+        // 5) Pass 2: Update files (skip vendor/)
         // ------------------------------------------------------------
-        echo "\nPass 2: Updating files...\n";
+        // Before starting Pass 2, remove any paths under “vendor/” so that we don’t modify third-party code.
+        $phpFilePaths = array_filter($phpFilePaths, static function (string $path): bool {
+            // On Windows the directory separator may be “\”, so use DIRECTORY_SEPARATOR.
+            $needle = DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR;
+            return strpos($path, $needle) === false;
+        });
+
+        echo "\nPass 2: Updating files (excluding vendor/) ...\n";
         if ($verbose) {
             echo 'Processing ' . count($phpFilePaths) . " files...\n";
         }
 
+        // Keep track of which files were actually modified (fixed)
+        $filesFixed = [];
+
         foreach ($phpFilePaths as $filePath) {
             if ($verbose) {
-                echo "  • Processing: {$filePath}\n";
+                echo "  • Processing (Pass 2): {$filePath}\n";
             }
 
             $fileOverallModified     = false;
@@ -422,12 +439,32 @@ class Application
                 }
             } while (true);
 
-            if ($fileOverallModified && $verbose) {
-                echo "  ✓ Finished {$filePath} after modifications.\n";
+            if ($fileOverallModified) {
+                if ($verbose) {
+                    echo "  ✓ Finished {$filePath} after modifications.\n";
+                }
+                $filesFixed[] = $filePath;
             }
         }
 
         echo "All done.\n";
+
+        // ------------------------------------------------------------
+        // 6) Print separate lists of files read vs. files fixed
+        // ------------------------------------------------------------
+        if ($verbose) {
+            echo "\n=== Summary ===\n";
+            echo "Files read (" . count($filesRead) . "):\n";
+            foreach ($filesRead as $f) {
+                echo "  - $f\n";
+            }
+            echo "\nFiles fixed (" . count($filesFixed) . "):\n";
+            foreach ($filesFixed as $f) {
+                echo "  - $f\n";
+            }
+            echo "\n";
+        }
+
         return 0;
     }
 
