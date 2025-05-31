@@ -158,8 +158,6 @@ class AstUtils
             }
         } elseif ($callNode instanceof Node\Expr\FuncCall && $callNode->name instanceof Node\Name) {
             $funcNameNode = $callNode->name;
-            if (!($funcNameNode->hasAttribute('resolvedName') && $funcNameNode->getAttribute('resolvedName') instanceof Node\Name)) {
-            }
         } // --- handle constructor calls as calls to ClassName::__construct ---
         elseif ($callNode instanceof \PhpParser\Node\Expr\New_
             && $callNode->class instanceof \PhpParser\Node\Name
