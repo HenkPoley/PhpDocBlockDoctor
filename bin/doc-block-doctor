@@ -21,7 +21,7 @@ $analyzerLogHandler = new AnalyzerLogHandler('logs/tombstones');
 
 $app = new Application();
 
-echo 'Increasing memory limit to 3 GB RAM, vendor/ directories are huge 😰.';
+echo 'Increasing memory limit to 3 GB RAM, vendor/ directories are huge 😰.' . PHP_EOL;
 ini_set('memory_limit', '3G');
 
 $exitCode = $app->run($argv);
