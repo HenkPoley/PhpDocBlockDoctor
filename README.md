@@ -45,3 +45,4 @@ Had a crashing "single"-sign-on system that uses costomisations of [SimpleSAMLph
 * Make an option to ignore existing `@throws` annotations (apart from the multi-line comments), so it can clean up the docblocks. Erasing 'Laravel Facade'-like `@throws` of course.
 * Maybe put the `use` statement cleaning behind some commandline option.
 * Propagate (full function-wide) `catch(\Specific\Exception $e)` through the call chain. We can be fairly sure that part of the code won't emit that exception. So you have at least some basic way to clean up the `@throws` annotations.
+* Follow proper ordering of PhpDoc tags. If there is one? @return comes before @throws. @see comes after @throws?
