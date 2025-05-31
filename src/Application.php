@@ -18,6 +18,8 @@ class Application
 {
     /**
      * @param string[] $argv
+     *
+     * @throws \LogicException
      */
     public function run($argv): int
     {

@@ -38,6 +38,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
 
     /**
      * @param mixed[] $nodes
+     *
+     * @throws \LogicException
      */
     public function beforeTraverse($nodes)
     {
@@ -88,6 +90,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
 
     /**
      * @param \PhpParser\Node $node
+     *
+     * @throws \LogicException
      */
     public function enterNode($node)
     {
@@ -153,6 +157,9 @@ class ThrowsGatherer extends NodeVisitorAbstract
         return null;
     }
 
+    /**
+     * @throws \LogicException
+     */
     private function calculateDirectThrowsForNode(Node $funcOrMethodNode): array
     {
         $fqcns = [];
