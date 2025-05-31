@@ -125,7 +125,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
         $newDocBlockContentLines = [];
         $hasAnyContentForNewDocBlock = false;
 
-        if ($docCommentNode !== null) {
+        if ($docCommentNode instanceof \PhpParser\Comment\Doc) {
             $originalLines = preg_split('/\R/u', $docCommentNode->getText());
             $currentGenericTagLines = [];
             $isInsideGenericTag = false;
@@ -220,7 +220,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
         }
 
         $originalNormalizedDocText = null;
-        if ($docCommentNode !== null) {
+        if ($docCommentNode instanceof \PhpParser\Comment\Doc) {
             $originalDocText = $docCommentNode->getText();
             $originalContentOnlyLines = [];
             $lines = preg_split('/\R/u', $originalDocText);

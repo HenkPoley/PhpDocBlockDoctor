@@ -105,7 +105,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         $currentAnnotatedThrowsFqcns = [];
 
         $docComment = $node->getDocComment();
-        if ($docComment !== null) {
+        if ($docComment instanceof \PhpParser\Comment\Doc) {
             $docText = $docComment->getText();
             $docLines = preg_split('/\R/u', $docText);
             $currentThrowsFqcnForDesc = null;
