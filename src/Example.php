@@ -21,8 +21,6 @@ class Example
     }
 
     /**
-     * @return void
-     *
      * @throws \LogicException
      */
     public function two(): void
