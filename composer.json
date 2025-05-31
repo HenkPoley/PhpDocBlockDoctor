@@ -1,11 +1,14 @@
 {
 	"name": "henk-poley/doc-block-doctor",
 	"description": "PHP DocBlockDoctor, it cleans up the exception annotations throughout your codebase",
-	"type": "project",
+	"type": "library",
 	"require": {
 		"php": "^7.1|^8.0",
 		"nikic/php-parser": "^5.4"
 	},
+	"bin": [
+		"bin/doc-block-doctor"
+	],
 	"autoload": {
 		"psr-4": {
 			"HenkPoley\\DocBlockDoctor\\": "src/"
