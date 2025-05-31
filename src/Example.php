@@ -63,4 +63,12 @@ class Example
     {
         $this->externalClass->nonStaticFunctionThatThrows();
     }
+
+    /**
+     * @throws \UnderflowException
+     */
+    function functionVariable(OneMoreClass $oneMoreClass)
+    {
+        $oneMoreClass->nonStaticFunctionThatThrows();
+    }
 }

@@ -2,9 +2,10 @@
 namespace HenkPoley\DocBlockDoctor;
 
 use PhpParser\Node;
+use PhpParser\Node\Name;
+use PhpParser\Node\NullableType;
+use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\Class_;
-use PhpParser\Node\Stmt\Property;
-use PhpParser\Node\Stmt\PropertyProperty;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\NodeFinder;
@@ -214,11 +215,11 @@ class AstUtils
 
                 // Look through all properties of this class to find one named `$propertyName`
                 foreach ($classNode->stmts as $stmt) {
-                    if (!($stmt instanceof Property)) {
+                    if (!($stmt instanceof Node\Stmt\Property)) {
                         continue;
                     }
 
-                    /** @var PropertyProperty $propElem */
+                    /** @var Node\Stmt\PropertyProperty $propElem */
                     foreach ($stmt->props as $propElem) {
                         if ($propElem->name->toString() === $propertyName) {
                             // Found something like “private Translate $translator;”
@@ -248,6 +249,57 @@ class AstUtils
                 }
             }
             // If we didn’t find a matching @var or couldn’t resolve it, fall through:
+        }
+
+        // === PARAMETER‐TYPE: $foo->bar() ===
+        // New block: if $callNode->var is a simple variable, see if that variable
+        // was defined as a typed parameter in the enclosing method/function.
+        if (
+            $callNode instanceof Node\Expr\MethodCall
+            && $callNode->var instanceof Variable
+            && is_string($callNode->var->name)
+            && $callNode->name instanceof Identifier
+        ) {
+            $varName = $callNode->var->name; // e.g. "oneMoreClass"
+            $methodName = $callNode->name->toString();
+
+            // Search the enclosing function/method for a parameter with the same name:
+            foreach ($callerFuncOrMethodNode->params as $param) {
+                if ($param->var instanceof Variable
+                    && is_string($param->var->name)
+                    && $param->var->name === $varName
+                    && $param->type !== null
+                ) {
+                    // We only handle "Name" or "NullableType(Name)" specifically:
+                    $typeNode = $param->type;
+                    if ($typeNode instanceof Name) {
+                        // Resolve a direct Name (e.g. OneMoreClass or \Foo\Bar)
+                        $paramFqcn = $this->resolveNameNodeToFqcn(
+                            $typeNode,
+                            $callerNamespace,
+                            $callerUseMap,
+                            false
+                        );
+                    } elseif ($typeNode instanceof NullableType && $typeNode->type instanceof Name) {
+                        // Resolve “?OneMoreClass” → OneMoreClass
+                        $paramFqcn = $this->resolveNameNodeToFqcn(
+                            $typeNode->type,
+                            $callerNamespace,
+                            $callerUseMap,
+                            false
+                        );
+                    } else {
+                        // Other types (scalar types, etc.) can be ignored.
+                        continue;
+                    }
+
+                    if ($paramFqcn) {
+                        // Successfully mapped $oneMoreClass → FQCN
+                        return ltrim($paramFqcn, '\\') . '::' . $methodName;
+                    }
+                }
+            }
+            // If no matching typed parameter, fall through to other logic:
         }
 
         // === 1) Instance method on $this: $this->foo() ===> ClassName::foo ===
