@@ -5,6 +5,7 @@ namespace HenkPoley\DocBlockDoctor;
 
 use Exception;
 use HenkPoley\DocBlockDoctor\SubPath\OneMoreClass;
+use HenkPoley\DocBlockDoctor\SubPath\ThirdExampleClass;
 use LogicException;
 
 class Example
@@ -70,5 +71,14 @@ class Example
     function functionVariable(OneMoreClass $oneMoreClass)
     {
         $oneMoreClass->nonStaticFunctionThatThrows();
+    }
+
+    /**
+     * @throws \ErrorException
+     */
+    function callOnNewObject()
+    {
+        $foo = new ThirdExampleClass();
+        $foo->someOtherNonStaticFunction();
     }
 }

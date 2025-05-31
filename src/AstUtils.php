@@ -8,6 +8,7 @@ use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\Variable;
+use PhpParser\Node\Expr\Assign;
 use PhpParser\NodeFinder;
 use PhpParser\Node\Stmt\Return_;
 use HenkPoley\DocBlockDoctor\GlobalCache;
@@ -132,6 +133,8 @@ class AstUtils
      * @param string $callerNamespace
      * @param mixed[] $callerUseMap
      * @param \PhpParser\Node $callerFuncOrMethodNode
+     *
+     * @throws \LogicException
      */
     public function getCalleeKey($callNode, $callerNamespace, $callerUseMap, $callerFuncOrMethodNode): ?string
     {
@@ -300,6 +303,64 @@ class AstUtils
                 }
             }
             // If no matching typed parameter, fall through to other logic:
+        }
+
+        // === LOCAL NEW ASSIGNMENT:  $foo = new SomeClass();  then  $foo->bar()  ===
+        if (
+            $callNode instanceof Node\Expr\MethodCall
+            && $callNode->var instanceof Variable
+            && is_string($callNode->var->name)
+            && $callNode->name instanceof Identifier
+        ) {
+            $varName    = $callNode->var->name;     // e.g. "foo"
+            $methodName = $callNode->name->toString();
+
+            // Ensure we have statements to scan:
+            if (property_exists($callerFuncOrMethodNode, 'stmts') && is_array($callerFuncOrMethodNode->stmts)) {
+                $finder     = new NodeFinder();
+                $allAssigns = $finder->findInstanceOf(
+                    $callerFuncOrMethodNode->stmts,
+                    Assign::class
+                );
+
+                $bestAssign   = null;
+                $bestPosition = -1;
+                foreach ($allAssigns as $assignNode) {
+                    // match "$foo = new Something();"
+                    if (
+                        $assignNode->var instanceof Variable
+                        && is_string($assignNode->var->name)
+                        && $assignNode->var->name === $varName
+                        && $assignNode->expr instanceof Node\Expr\New_
+                        && $assignNode->expr->class instanceof Node\Name
+                    ) {
+                        $pos = $assignNode->getStartFilePos() ?? -1;
+                        $callPos = $callNode->getStartFilePos() ?? PHP_INT_MAX;
+                        // Only consider assignments that happen earlier in the file than the call:
+                        if ($pos !== null && $pos < $callPos) {
+                            if ($pos > $bestPosition) {
+                                $bestPosition = $pos;
+                                $bestAssign   = $assignNode;
+                            }
+                        }
+                    }
+                }
+
+                if ($bestAssign instanceof Assign) {
+                    // Resolve "new Something()" → FQCN
+                    $newClassNode = $bestAssign->expr->class; // a Node\Name
+                    $classFqcn    = $this->resolveNameNodeToFqcn(
+                        $newClassNode,
+                        $callerNamespace,
+                        $callerUseMap,
+                        false
+                    );
+                    if ($classFqcn) {
+                        return ltrim($classFqcn, '\\') . '::' . $methodName;
+                    }
+                }
+            }
+            // If nothing matched, fall through to "$this->", "static::", etc.
         }
 
         // === 1) Instance method on $this: $this->foo() ===> ClassName::foo ===
