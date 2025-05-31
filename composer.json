@@ -19,5 +19,8 @@
 			"name": "Henk Poley",
 			"email": "HenkPoley@gmail.com"
 		}
-	]
+	],
+	"require-dev": {
+		"vimeo/psalm": "^6.12"
+	}
 }
