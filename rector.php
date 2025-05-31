@@ -11,7 +11,7 @@ return RectorConfig::configure()
     ])
     // uncomment to reach your current PHP version
     ->withPhpSets(php71: true)
-    ->withTypeCoverageLevel(47)
+    ->withTypeCoverageLevel(50)
     ->withDeadCodeLevel(50)
-    ->withCodeQualityLevel(47)
+    ->withCodeQualityLevel(50)
     ->withSets([DowngradeLevelSetList::DOWN_TO_PHP_71]);
