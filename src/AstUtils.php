@@ -88,7 +88,7 @@ class AstUtils
      */
     public function resolveStringToFqcn($name, $currentNamespace, $useMap): string
     {
-        if (empty($name)) {
+        if ($name === null || $name === '' || $name === '0') {
             return '';
         }
         if (strncmp($name, '\\', strlen('\\')) === 0) {

@@ -124,7 +124,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                 $contentLine = rtrim((string)$contentLine);
 
                 if (preg_match('/^@throws\s+([^\s]+)\s*(.*)/i', $contentLine, $matches)) {
-                    if ($currentThrowsFqcnForDesc && !isset(\HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc]) && !empty(trim($accumulatedDescription))) {
+                    if ($currentThrowsFqcnForDesc && !isset(\HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc]) && !in_array(trim($accumulatedDescription), ['', '0'], true)) {
                         \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc] = trim($accumulatedDescription);
                     }
                     $exceptionNameInAnnotation = trim($matches[1]);
@@ -136,16 +136,16 @@ class ThrowsGatherer extends NodeVisitorAbstract
                     }
 
                 } elseif ($currentThrowsFqcnForDesc && !$isFirstLine && !$isLastLine && !preg_match('/^@\w+/', $contentLine)) {
-                    $accumulatedDescription .= (empty(trim($accumulatedDescription)) && $contentLine === '' ? '' : "\n") . $contentLine;
+                    $accumulatedDescription .= (in_array(trim($accumulatedDescription), ['', '0'], true) && $contentLine === '' ? '' : "\n") . $contentLine;
                 } elseif ($isLastLine || preg_match('/^@\w+/', $contentLine)) {
-                    if ($currentThrowsFqcnForDesc && !empty(trim($accumulatedDescription)) && !isset(\HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc])) {
+                    if ($currentThrowsFqcnForDesc && !in_array(trim($accumulatedDescription), ['', '0'], true) && !isset(\HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc])) {
                         \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc] = trim($accumulatedDescription);
                     }
                     $currentThrowsFqcnForDesc = null;
                     $accumulatedDescription = "";
                 }
             }
-            if ($currentThrowsFqcnForDesc && !empty(trim($accumulatedDescription)) && !isset(\HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc])) {
+            if ($currentThrowsFqcnForDesc && !in_array(trim($accumulatedDescription), ['', '0'], true) && !isset(\HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc])) {
                 \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc] = trim($accumulatedDescription);
             }
         }

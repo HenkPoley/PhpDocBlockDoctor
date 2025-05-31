@@ -13,4 +13,4 @@ return RectorConfig::configure()
     ->withDowngradeSets(php71: true)
     ->withTypeCoverageLevel(50) // max: 50
     ->withDeadCodeLevel(49) // max: 49
-    ->withCodeQualityLevel(61); // max: 71
+    ->withCodeQualityLevel(64); // max: 71

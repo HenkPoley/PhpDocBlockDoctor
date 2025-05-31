@@ -57,9 +57,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                 }
             }
         }
-        if (!$hasMeaningfulContent && empty(array_filter($actualContent, function ($l): bool {
-                return trim($l) !== "";
-            }))) {
+        if (!$hasMeaningfulContent && array_filter($actualContent, function ($l): bool {return trim($l) !== "";}) === []) {
             return null;
         }
 
