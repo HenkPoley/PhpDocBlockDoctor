@@ -29,6 +29,8 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
 
     /**
      * @param \PhpParser\Node $node
+     *
+     * @throws \InvalidArgumentException
      */
     public function leaveNode($node): ?int // Return type indicates no AST modification by traverser
     {
