@@ -156,7 +156,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
     private function calculateDirectThrowsForNode(Node $funcOrMethodNode): array
     {
         $fqcns = [];
-        if (!isset($funcOrMethodNode->stmts) || !is_array($funcOrMethodNode->stmts)) {
+        if (!property_exists($funcOrMethodNode, 'stmts') || $funcOrMethodNode->stmts === null || !is_array($funcOrMethodNode->stmts)) {
             return [];
         }
         $throwNodes = $this->nodeFinder->findInstanceOf($funcOrMethodNode->stmts, Node\Expr\Throw_::class);
