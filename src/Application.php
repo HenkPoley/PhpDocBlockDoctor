@@ -21,6 +21,8 @@ class Application
      */
     public function run($argv): int
     {
+        $verbose = false;
+
         // --- Main Script ---
         $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 1));
         // $prettyPrinter is no longer needed globally, UseStatementSimplifierSurgical creates its own.
@@ -50,12 +52,18 @@ class Application
         GlobalCache::clear();
         $nameResolverForPass1 = new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]);
         $parentConnectorForPass1 = new ParentConnectingVisitor();
+        if ($verbose) {
+            echo 'Processing ' . count($phpFilePaths) . ' files...' . PHP_EOL;
+        }
         foreach ($phpFilePaths as $filePath) {
-            echo 'Processing: ' . $filePath . PHP_EOL;
+            if ($verbose) {
+                echo 'Processing: ' . $filePath . PHP_EOL;
+            }
             $code = file_get_contents($filePath);
             try {
                 $ast = $parser->parse($code);
                 if (!$ast) {
+                    echo 'No AST in ' . $filePath . PHP_EOL;
                     continue;
                 }
 
@@ -130,8 +138,13 @@ class Application
         echo "Global Throws Resolution Complete.\n";
 
         echo "\nPass 2: Updating files...\n";
+        if ($verbose) {
+            echo 'Processing ' . count($phpFilePaths) . ' files...' . PHP_EOL;
+        }
         foreach ($phpFilePaths as $filePath) {
-            echo "Processing: " . $filePath . PHP_EOL;
+            if ($verbose) {
+                echo "Processing: " . $filePath . PHP_EOL;
+            }
             $fileOverallModified = false;
             $maxFilePassIterations = 3;
             $currentFilePassIteration = 0;
