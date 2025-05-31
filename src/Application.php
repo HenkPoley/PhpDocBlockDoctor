@@ -194,7 +194,6 @@ class Application
                 $traverserDocBlock->addVisitor($docBlockUpdater);
                 $traverserDocBlock->traverse($currentAST);
 
-                // TODO: [EA] \HenkPoley\DocBlockDoctor\DocBlockUpdater needs to implement __isset to properly work here.
                 if (!empty($docBlockUpdater->pendingPatches)) {
                     $currentFileContentForPatching = file_get_contents($filePath);
                     $originalFileLinesForIndent = explode("\n", $currentFileContentForPatching);
