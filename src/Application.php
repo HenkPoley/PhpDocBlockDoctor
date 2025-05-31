@@ -21,49 +21,115 @@ class Application
      */
     public function run($argv): int
     {
-        $verbose = false;
+        // ------------------------------------------------------------
+        // 1) First, check for help flags. If --help or -h is anywhere
+        //    on the command line, print usage and exit immediately.
+        // ------------------------------------------------------------
+        foreach ($argv as $arg) {
+            if ($arg === '--help' || $arg === '-h') {
+                $this->printHelp();
+                return 0;
+            }
+        }
 
-        // --- Main Script ---
-        $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 1));
-        // $prettyPrinter is no longer needed globally, UseStatementSimplifierSurgical creates its own.
+        // ------------------------------------------------------------
+        // 2) Next, parse --verbose (or -v) and the optional <path>.
+        // ------------------------------------------------------------
+        $verbose = false;
+        $rootDir = null;
+        // Skip $argv[0]; start at 1
+        $counter = count($argv);
+
+        // Skip $argv[0]; start at 1
+        for ($i = 1; $i < $counter; $i++) {
+            $arg = $argv[$i];
+
+            if ($arg === '--verbose' || $arg === '-v') {
+                $verbose = true;
+                continue;
+            }
+
+            // Treat the first non‐flag (and non‐help) argument as the path
+            if ($rootDir === null) {
+                $rootDir = $arg;
+            }
+        }
+
+        // Default to current working directory if no path provided
+        if ($rootDir === null) {
+            $rootDir = getcwd();
+        }
+
+        if ($verbose) {
+            echo "[Verbose] Running DocBlockDoctor on: {$rootDir}\n";
+        }
+
+        // ------------------------------------------------------------
+        // 3) Main logic: gather files, resolve throws, update docblocks.
+        // ------------------------------------------------------------
+
+        $parser    = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 1));
         $nodeFinder = new NodeFinder();
-        $astUtils = new AstUtils();
-        $rootDir = $argv[1] ?? getcwd();
+        $astUtils   = new AstUtils();
+
+        // Collect all .php files under $rootDir
         $phpFilePaths = [];
-        $rii = new RecursiveIteratorIterator(
-            new RecursiveCallbackFilterIterator(
-                new RecursiveDirectoryIterator($rootDir, RecursiveDirectoryIterator::SKIP_DOTS | RecursiveDirectoryIterator::FOLLOW_SYMLINKS),
-                function ($file, $key, $iterator): bool {
-                    $filename = $file->getFilename();
-                    if ($iterator->hasChildren()) {
-                        return !in_array($filename, ['vendor', '.git', 'node_modules', '.history', 'tests', 'cache']);
+        try {
+            $rii = new RecursiveIteratorIterator(
+                new RecursiveCallbackFilterIterator(
+                    new RecursiveDirectoryIterator(
+                        $rootDir,
+                        RecursiveDirectoryIterator::SKIP_DOTS | RecursiveDirectoryIterator::FOLLOW_SYMLINKS
+                    ),
+                    function ($file, $key, $iterator): bool {
+                        $filename = $file->getFilename();
+                        if ($iterator->hasChildren()) {
+                            return !in_array($filename, ['vendor', '.git', 'node_modules', '.history', 'tests', 'cache'], true);
+                        }
+                        return $file->isFile() && $file->getExtension() === 'php';
                     }
-                    return $file->isFile() && $file->getExtension() === 'php';
-                }
-            ), RecursiveIteratorIterator::LEAVES_ONLY
-        );
+                ),
+                RecursiveIteratorIterator::LEAVES_ONLY
+            );
+        } catch (\UnexpectedValueException $e) {
+            // If $rootDir is not a directory (or not accessible), report and exit
+            fwrite(STDERR, "Error: Cannot open directory '{$rootDir}'.\n");
+            return 1;
+        }
+
         foreach ($rii as $fileInfo) {
             if ($fileInfo->getRealPath()) {
                 $phpFilePaths[] = $fileInfo->getRealPath();
             }
         }
 
-        echo "Pass 1: Gathering info...\n";
-        GlobalCache::clear();
-        $nameResolverForPass1 = new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]);
-        $parentConnectorForPass1 = new ParentConnectingVisitor();
         if ($verbose) {
-            echo 'Processing ' . count($phpFilePaths) . ' files...' . PHP_EOL;
+            echo "Pass 1: Gathering info on " . count($phpFilePaths) . " files...\n";
+        } else {
+            echo "Pass 1: Gathering info...\n";
         }
+
+        GlobalCache::clear();
+        $nameResolverForPass1    = new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]);
+        $parentConnectorForPass1 = new ParentConnectingVisitor();
+
         foreach ($phpFilePaths as $filePath) {
             if ($verbose) {
-                echo 'Processing: ' . $filePath . PHP_EOL;
+                echo "  • Processing: {$filePath}\n";
             }
-            $code = file_get_contents($filePath);
+
+            $code = @file_get_contents($filePath);
+            if ($code === false) {
+                echo "  ! Cannot read file: {$filePath}\n";
+                continue;
+            }
+
             try {
                 $ast = $parser->parse($code);
                 if (!$ast) {
-                    echo 'No AST in ' . $filePath . PHP_EOL;
+                    if ($verbose) {
+                        echo "    → No AST for {$filePath}\n";
+                    }
                     continue;
                 }
 
@@ -74,32 +140,40 @@ class Application
                 $traverserPass1->traverse($ast);
 
             } catch (Error $e) {
-                echo "Parse error Pass 1 {$filePath}: {$e->getMessage()}\n";
+                echo "Parse error (Pass 1) in {$filePath}: {$e->getMessage()}\n";
             }
         }
+
         echo "Pass 1 Complete.\n";
 
+        // ------------------------------------------------------------
+        // 4) Intermediate: Resolve all throws globally
+        // ------------------------------------------------------------
         echo "\nIntermediate Phase: Globally resolving throws...\n";
+
         GlobalCache::$resolvedThrows = [];
         foreach (array_keys(GlobalCache::$astNodeMap) as $funcKey) {
-            $direct = GlobalCache::$directThrows[$funcKey] ?? [];
+            $direct    = GlobalCache::$directThrows[$funcKey]    ?? [];
             $annotated = GlobalCache::$annotatedThrows[$funcKey] ?? [];
-            $initialThrows = array_values(array_unique(array_merge($direct, $annotated)));
-            sort($initialThrows);
-            GlobalCache::$resolvedThrows[$funcKey] = $initialThrows;
+            $initial   = array_values(array_unique(array_merge($direct, $annotated)));
+            sort($initial);
+            GlobalCache::$resolvedThrows[$funcKey] = $initial;
         }
 
-        $maxGlobalIterations = count(GlobalCache::$astNodeMap) + 5;
+        $maxGlobalIterations   = count(GlobalCache::$astNodeMap) + 5;
         $currentGlobalIteration = 0;
+
         do {
             $changedInThisGlobalIteration = false;
             $currentGlobalIteration++;
+
             foreach (GlobalCache::$astNodeMap as $funcKey => $funcNode) {
-                $filePathOfFunc = GlobalCache::$nodeKeyToFilePath[$funcKey];
+                $filePathOfFunc  = GlobalCache::$nodeKeyToFilePath[$funcKey];
                 $callerNamespace = GlobalCache::$fileNamespaces[$filePathOfFunc] ?? '';
-                $callerUseMap = GlobalCache::$fileUseMaps[$filePathOfFunc] ?? [];
-                $currentIterationBaseThrows = array_values(array_unique(array_merge(
-                    GlobalCache::$directThrows[$funcKey] ?? [],
+                $callerUseMap    = GlobalCache::$fileUseMaps[$filePathOfFunc] ?? [];
+
+                $baseThrows = array_values(array_unique(array_merge(
+                    GlobalCache::$directThrows[$funcKey]    ?? [],
                     GlobalCache::$annotatedThrows[$funcKey] ?? []
                 )));
 
@@ -109,60 +183,74 @@ class Application
                         $nodeFinder->findInstanceOf($funcNode->stmts, Node\Expr\MethodCall::class),
                         $nodeFinder->findInstanceOf($funcNode->stmts, Node\Expr\StaticCall::class),
                         $nodeFinder->findInstanceOf($funcNode->stmts, Node\Expr\FuncCall::class),
-                        // pick up "new X()" so we can pull in X::__construct throws
                         $nodeFinder->findInstanceOf($funcNode->stmts, Node\Expr\New_::class)
                     );
+
                     foreach ($callNodes as $callNode) {
                         $calleeKey = $astUtils->getCalleeKey($callNode, $callerNamespace, $callerUseMap, $funcNode);
                         if ($calleeKey && $calleeKey !== $funcKey) {
                             $exceptionsFromCallee = GlobalCache::$resolvedThrows[$calleeKey] ?? [];
-                            // TODO: [EA] 'array_merge(...)' is used in a loop and is a resources greedy construction.
                             $throwsFromCallees = array_merge($throwsFromCallees, $exceptionsFromCallee);
                         }
                     }
                 }
 
-                $newlyCalculatedThrowsForFunc = array_values(array_unique(array_merge($currentIterationBaseThrows, $throwsFromCallees)));
-                sort($newlyCalculatedThrowsForFunc);
-                $previouslyStoredResolvedThrows = GlobalCache::$resolvedThrows[$funcKey] ?? [];
-                if ($newlyCalculatedThrowsForFunc !== $previouslyStoredResolvedThrows) {
-                    GlobalCache::$resolvedThrows[$funcKey] = $newlyCalculatedThrowsForFunc;
+                $newThrows = array_values(array_unique(array_merge($baseThrows, $throwsFromCallees)));
+                sort($newThrows);
+
+                $oldThrows = GlobalCache::$resolvedThrows[$funcKey] ?? [];
+                if ($newThrows !== $oldThrows) {
+                    GlobalCache::$resolvedThrows[$funcKey] = $newThrows;
                     $changedInThisGlobalIteration = true;
                 }
             }
+
             if ($currentGlobalIteration >= $maxGlobalIterations) {
                 echo "Warning: Global Throws Resolution max iterations ({$currentGlobalIteration}).\n";
                 break;
             }
         } while ($changedInThisGlobalIteration);
+
         echo "Global Throws Resolution Complete.\n";
 
+        // ------------------------------------------------------------
+        // 5) Pass 2: Update files
+        // ------------------------------------------------------------
         echo "\nPass 2: Updating files...\n";
         if ($verbose) {
-            echo 'Processing ' . count($phpFilePaths) . ' files...' . PHP_EOL;
+            echo 'Processing ' . count($phpFilePaths) . " files...\n";
         }
+
         foreach ($phpFilePaths as $filePath) {
             if ($verbose) {
-                echo "Processing: " . $filePath . PHP_EOL;
+                echo "  • Processing: {$filePath}\n";
             }
-            $fileOverallModified = false;
-            $maxFilePassIterations = 3;
+
+            $fileOverallModified     = false;
+            $maxFilePassIterations   = 3;
             $currentFilePassIteration = 0;
+
             do {
                 $currentFilePassIteration++;
                 if ($currentFilePassIteration > $maxFilePassIterations) {
                     echo "Warning: Max iterations for file {$filePath}. Skipping further passes on this file.\n";
                     break;
                 }
-                $modifiedInThisSpecificPassIteration = false;
-                $codeAtStartOfThisIteration = file_get_contents($filePath);
+
+                $modifiedInThisPass = false;
+                $codeAtStart       = @file_get_contents($filePath);
+                if ($codeAtStart === false) {
+                    echo "  ! Cannot read file: {$filePath}\n";
+                    break;
+                }
 
                 try {
-                    $currentNameResolver = new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]);
+                    $currentNameResolver  = new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]);
                     $currentParentConnector = new ParentConnectingVisitor();
-                    $currentAST = $parser->parse($codeAtStartOfThisIteration);
+                    $currentAST = $parser->parse($codeAtStart);
+
                     if (!$currentAST) {
-                        echo "Error parsing {$filePath} Pass 2.\n";
+                        echo "Error parsing {$filePath} (Pass 2).\n";
                         break;
                     }
 
@@ -171,159 +259,212 @@ class Application
                     $setupTraverser->addVisitor($currentParentConnector);
                     $currentAST = $setupTraverser->traverse($currentAST);
                 } catch (Error $e) {
-                    echo "Parse error Pass 2 {$filePath}: {$e->getMessage()}\n";
+                    echo "Parse error (Pass 2) in {$filePath}: {$e->getMessage()}\n";
                     break;
                 }
 
                 // --- Use Statement Simplification (Surgical) ---
                 $useSimplifierSurgical = new UseStatementSimplifierSurgical();
-                $traverserUseSurgical = new NodeTraverser();
+                $traverserUseSurgical  = new NodeTraverser();
                 $traverserUseSurgical->addVisitor($useSimplifierSurgical);
-                // Traverse the AST. The visitor collects patches but does not modify the AST itself.
                 $traverserUseSurgical->traverse($currentAST);
 
                 if ($useSimplifierSurgical->pendingPatches !== []) {
-                    $newCode = $codeAtStartOfThisIteration; // Start with the code from the beginning of this file pass
+                    $newCode = $codeAtStart;
                     $patches = $useSimplifierSurgical->pendingPatches;
-                    // Sort patches by start position in descending order to apply them correctly
                     usort($patches, function (array $a, array $b): int {
                         return $b['startPos'] <=> $a['startPos'];
                     });
+
                     foreach ($patches as $patch) {
-                        $newCode = substr_replace($newCode, $patch['replacementText'], $patch['startPos'], $patch['length']);
+                        $newCode = substr_replace(
+                            $newCode,
+                            $patch['replacementText'],
+                            $patch['startPos'],
+                            $patch['length']
+                        );
                     }
 
-                    if ($newCode !== $codeAtStartOfThisIteration) {
+                    if ($newCode !== $codeAtStart) {
                         file_put_contents($filePath, $newCode);
-                        echo "Surgically simplified use statements in {$filePath}\n";
+                        if ($verbose) {
+                            echo "    → Surgically simplified use statements in {$filePath}\n";
+                        }
                         $fileOverallModified = true;
-                        continue; // Re-process the file from start due to textual modification, ensuring next ops see this change
+                        continue; // Re‐parse from scratch after a surgical change
                     }
                 }
-                // END Use Statement Simplification ---
+                // --- End Use Statement Simplification ---
 
-
-                $docBlockUpdater = new DocBlockUpdater($astUtils, $filePath);
+                $docBlockUpdater   = new DocBlockUpdater($astUtils, $filePath);
                 $traverserDocBlock = new NodeTraverser();
                 $traverserDocBlock->addVisitor($docBlockUpdater);
                 $traverserDocBlock->traverse($currentAST);
 
                 if ($docBlockUpdater->pendingPatches !== []) {
-                    $currentFileContentForPatching = file_get_contents($filePath);
-                    if(!is_string($currentFileContentForPatching)) {
-                        echo 'Could not read file contents for patching: ' . $filePath . PHP_EOL;
-                        continue;
+                    $currentFileContent = @file_get_contents($filePath);
+                    if ($currentFileContent === false) {
+                        echo "  ! Cannot read file: {$filePath}\n";
+                        break;
                     }
-                    $originalFileLinesForIndent = explode("\n", $currentFileContentForPatching);
 
+                    $originalLinesForIndent = explode("\n", $currentFileContent);
                     $patchesForFile = $docBlockUpdater->pendingPatches;
                     usort($patchesForFile, function (array $a, array $b): int {
                         return $b['patchStart'] <=> $a['patchStart'];
                     });
-                    $newFileContent = $currentFileContentForPatching; // Work on a copy
 
+                    $newFileContent = $currentFileContent;
                     foreach ($patchesForFile as $patch) {
-                        $baseIndent = ''; // Indentation for the docblock lines themselves
-
+                        $baseIndent = '';
                         if ($patch['type'] === 'add' || $patch['type'] === 'update') {
                             $nodeToIndentFor = $patch['node'];
-                            $nodeStartLine = $nodeToIndentFor->getStartLine();
-                            // Determine the base indentation from the line of the code element (method/function)
-                            // $originalFileLinesForIndent is based on the file content that $currentAST was parsed from.
-                            if ($nodeStartLine > 0 && isset($originalFileLinesForIndent[$nodeStartLine - 1]) && preg_match('/^(\s*)/', $originalFileLinesForIndent[$nodeStartLine - 1], $indentMatches)) {
+                            $nodeStartLine   = $nodeToIndentFor->getStartLine();
+
+                            if ($nodeStartLine > 0
+                                && isset($originalLinesForIndent[$nodeStartLine - 1])
+                                && preg_match('/^(\s*)/', $originalLinesForIndent[$nodeStartLine - 1], $indentMatches)
+                            ) {
                                 $baseIndent = $indentMatches[1];
                             }
 
-                            // Construct the new docblock string, with each line indented by $baseIndent
-                            $docBlockLines = explode("\n", (string)$patch['newDocText']);
-                            $indentedDocBlockString = "";
+                            $docBlockLines   = explode("\n", (string)$patch['newDocText']);
+                            $indentedDocBlock = "";
                             foreach ($docBlockLines as $idx => $docLine) {
-                                $indentedDocBlockString .= $baseIndent . $docLine;
+                                $indentedDocBlock .= $baseIndent . $docLine;
                                 if ($idx < count($docBlockLines) - 1) {
-                                    $indentedDocBlockString .= "\n";
+                                    $indentedDocBlock .= "\n";
                                 }
                             }
 
                             if ($patch['type'] === 'add') {
-                                $replacementText = $indentedDocBlockString . "\n";
-                                // Insert the new DocBlock at the very start of the line containing the method/function
-                                $lineStartPos = strrpos(substr($newFileContent, 0, $patch['patchStart']), "\n");
+                                $replacementText = $indentedDocBlock . "\n";
+                                $lineStartPos    = strrpos(
+                                    substr($newFileContent, 0, $patch['patchStart']),
+                                    "\n"
+                                );
                                 $currentAppliedPatchStartPos = ($lineStartPos !== false ? $lineStartPos + 1 : 0);
                                 $currentAppliedOriginalLength = 0;
-                            } elseif ($patch['type'] === 'update') {
-                                // 1) Figure out where this docblock really starts (including its indent).
-                                $lf = "\n";
+                            } else {
+                                $lf      = "\n";
                                 $upToSlash = substr($newFileContent, 0, $patch['patchStart']);
-                                $lastNl = strrpos($upToSlash, $lf);
-                                // if there’s no newline, start at the beginning of the file
+                                $lastNl  = strrpos($upToSlash, $lf);
                                 $lineStart = $lastNl === false ? 0 : $lastNl + 1;
 
-                                // 2) Remove everything from that indent up through the end of the old comment
                                 $currentAppliedPatchStartPos = $lineStart;
                                 $currentAppliedOriginalLength = $patch['patchEnd'] - $lineStart + 1;
-
-                                // 3) Replace with the new docblock (already built with the correct $baseIndent).
-                                //    We add a "\n" so that the method’s `public function…` stays on its own line.
-                                $replacementText = $indentedDocBlockString;
-                            } else {
-
-                                $replacementText = $indentedDocBlockString;
-                                // For 'update', $patch['patchStart'] is $docCommentNode->getStartFilePos()
-                                // This position should be the start of the old docblock's first line.
-                                $currentAppliedPatchStartPos = $patch['patchStart'];
-                                $currentAppliedOriginalLength = $patch['patchEnd'] - $patch['patchStart'] + 1;
+                                $replacementText = $indentedDocBlock;
                             }
                         } elseif ($patch['type'] === 'remove') {
                             $replacementText = '';
                             $currentAppliedPatchStartPos = $patch['patchStart'];
                             $currentAppliedOriginalLength = $patch['patchEnd'] - $patch['patchStart'] + 1;
 
-                            // Refined logic to remove the whole line if the docblock was alone on it.
-                            // This needs to operate on $newFileContent as it might have been changed by prior patches in this loop.
                             if ($currentAppliedPatchStartPos > 0) {
-                                $startPosOfDocBlockLine = strrpos(substr($newFileContent, 0, $currentAppliedPatchStartPos), "\n");
-                                $startPosOfDocBlockLine = ($startPosOfDocBlockLine === false) ? 0 : $startPosOfDocBlockLine + 1;
+                                $startOfLine = strrpos(
+                                    substr($newFileContent, 0, $currentAppliedPatchStartPos),
+                                    "\n"
+                                );
+                                $startOfLine = ($startOfLine === false) ? 0 : $startOfLine + 1;
                             } else {
-                                $startPosOfDocBlockLine = 0;
+                                $startOfLine = 0;
                             }
 
-                            $isDocBlockAloneOnLine = trim(substr($newFileContent, $startPosOfDocBlockLine, $currentAppliedPatchStartPos - $startPosOfDocBlockLine)) === '';
+                            $isDocBlockAlone = trim(
+                                    substr($newFileContent, $startOfLine,
+                                        $currentAppliedPatchStartPos - $startOfLine
+                                    )
+                                ) === '';
 
-                            $charAfterDocEnd = ($patch['patchEnd'] + 1 < strlen($newFileContent)) ? $newFileContent[$patch['patchEnd'] + 1] : '';
-                            $newlineLengthAfterDoc = 0;
-                            if ($charAfterDocEnd === "\n") {
-                                $newlineLengthAfterDoc = 1;
-                            } elseif ($charAfterDocEnd === "\r" && ($patch['patchEnd'] + 2 < strlen($newFileContent)) && $newFileContent[$patch['patchEnd'] + 2] === "\n") {
-                                $newlineLengthAfterDoc = 2;
+                            $charAfter       = ($patch['patchEnd'] + 1 < strlen($newFileContent))
+                                ? $newFileContent[$patch['patchEnd'] + 1]
+                                : '';
+                            $newlineLenAfter = 0;
+                            if ($charAfter === "\n") {
+                                $newlineLenAfter = 1;
+                            } elseif ($charAfter === "\r"
+                                && ($patch['patchEnd'] + 2 < strlen($newFileContent))
+                                && $newFileContent[$patch['patchEnd'] + 2] === "\n"
+                            ) {
+                                $newlineLenAfter = 2;
                             }
 
-                            if ($isDocBlockAloneOnLine && $newlineLengthAfterDoc > 0) {
-                                $currentAppliedPatchStartPos = $startPosOfDocBlockLine;
-                                $currentAppliedOriginalLength = ($patch['patchEnd'] + $newlineLengthAfterDoc) - $currentAppliedPatchStartPos;
+                            if ($isDocBlockAlone && $newlineLenAfter > 0) {
+                                $currentAppliedPatchStartPos   = $startOfLine;
+                                $currentAppliedOriginalLength = ($patch['patchEnd'] + $newlineLenAfter)
+                                    - $currentAppliedPatchStartPos;
                             }
                         } else {
-                            continue; // Should not happen
+                            // Should not happen
+                            continue;
                         }
 
-                        $newFileContent = substr_replace($newFileContent, $replacementText, $currentAppliedPatchStartPos, $currentAppliedOriginalLength);
+                        $newFileContent = substr_replace(
+                            $newFileContent,
+                            $replacementText,
+                            $currentAppliedPatchStartPos,
+                            $currentAppliedOriginalLength
+                        );
                     }
-                    if ($newFileContent !== $currentFileContentForPatching) {
+
+                    if ($newFileContent !== $currentFileContent) {
                         file_put_contents($filePath, $newFileContent);
-                        echo "Applied DocBlock changes surgically to {$filePath}\n";
-                        $modifiedInThisSpecificPassIteration = true;
+                        if ($verbose) {
+                            echo "    → Applied DocBlock changes to {$filePath}\n";
+                        }
+                        $modifiedInThisPass = true;
                         $fileOverallModified = true;
                     }
                 }
-                if (!$modifiedInThisSpecificPassIteration) {
+
+                if (! $modifiedInThisPass) {
                     break;
                 }
             } while (true);
-            if ($fileOverallModified) {
-                echo "Finished {$filePath} after mods.\n";
+
+            if ($fileOverallModified && $verbose) {
+                echo "  ✓ Finished {$filePath} after modifications.\n";
             }
         }
-        echo "All done.\n";
 
+        echo "All done.\n";
         return 0;
+    }
+
+    /**
+     * Print usage instructions for this CLI utility.
+     */
+    private function printHelp(): void
+    {
+        $help = <<<'USAGE'
+Usage:
+  php vendor/bin/doc-block-doctor [options] [<path>]
+
+Options:
+  -h, --help       Display this help message and exit
+  -v, --verbose    Enable verbose output (show each file being processed)
+
+Arguments:
+  <path>           Path to a file or directory to process.
+                   If omitted, defaults to the current working directory.
+
+Description:
+  DocBlockDoctor cleans up `@throws` annotations and simplifies `use …{…}` statements
+  in your PHP codebase. It statically analyzes each PHP file, gathers thrown exceptions
+  (including those bubbled up from called methods/functions), and writes updated DocBlocks.
+
+Examples:
+  # Process the current directory (quiet mode)
+  php vendor/bin/doc-block-doctor
+
+  # Process a specific directory, with verbose logging
+  php vendor/bin/doc-block-doctor --verbose /path/to/project
+
+  # Show help
+  php vendor/bin/doc-block-doctor --help
+
+USAGE;
+
+        echo $help . "\n";
     }
 }
