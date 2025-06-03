@@ -4,7 +4,7 @@ namespace Pitfalls\StaticCalls;
 
 class A {
     /**
-     * @throws \LogicException
+
      */
     public static function a(): void {
         B::b();
@@ -13,7 +13,7 @@ class A {
 
 class B {
     /**
-     * @throws \LogicException
+
      */
     public static function b(): void {
         throw new \LogicException("error");

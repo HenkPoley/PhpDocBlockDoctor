@@ -3,18 +3,12 @@
 namespace Pitfalls\Rethrow;
 
 class Worker {
-    /**
-     * @throws \RuntimeException
-     */
     public function doThing(): void {
         throw new \RuntimeException('fail');
     }
 }
 
 class Wrapper {
-    /**
-     * @throws \RuntimeException
-     */
     public function callAndRethrow(): void {
         try {
             (new Worker())->doThing();

@@ -10,7 +10,7 @@ class Factory {
 
 class Product {
     /**
-     * @throws \RuntimeException
+
      */
     public function doWork(): void {
         throw new \RuntimeException("uh-oh");

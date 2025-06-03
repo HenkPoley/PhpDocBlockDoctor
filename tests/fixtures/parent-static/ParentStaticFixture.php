@@ -4,7 +4,7 @@ namespace Pitfalls\ParentStatic;
 
 class Base {
     /**
-     * @throws \BadMethodCallException
+
      */
     public function __construct() {
         throw new \BadMethodCallException();
@@ -13,7 +13,7 @@ class Base {
 
 class Child extends Base {
     /**
-     * @throws \OverflowException
+
      */
     public function explicitThrow(): void {
         throw new \OverflowException();

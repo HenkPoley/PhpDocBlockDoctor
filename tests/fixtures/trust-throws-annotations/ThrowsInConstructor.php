@@ -7,16 +7,13 @@ namespace HenkPoley\DocBlockDoctor\TestFixtures\ConstructorThrows;
 
 class ThrowsInConstructor
 {
-    /**
-     * @throws \LogicException
-     */
     public function __construct()
     {
         throw new \LogicException("fail");
     }
 
     /**
-     * @throws \LogicException
+     * We annotate an exception that's not actually thrown here to make sure we 'believe' that.
      * @throws \RuntimeException
      */
     public function createAndCall()

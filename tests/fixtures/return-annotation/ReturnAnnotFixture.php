@@ -13,7 +13,7 @@ class Builder {
 
 class Worker {
     /**
-     * @throws \UnderflowException
+
      */
     public function work(): void {
         throw new \UnderflowException("oops");

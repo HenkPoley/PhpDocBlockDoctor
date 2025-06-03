@@ -4,7 +4,7 @@ namespace Pitfalls\CatchInMiddle;
 
 class X {
     /**
-     * @throws \\LogicException
+
      */
     public function foo(): void {
         throw new \LogicException("uh");
@@ -13,7 +13,7 @@ class X {
 
 class Y {
     /**
-     * @throws \\RuntimeException
+
      */
     public function bar(): void {
         try {

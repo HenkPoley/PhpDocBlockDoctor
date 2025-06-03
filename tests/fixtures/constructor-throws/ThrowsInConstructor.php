@@ -12,9 +12,6 @@ class ThrowsInConstructor
         throw new \LogicException("fail");
     }
 
-    /**
-     * @throws \RuntimeException
-     */
     public function createAndCall()
     {
         $obj = new ThrowsInConstructor();
