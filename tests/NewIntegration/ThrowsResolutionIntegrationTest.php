@@ -84,7 +84,38 @@ class ThrowsResolutionIntegrationTest extends TestCase
                         $finder->findInstanceOf($node->stmts, \PhpParser\Node\Expr\New_::class),
                     );
                     foreach ($calls as $call) {
-                        $calleeKey = $utils->getCalleeKey($call, $namespace, $useMap, $node);
+                        $calleeKey = null;
+                        if (
+                            $call instanceof \PhpParser\Node\Expr\MethodCall &&
+                            $call->var instanceof \PhpParser\Node\Expr\New_ &&
+                            $call->var->class instanceof \PhpParser\Node\Name &&
+                            $call->name instanceof \PhpParser\Node\Identifier
+                        ) {
+                            $objClass = $utils->resolveNameNodeToFqcn(
+                                $call->var->class,
+                                $namespace,
+                                $useMap,
+                                false
+                            );
+                            if ($objClass !== '') {
+                                $calleeKey = ltrim($objClass, '\\') . '::' . $call->name->toString();
+                            }
+                        } elseif (
+                            $call instanceof \PhpParser\Node\Expr\MethodCall &&
+                            $call->var instanceof \PhpParser\Node\Expr\Variable &&
+                            $call->name instanceof \PhpParser\Node\Identifier
+                        ) {
+                            $assignExpr = $this->findAssignmentForVariable($node->stmts ?? [], $call->var, $call);
+                            if ($assignExpr) {
+                                $type = $this->resolveAssignedExprType($assignExpr, $namespace, $useMap, $node, $utils, $finder);
+                                if ($type) {
+                                    $calleeKey = ltrim($type, '\\') . '::' . $call->name->toString();
+                                }
+                            }
+                        }
+                        if ($calleeKey === null) {
+                            $calleeKey = $utils->getCalleeKey($call, $namespace, $useMap, $node);
+                        }
                         if ($calleeKey && $calleeKey !== $methodKey) {
                             foreach (GlobalCache::$resolvedThrows[$calleeKey] ?? [] as $ex) {
                                 $throwsFromCallees[] = $ex;
@@ -121,5 +152,63 @@ class ThrowsResolutionIntegrationTest extends TestCase
             $scenarios[] = [$fi->getFilename()];
         }
         return $scenarios;
+    }
+
+    private function findAssignmentForVariable(array $stmts, \PhpParser\Node\Expr\Variable $var, \PhpParser\Node $boundary): ?\PhpParser\Node\Expr
+    {
+        $name = is_string($var->name) ? $var->name : null;
+        if ($name === null) {
+            return null;
+        }
+        $finder = new NodeFinder();
+        $assigns = $finder->findInstanceOf($stmts, \PhpParser\Node\Expr\Assign::class);
+        $best = null;
+        $bestPos = -1;
+        foreach ($assigns as $assign) {
+            if ($assign->var instanceof \PhpParser\Node\Expr\Variable && $assign->var->name === $name) {
+                $pos = $assign->getStartFilePos() ?? -1;
+                $callPos = $boundary->getStartFilePos() ?? PHP_INT_MAX;
+                if ($pos !== null && $pos < $callPos && $pos > $bestPos) {
+                    $best = $assign->expr;
+                    $bestPos = $pos;
+                }
+            }
+        }
+        return $best;
+    }
+
+    private function resolveAssignedExprType(\PhpParser\Node\Expr $expr, string $namespace, array $useMap, \PhpParser\Node $scopeNode, AstUtils $utils, NodeFinder $finder): ?string
+    {
+        if ($expr instanceof \PhpParser\Node\Expr\New_ && $expr->class instanceof \PhpParser\Node\Name) {
+            return ltrim($utils->resolveNameNodeToFqcn($expr->class, $namespace, $useMap, false), '\\');
+        }
+        if ($expr instanceof \PhpParser\Node\Expr\MethodCall || $expr instanceof \PhpParser\Node\Expr\StaticCall) {
+            $calleeKey = null;
+            if ($expr instanceof \PhpParser\Node\Expr\MethodCall && $expr->var instanceof \PhpParser\Node\Expr\New_ && $expr->var->class instanceof \PhpParser\Node\Name && $expr->name instanceof \PhpParser\Node\Identifier) {
+                $objFqcn = $utils->resolveNameNodeToFqcn($expr->var->class, $namespace, $useMap, false);
+                if ($objFqcn !== '') {
+                    $calleeKey = ltrim($objFqcn, '\\') . '::' . $expr->name->toString();
+                }
+            }
+            if ($calleeKey === null) {
+                $calleeKey = $utils->getCalleeKey($expr, $namespace, $useMap, $scopeNode);
+            }
+            if ($calleeKey && isset(GlobalCache::$astNodeMap[$calleeKey])) {
+                $calleeNode = GlobalCache::$astNodeMap[$calleeKey];
+                $file = GlobalCache::$nodeKeyToFilePath[$calleeKey];
+                $ns   = GlobalCache::$fileNamespaces[$file] ?? '';
+                $umap = GlobalCache::$fileUseMaps[$file] ?? [];
+                if ($calleeNode->returnType instanceof \PhpParser\Node\Name) {
+                    return ltrim($utils->resolveNameNodeToFqcn($calleeNode->returnType, $ns, $umap, false), '\\');
+                }
+                $returns = $finder->findInstanceOf($calleeNode->stmts ?? [], \PhpParser\Node\Stmt\Return_::class);
+                foreach ($returns as $ret) {
+                    if ($ret->expr instanceof \PhpParser\Node\Expr\New_ && $ret->expr->class instanceof \PhpParser\Node\Name) {
+                        return ltrim($utils->resolveNameNodeToFqcn($ret->expr->class, $ns, $umap, false), '\\');
+                    }
+                }
+            }
+        }
+        return null;
     }
 }
