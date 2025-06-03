@@ -3,6 +3,7 @@
 namespace HenkPoley\DocBlockDoctor;
 
 use PhpParser\Node;
+use PhpParser\Node\Identifier;
 use PhpParser\NodeVisitorAbstract;
 use PhpParser\PrettyPrinter;
 
@@ -40,9 +41,12 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
             // Construct the new single UseUse node
             $newNameParts = array_merge($node->prefix->getParts(), $originalUse->name->getParts());
             $newUseName = new Node\Name($newNameParts, $originalUse->name->getAttributes());
+            $aliasNode = $originalUse->alias instanceof Identifier
+                ? clone $originalUse->alias
+                : null;
             $newUseUse = new Node\Stmt\UseUse(
                 $newUseName,
-                $originalUse->alias->name ?? null, // alias is Identifier or null
+                $aliasNode,
                 $originalUse->type,
                 $originalUse->getAttributes() // Carry over attributes from UseUse
             );
