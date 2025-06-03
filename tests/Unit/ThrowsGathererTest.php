@@ -53,9 +53,8 @@ class ThrowsGathererTest extends TestCase
 
         $key = 'T\\C::foo';
         $this->assertArrayHasKey($key, GlobalCache::$directThrows);
-        // The current implementation still lists LogicException as “direct throws” even if it’s caught,
-        // so we assert exactly that:
-        $this->assertSame(['LogicException'], GlobalCache::$directThrows[$key] ?? []);
+        // The thrown LogicException is caught within the method, so no direct throws should be reported
+        $this->assertSame([], GlobalCache::$directThrows[$key] ?? []);
     }
 
     public function testCalculateDirectThrowsFindsUncaught(): void
