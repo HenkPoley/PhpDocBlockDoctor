@@ -1,0 +1,13 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\Rethrow\\Worker::doThing": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\Rethrow\\Wrapper::callAndRethrow": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\Rethrow\\Runner::start": [
+      "RuntimeException"
+    ]
+  }
+}

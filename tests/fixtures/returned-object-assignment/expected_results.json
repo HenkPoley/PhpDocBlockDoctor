@@ -1,0 +1,11 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\ReturnAssign\\Provider::getHandler": [],
+    "Pitfalls\\ReturnAssign\\Handler::handle": [
+      "DomainException"
+    ],
+    "Pitfalls\\ReturnAssign\\Runner::run": [
+      "DomainException"
+    ]
+  }
+}
