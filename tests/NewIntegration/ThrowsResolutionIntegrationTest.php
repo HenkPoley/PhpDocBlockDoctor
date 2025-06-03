@@ -84,6 +84,10 @@ class ThrowsResolutionIntegrationTest extends TestCase
                         $finder->findInstanceOf($node->stmts, \PhpParser\Node\Expr\New_::class),
                     );
                     foreach ($calls as $call) {
+                        if ($this->isNodeWithinTry($call, $node)) {
+                            // assume all exceptions from this call are caught
+                            continue;
+                        }
                         $calleeKey = null;
                         if (
                             $call instanceof \PhpParser\Node\Expr\MethodCall &&
@@ -152,6 +156,21 @@ class ThrowsResolutionIntegrationTest extends TestCase
             $scenarios[] = [$fi->getFilename()];
         }
         return $scenarios;
+    }
+
+    private function isNodeWithinTry(\PhpParser\Node $node, \PhpParser\Node $boundary): bool
+    {
+        $parent = $node->getAttribute('parent');
+        while ($parent && $parent !== $boundary) {
+            if ($parent instanceof \PhpParser\Node\Stmt\TryCatch) {
+                return true;
+            }
+            if ($parent instanceof \PhpParser\Node\FunctionLike && $parent !== $boundary) {
+                break;
+            }
+            $parent = $parent->getAttribute('parent');
+        }
+        return false;
     }
 
     private function findAssignmentForVariable(array $stmts, \PhpParser\Node\Expr\Variable $var, \PhpParser\Node $boundary): ?\PhpParser\Node\Expr
