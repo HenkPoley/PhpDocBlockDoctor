@@ -1,0 +1,11 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\MethodChaining\\Factory::make": [],
+    "Pitfalls\\MethodChaining\\Product::doWork": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\MethodChaining\\Caller::runAll": [
+      "RuntimeException"
+    ]
+  }
+}

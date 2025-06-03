@@ -81,4 +81,21 @@ class Example
         $foo = new ThirdExampleClass();
         $foo->someOtherNonStaticFunction();
     }
+
+    /**
+     * @return ThirdExampleClass
+     */
+    function surelyThisReturnsAnObject()
+    {
+
+    }
+
+    /**
+    * Ought to throw ThirdExampleClass
+    */
+    function weTrustReturnAnnotations(): void
+    {
+        $foo = $this->surelyThisReturnsAnObject();
+        $foo->someOtherNonStaticFunction();
+    }
 }

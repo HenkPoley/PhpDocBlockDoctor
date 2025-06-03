@@ -1,0 +1,13 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\ParentStatic\\Base::__construct": [
+      "BadMethodCallException"
+    ],
+    "Pitfalls\\ParentStatic\\Child::explicitThrow": [
+      "OverflowException"
+    ],
+    "Pitfalls\\ParentStatic\\Child::makeParent": [
+      "BadMethodCallException"
+    ]
+  }
+}

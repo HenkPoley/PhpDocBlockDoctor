@@ -1,0 +1,13 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\CatchInMiddle\\X::foo": [
+      "LogicException"
+    ],
+    "Pitfalls\\CatchInMiddle\\Y::bar": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\CatchInMiddle\\Z::top": [
+      "RuntimeException"
+    ]
+  }
+}

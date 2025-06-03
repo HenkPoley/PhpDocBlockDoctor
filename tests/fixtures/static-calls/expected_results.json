@@ -1,0 +1,10 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\StaticCalls\\A::a": [
+      "LogicException"
+    ],
+    "Pitfalls\\StaticCalls\\B::b": [
+      "LogicException"
+    ]
+  }
+}

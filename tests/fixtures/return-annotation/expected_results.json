@@ -1,0 +1,11 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\ReturnAnnotation\\Builder::getWorker": [],
+    "Pitfalls\\ReturnAnnotation\\Worker::work": [
+      "UnderflowException"
+    ],
+    "Pitfalls\\ReturnAnnotation\\Runner::go": [
+      "UnderflowException"
+    ]
+  }
+}
