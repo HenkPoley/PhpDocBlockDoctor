@@ -104,7 +104,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         }
         \HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap[$key] = $node;
         \HenkPoley\DocBlockDoctor\GlobalCache::$nodeKeyToFilePath[$key] = $this->filePath;
-        \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$key] = $this->calculateDirectThrowsForNode($node);
+        \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$key] = [];
         \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key] = [];
         $currentAnnotatedThrowsFqcns = [];
 
@@ -158,6 +158,22 @@ class ThrowsGatherer extends NodeVisitorAbstract
     }
 
     /**
+     * @param \PhpParser\Node $node
+     */
+    public function leaveNode($node)
+    {
+        if (!$node instanceof Node\Stmt\Function_ && !$node instanceof Node\Stmt\ClassMethod) {
+            return null;
+        }
+        $key = $this->astUtils->getNodeKey($node, $this->currentNamespace);
+        if (!$key) {
+            return null;
+        }
+        \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$key] = $this->calculateDirectThrowsForNode($node);
+        return null;
+    }
+
+    /**
      * @throws \LogicException
      */
     private function calculateDirectThrowsForNode(Node $funcOrMethodNode): array
@@ -174,6 +190,32 @@ class ThrowsGatherer extends NodeVisitorAbstract
                     $thrownFqcn = $this->astUtils->resolveNameNodeToFqcn($newExpr->class, $this->currentNamespace, $this->useMap, false);
                     if (!$this->astUtils->isExceptionCaught($throwExpr, $thrownFqcn, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
                         $fqcns[] = $thrownFqcn;
+                    }
+                }
+            } elseif ($throwExpr->expr instanceof Node\Expr\Variable) {
+                $varName = $throwExpr->expr->name;
+                if (is_string($varName)) {
+                    $parent = $throwExpr->getAttribute('parent');
+                    $catchNode = null;
+                    while ($parent && $parent !== $funcOrMethodNode->getAttribute('parent')) {
+                        if ($parent instanceof Node\Stmt\Catch_) {
+                            $catchNode = $parent;
+                            break;
+                        }
+                        if (($parent instanceof Node\Stmt\Function_ || $parent instanceof Node\Stmt\ClassMethod || $parent instanceof Node\Expr\Closure) && $parent !== $funcOrMethodNode) {
+                            break;
+                        }
+                        $parent = $parent->getAttribute('parent');
+                    }
+                    if ($catchNode && $catchNode->var instanceof Node\Expr\Variable && $catchNode->var->name === $varName) {
+                        foreach ($catchNode->types as $typeNode) {
+                            if ($typeNode instanceof Node\Name) {
+                                $thrownFqcn = $this->astUtils->resolveNameNodeToFqcn($typeNode, $this->currentNamespace, $this->useMap, false);
+                                if (!$this->astUtils->isExceptionCaught($throwExpr, $thrownFqcn, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
+                                    $fqcns[] = $thrownFqcn;
+                                }
+                            }
+                        }
                     }
                 }
             }

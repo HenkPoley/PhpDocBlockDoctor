@@ -508,9 +508,16 @@ class AstUtils
         $useMap
     ): bool {
         $parent = $throwNode->getAttribute('parent');
+        $currentCatch = null;
         while ($parent && $parent !== $boundaryNode->getAttribute('parent')) {
+            if ($parent instanceof Node\Stmt\Catch_) {
+                $currentCatch = $parent;
+            }
             if ($parent instanceof Node\Stmt\TryCatch) {
                 foreach ($parent->catches as $catchClause) {
+                    if ($currentCatch === $catchClause) {
+                        continue; // Skip catch block that contains the throw
+                    }
                     foreach ($catchClause->types as $typeNode) {
                         $caughtTypeFqcn = $this->resolveNameNodeToFqcn(
                             $typeNode,
@@ -530,6 +537,7 @@ class AstUtils
                         }
                     }
                 }
+                $currentCatch = null;
             }
 
             if (
