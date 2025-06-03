@@ -22,7 +22,7 @@
 		}
 	],
 	"require-dev": {
-		"vimeo/psalm": "^6.12",
+		"vimeo/psalm": "^6.5",
 		"rector/rector": "^2.0",
 		"phpunit/phpunit": "^12.1.6"
 	}
