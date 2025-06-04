@@ -157,7 +157,34 @@ class AstUtils
                 $innerFilePath = GlobalCache::$nodeKeyToFilePath[$innerKey] ?? null;
 
                 if ($innerNode instanceof Node\Stmt\ClassMethod && $innerFilePath) {
-                    // 3) Find any “return new SomeClass();” inside that method
+                    $innerNamespace = GlobalCache::$fileNamespaces[$innerFilePath] ?? '';
+                    $innerUseMap    = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
+
+                    // 3a) If the inner method has a return type hint, use that
+                    $returnType = $innerNode->returnType;
+                    if ($returnType instanceof Node\Name) {
+                        $returnedFqcn = $this->resolveNameNodeToFqcn(
+                            $returnType,
+                            $innerNamespace,
+                            $innerUseMap,
+                            false
+                        );
+                        if ($returnedFqcn !== '') {
+                            return ltrim($returnedFqcn, '\\') . '::' . $callNode->name->toString();
+                        }
+                    } elseif ($returnType instanceof Node\NullableType && $returnType->type instanceof Node\Name) {
+                        $returnedFqcn = $this->resolveNameNodeToFqcn(
+                            $returnType->type,
+                            $innerNamespace,
+                            $innerUseMap,
+                            false
+                        );
+                        if ($returnedFqcn !== '') {
+                            return ltrim($returnedFqcn, '\\') . '::' . $callNode->name->toString();
+                        }
+                    }
+
+                    // 3b) Find any “return new SomeClass();” inside that method
                     $finder = new NodeFinder();
                     $returns = $finder->findInstanceOf(
                         $innerNode->stmts ?? [],
@@ -170,9 +197,7 @@ class AstUtils
                             && $returnStmt->expr->class instanceof Node\Name
                         ) {
                             // Resolve the FQCN of the returned class:
-                            $innerNamespace = GlobalCache::$fileNamespaces[$innerFilePath] ?? '';
-                            $innerUseMap    = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
-                            $returnedFqcn   = $this->resolveNameNodeToFqcn(
+                            $returnedFqcn = $this->resolveNameNodeToFqcn(
                                 $returnStmt->expr->class,
                                 $innerNamespace,
                                 $innerUseMap,
