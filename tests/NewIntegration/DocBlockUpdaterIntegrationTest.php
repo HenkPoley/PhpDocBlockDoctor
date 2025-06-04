@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace HenkPoley\DocBlockDoctor\Tests\Integration;
+namespace HenkPoley\DocBlockDoctor\Tests\NewIntegration;
 
 use PhpParser\PhpVersion;
 use PHPUnit\Framework\TestCase;
@@ -9,7 +9,6 @@ use PhpParser\ParserFactory;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\NodeVisitor\ParentConnectingVisitor;
-use PhpParser\PrettyPrinter\Standard as PrettyPrinter;
 use PhpParser\NodeFinder;
 use HenkPoley\DocBlockDoctor\AstUtils;
 use HenkPoley\DocBlockDoctor\ThrowsGatherer;
@@ -24,10 +23,7 @@ class DocBlockUpdaterIntegrationTest extends TestCase
 {
     public function testRewrittenDocblocksMatchExpected(): void
     {
-        $this->markTestSkipped('Test sadly fails. Please ignore this until we\'re sure we understand.');
-
-        // Point this at an actual fixture folder you have under tests/fixtures.
-        // For example, if you already have tests/fixtures/constructor-throws, use that:
+        // Use the constructor-throws fixture to validate docblock rewriting
         $fixtureDir = __DIR__ . '/../fixtures/constructor-throws';
         $inputFile  = $fixtureDir . '/ThrowsInConstructor.php';
         $expectedOut = $fixtureDir . '/expected_rewritten.php';
@@ -107,7 +103,7 @@ class DocBlockUpdaterIntegrationTest extends TestCase
         $traverser2->addVisitor(new ParentConnectingVisitor());
         $docUpd      = new DocBlockUpdater($astUtils, $inputFile);
         $traverser2->addVisitor($docUpd);
-        $newAst      = $traverser2->traverse($ast);
+        $traverser2->traverse($ast);
 
         // 5) Apply textual patches collected by DocBlockUpdater so we compare exact source formatting
         $patchedCode = $code;
