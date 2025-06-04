@@ -186,6 +186,11 @@ class ThrowsGatherer extends NodeVisitorAbstract
         }
         $throwNodes = $this->nodeFinder->findInstanceOf($funcOrMethodNode->stmts, Node\Expr\Throw_::class);
         foreach ($throwNodes as $throwExpr) {
+            // Skip throws that are unreachable due to a prior throw/return
+            // statement in the current statement list.
+            if ($this->astUtils->isNodeAfterExecutionEndingStmt($throwExpr, $funcOrMethodNode)) {
+                continue;
+            }
             if ($throwExpr->expr instanceof Node\Expr\New_) {
                 $newExpr = $throwExpr->expr;
                 if ($newExpr->class instanceof Node\Name) {
