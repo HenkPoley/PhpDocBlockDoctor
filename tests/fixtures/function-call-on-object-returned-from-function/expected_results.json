@@ -1,0 +1,7 @@
+{
+  "fullyQualifiedMethodKeys" :{
+    "Pitfalls\\FunctionCallOnObjectReturnedFromFunction\\Template::getEntityPropertyTranslation": [
+      "\\ArithmeticError"
+    ]
+  }
+}
