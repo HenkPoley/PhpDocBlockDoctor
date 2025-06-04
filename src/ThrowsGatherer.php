@@ -159,6 +159,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
 
     /**
      * @param \PhpParser\Node $node
+     *
+     * @throws \LogicException
      */
     public function leaveNode($node)
     {
