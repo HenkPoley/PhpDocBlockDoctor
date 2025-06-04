@@ -88,6 +88,9 @@ class ThrowsResolutionIntegrationTest extends TestCase
                             // assume all exceptions from this call are caught
                             continue;
                         }
+                        if ($utils->isNodeAfterExecutionEndingStmt($call, $node)) {
+                            continue;
+                        }
                         $calleeKey = null;
                         if (
                             $call instanceof \PhpParser\Node\Expr\MethodCall &&

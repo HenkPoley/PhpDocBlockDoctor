@@ -1,0 +1,13 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\ThrowEndsExecution\\Helper::boom": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\ThrowEndsExecution\\Runner::run": [
+      "LogicException"
+    ],
+    "Pitfalls\\ThrowEndsExecution\\Caller::call": [
+      "LogicException"
+    ]
+  }
+}
