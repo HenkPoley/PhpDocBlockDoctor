@@ -1,0 +1,11 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\IfAllowsExecution\\ThrowEndsExecution::throwsOnlyOneBecauseThrowEndsTheFunction": [
+      "CompileError"
+    ],
+    "Pitfalls\\IfAllowsExecution\\ThrowEndsExecution::canThrowBoth": [
+      "AssertionError",
+      "CompileError"
+    ]
+  }
+}
