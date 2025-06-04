@@ -580,4 +580,40 @@ class AstUtils
 
         return false;
     }
+
+    /**
+     * Determine if a node appears after a throw/return statement that would
+     * terminate execution of the current statement list. Used to avoid
+     * considering unreachable calls when propagating exceptions.
+     *
+     * @param \PhpParser\Node $node        The node to check reachability for
+     * @param \PhpParser\Node $boundary    Typically a function or method node
+     */
+    public function isNodeAfterExecutionEndingStmt(Node $node, Node $boundary): bool
+    {
+        $current = $node;
+        while ($current && $current !== $boundary) {
+            $parent = $current->getAttribute('parent');
+            if ($parent && property_exists($parent, 'stmts') && is_array($parent->stmts)) {
+                $stmts = $parent->stmts;
+                $idx = array_search($current, $stmts, true);
+                if ($idx !== false) {
+                    for ($i = 0; $i < $idx; $i++) {
+                        $s = $stmts[$i];
+                        if (
+                            $s instanceof Node\Stmt\Return_
+                            || $s instanceof Node\Stmt\Throw_
+                            || $s instanceof Node\Expr\Throw_
+                            || ($s instanceof Node\Stmt\Expression && $s->expr instanceof Node\Expr\Throw_)
+                        ) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            $current = $parent;
+        }
+
+        return false;
+    }
 }

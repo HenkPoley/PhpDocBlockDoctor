@@ -196,6 +196,9 @@ class Application
                     );
 
                     foreach ($callNodes as $callNode) {
+                        if ($astUtils->isNodeAfterExecutionEndingStmt($callNode, $funcNode)) {
+                            continue;
+                        }
                         $calleeKey = $astUtils->getCalleeKey($callNode, $callerNamespace, $callerUseMap, $funcNode);
                         if ($calleeKey && $calleeKey !== $funcKey) {
                             $exceptionsFromCallee = GlobalCache::$resolvedThrows[$calleeKey] ?? [];
