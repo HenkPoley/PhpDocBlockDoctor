@@ -238,7 +238,6 @@ class AstUtils
             }
 
             if ($parent instanceof Class_ || $parent instanceof Node\Stmt\Trait_) {
-                /** @var Class_|Node\Stmt\Trait_ $classNode */
                 $classNode = $parent;
 
                 // Look through all properties of this class/trait to find one named `$propertyName`
@@ -343,6 +342,7 @@ class AstUtils
             $methodName = $callNode->name->toString();
 
             // Search the enclosing function/method for a parameter with the same name:
+            /** @psalm-suppress NoInterfaceProperties */
             foreach ($callerFuncOrMethodNode->params as $param) {
                 if ($param->var instanceof Variable
                     && is_string($param->var->name)
@@ -392,6 +392,7 @@ class AstUtils
             $methodName = $callNode->name->toString();
 
             // Ensure we have statements to scan:
+            /** @psalm-suppress NoInterfaceProperties */
             if (property_exists($callerFuncOrMethodNode, 'stmts') && is_array($callerFuncOrMethodNode->stmts)) {
                 $finder     = new NodeFinder();
                 $allAssigns = $finder->findInstanceOf(
@@ -410,10 +411,10 @@ class AstUtils
                         && $assignNode->expr instanceof Node\Expr\New_
                         && $assignNode->expr->class instanceof Node\Name
                     ) {
-                        $pos = $assignNode->getStartFilePos() ?? -1;
-                        $callPos = $callNode->getStartFilePos() ?? PHP_INT_MAX;
+                        $pos = $assignNode->getStartFilePos();
+                        $callPos = $callNode->getStartFilePos();
                         // Only consider assignments that happen earlier in the file than the call:
-                        if ($pos !== null && $pos < $callPos && $pos > $bestPosition) {
+                        if ($pos < $callPos && $pos > $bestPosition) {
                             $bestPosition = $pos;
                             $bestAssign   = $assignNode;
                         }
@@ -422,7 +423,9 @@ class AstUtils
 
                 if ($bestAssign instanceof Assign) {
                     // Resolve "new Something()" → FQCN
-                    $newClassNode = $bestAssign->expr->class; // a Node\Name
+                    /** @var Node\Expr\New_ $newExpr */
+                    $newExpr = $bestAssign->expr;
+                    $newClassNode = $newExpr->class; // a Node\Name
                     $classFqcn    = $this->resolveNameNodeToFqcn(
                         $newClassNode,
                         $callerNamespace,
@@ -651,7 +654,7 @@ class AstUtils
                         $s = $stmts[$i];
                         if (
                             $s instanceof Node\Stmt\Return_
-                            || $s instanceof Node\Stmt\Throw_
+                            || $s instanceof Node\Expr\Throw_
                             || $s instanceof Node\Expr\Throw_
                             || ($s instanceof Node\Stmt\Expression && $s->expr instanceof Node\Expr\Throw_)
                         ) {

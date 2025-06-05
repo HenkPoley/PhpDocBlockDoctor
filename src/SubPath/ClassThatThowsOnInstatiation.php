@@ -2,6 +2,7 @@
 
 namespace HenkPoley\DocBlockDoctor\SubPath;
 
+/** @psalm-suppress UnusedClass */
 class ClassThatThowsOnInstatiation
 {
     /**
@@ -10,13 +11,5 @@ class ClassThatThowsOnInstatiation
     function __construct()
     {
         throw new \BadMethodCallException();
-    }
-
-    /**
-     * @throws \BadMethodCallException
-     */
-    function instantiateSelf()
-    {
-        return new self();
     }
 }

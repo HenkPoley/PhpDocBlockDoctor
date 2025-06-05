@@ -5,6 +5,8 @@ namespace HenkPoley\DocBlockDoctor;
 use PhpParser\Node;
 use PhpParser\NodeFinder;
 use PhpParser\NodeVisitorAbstract;
+use PhpParser\Node\Stmt\ClassMethod;
+use PhpParser\Node\Stmt\Function_;
 
 class ThrowsGatherer extends NodeVisitorAbstract
 {
@@ -178,10 +180,13 @@ class ThrowsGatherer extends NodeVisitorAbstract
     /**
      * @throws \LogicException
      */
+    /**
+     * @param Function_|ClassMethod $funcOrMethodNode
+     */
     private function calculateDirectThrowsForNode(Node $funcOrMethodNode): array
     {
         $fqcns = [];
-        if (!property_exists($funcOrMethodNode, 'stmts') || $funcOrMethodNode->stmts === null || !is_array($funcOrMethodNode->stmts)) {
+        if ($funcOrMethodNode->stmts === null) {
             return [];
         }
         $throwNodes = $this->nodeFinder->findInstanceOf($funcOrMethodNode->stmts, Node\Expr\Throw_::class);
@@ -270,6 +275,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         });
         $types = [];
         foreach ($matches as $ins) {
+            /** @var Node\Expr\Instanceof_ $ins */
             $types[] = $this->astUtils->resolveNameNodeToFqcn($ins->class, $this->currentNamespace, $this->useMap, false);
         }
         return $types;

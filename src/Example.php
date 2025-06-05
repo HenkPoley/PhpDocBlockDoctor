@@ -8,6 +8,7 @@ use HenkPoley\DocBlockDoctor\SubPath\OneMoreClass;
 use HenkPoley\DocBlockDoctor\SubPath\ThirdExampleClass;
 use LogicException;
 
+/** @psalm-suppress UnusedClass */
 class Example
 {
     /** @var OneMoreClass */
@@ -21,7 +22,6 @@ class Example
     {
         $this->two();
         $this->three('input');
-        OneMoreClass::aFunction();
     }
 
     /**
@@ -38,11 +38,16 @@ class Example
      * @param string $input Multi-line
      * with emoji
      * 👨‍🎤
+     *
      * @see https://en.wikipedia.org/wiki/Roses_Are_Red#Origins
      * Origin of the poem
      *
      * @throws \Exception Violets are blue.
      * I throw an exception, when true equals true.
+     *
+     * @return never
+     *
+     * @psalm-suppress PossiblyUnusedParam
      */
     public function three($input)
     {
@@ -52,7 +57,7 @@ class Example
     /**
      * @throws \ErrorException
      */
-    function usesFunctionOnObjectReturnedFromCallToClassVariable()
+    function usesFunctionOnObjectReturnedFromCallToClassVariable(): void
     {
         $this->externalClass->nonStaticFunction()->someOtherNonStaticFunction();
     }
@@ -60,7 +65,7 @@ class Example
     /**
      * @throws \UnderflowException
      */
-    function usesFunctionOnClassVariable()
+    function usesFunctionOnClassVariable(): void
     {
         $this->externalClass->nonStaticFunctionThatThrows();
     }
@@ -68,7 +73,7 @@ class Example
     /**
      * @throws \UnderflowException
      */
-    function functionVariable(OneMoreClass $oneMoreClass)
+    function functionVariable(OneMoreClass $oneMoreClass): void
     {
         $oneMoreClass->nonStaticFunctionThatThrows();
     }
@@ -76,7 +81,7 @@ class Example
     /**
      * @throws \ErrorException
      */
-    function callOnNewObject()
+    function callOnNewObject(): void
     {
         $foo = new ThirdExampleClass();
         $foo->someOtherNonStaticFunction();
@@ -85,9 +90,9 @@ class Example
     /**
      * @return ThirdExampleClass
      */
-    function surelyThisReturnsAnObject()
+    function surelyThisReturnsAnObject(): ThirdExampleClass
     {
-
+        return new ThirdExampleClass();
     }
 
     /**
