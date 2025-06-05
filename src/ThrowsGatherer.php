@@ -223,12 +223,55 @@ class ThrowsGatherer extends NodeVisitorAbstract
                                 }
                             }
                         }
+                        $instanceofTypes = $this->getInstanceofTypesBeforeThrow($catchNode->stmts, $throwExpr, $varName);
+                        foreach ($instanceofTypes as $fq) {
+                            if (!$this->astUtils->isExceptionCaught($throwExpr, $fq, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
+                                $fqcns[] = $fq;
+                            }
+                        }
+                    } else {
+                        $instanceofTypes = $this->getInstanceofTypesBeforeThrow($funcOrMethodNode->stmts, $throwExpr, $varName);
+                        foreach ($instanceofTypes as $fq) {
+                            if (!$this->astUtils->isExceptionCaught($throwExpr, $fq, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
+                                $fqcns[] = $fq;
+                            }
+                        }
                     }
                 }
             }
         }
-        return array_values(array_filter($fqcns, function ($fqcn): bool {
+        $filtered = array_filter($fqcns, function ($fqcn): bool {
             return class_exists($fqcn) || interface_exists($fqcn);
-        }));
+        });
+        return array_values(array_unique($filtered));
+    }
+
+    private function getInstanceofTypesBeforeThrow(array $stmts, Node\Expr\Throw_ $throwExpr, string $varName): array
+    {
+        $types = [];
+        foreach ($stmts as $stmt) {
+            $types = array_merge($types, $this->findInstanceofTypes($stmt, $varName));
+            if ($this->nodeFinder->findFirst($stmt, static function (Node $n) use ($throwExpr): bool {
+                return $n === $throwExpr;
+            })) {
+                break;
+            }
+        }
+        return array_values(array_unique(array_filter($types)));
+    }
+
+    private function findInstanceofTypes(Node $node, string $varName): array
+    {
+        $matches = $this->nodeFinder->find($node, static function (Node $n) use ($varName): bool {
+            return $n instanceof Node\Expr\Instanceof_
+                && $n->expr instanceof Node\Expr\Variable
+                && $n->expr->name === $varName
+                && $n->class instanceof Node\Name;
+        });
+        $types = [];
+        foreach ($matches as $ins) {
+            $types[] = $this->astUtils->resolveNameNodeToFqcn($ins->class, $this->currentNamespace, $this->useMap, false);
+        }
+        return $types;
     }
 }
