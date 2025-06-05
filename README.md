@@ -8,10 +8,30 @@ Oh, and it also cleans up `use Foo\Bar\{Baz};` statements to `use Foo\Bar\Baz;`.
 
 Vibe coded this into existence with Google Gemini Pro 2.5, and OpenAI o4-mini-high, and of course some experience with PHP. Code is probably a mess.
 
+## Installing
+
+This package is currently not in the Composer repository.
+
+Add to your `composer.json`:
+
+```json
+{
+	"require": {
+		"henk-poley/doc-block-doctor": "dev-main"
+	},
+	"repositories": [
+		{
+			"type": "vcs",
+			"url": "https://github.com/HenkPoley/PhpDocBlockDoctor"
+		}
+	]
+}
+```
+
 ## Commandline syntax
 
 ```shell
-php vendor/bin/doc-block-doctor <path>
+php ./vendor/bin/doc-block-doctor <path>
 ```
 
 ## Result
