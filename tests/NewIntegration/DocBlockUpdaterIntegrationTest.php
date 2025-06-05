@@ -21,6 +21,9 @@ use HenkPoley\DocBlockDoctor\DocBlockUpdater;
  */
 class DocBlockUpdaterIntegrationTest extends TestCase
 {
+    /**
+     * @throws \LogicException
+     */
     #[\PHPUnit\Framework\Attributes\DataProvider('fixtureProvider')]
     public function testRewrittenDocblocksMatchExpected(string $scenario, string $fileName): void
     {

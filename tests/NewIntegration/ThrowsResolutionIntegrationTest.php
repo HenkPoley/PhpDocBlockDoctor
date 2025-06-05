@@ -17,6 +17,9 @@ use PHPUnit\Framework\TestCase;
 
 class ThrowsResolutionIntegrationTest extends TestCase
 {
+    /**
+     * @throws \LogicException
+     */
     #[DataProvider('fixtureProvider')]
     public function testResolvedThrowsMatchFixture(string $scenario): void
     {
@@ -176,6 +179,9 @@ class ThrowsResolutionIntegrationTest extends TestCase
         return false;
     }
 
+    /**
+     * @throws \LogicException
+     */
     private function findAssignmentForVariable(array $stmts, \PhpParser\Node\Expr\Variable $var, \PhpParser\Node $boundary): ?\PhpParser\Node\Expr
     {
         $name = is_string($var->name) ? $var->name : null;
@@ -199,6 +205,9 @@ class ThrowsResolutionIntegrationTest extends TestCase
         return $best;
     }
 
+    /**
+     * @throws \LogicException
+     */
     private function resolveAssignedExprType(\PhpParser\Node\Expr $expr, string $namespace, array $useMap, \PhpParser\Node $scopeNode, AstUtils $utils, NodeFinder $finder): ?string
     {
         if ($expr instanceof \PhpParser\Node\Expr\New_ && $expr->class instanceof \PhpParser\Node\Name) {

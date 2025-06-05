@@ -24,6 +24,9 @@ class ThrowsGathererTest extends TestCase
         GlobalCache::clear();
     }
 
+    /**
+     * @throws \LogicException
+     */
     public function testCalculateDirectThrowsIgnoresCaught(): void
     {
         $code = <<<'PHP'
@@ -55,6 +58,9 @@ class ThrowsGathererTest extends TestCase
         $this->assertSame([], GlobalCache::$directThrows[$key] ?? []);
     }
 
+    /**
+     * @throws \LogicException
+     */
     public function testCalculateDirectThrowsFindsUncaught(): void
     {
         $code = <<<'PHP'
@@ -84,6 +90,9 @@ class ThrowsGathererTest extends TestCase
         );
     }
 
+    /**
+     * @throws \LogicException
+     */
     public function testCalculateDirectThrowsFromInstanceofCatch(): void
     {
         $code = <<<'PHP'

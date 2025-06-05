@@ -241,7 +241,11 @@ class ThrowsGatherer extends NodeVisitorAbstract
         return array_values(array_unique($filtered));
     }
 
-    /** @param Node[] $stmts */
+    /**
+     * @param Node[] $stmts
+     *
+     * @throws \LogicException
+     */
     private function getInstanceofTypesBeforeThrow(array $stmts, Node\Expr\Throw_ $throwExpr, string $varName): array
     {
         $types = [];
@@ -254,6 +258,9 @@ class ThrowsGatherer extends NodeVisitorAbstract
         return array_values(array_unique(array_filter($types)));
     }
 
+    /**
+     * @throws \LogicException
+     */
     private function findInstanceofTypes(Node $node, string $varName): array
     {
         $matches = $this->nodeFinder->find($node, static fn(Node $n): bool => $n instanceof Node\Expr\Instanceof_

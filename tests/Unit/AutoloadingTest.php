@@ -24,6 +24,10 @@ class AutoloadingTest extends TestCase
         GlobalCache::clear();
     }
 
+    /**
+     * @throws \LogicException
+     * @throws \RuntimeException
+     */
     public function testThrowsGathererDoesNotAutoloadMissingClasses(): void
     {
         $code = <<<'PHP'

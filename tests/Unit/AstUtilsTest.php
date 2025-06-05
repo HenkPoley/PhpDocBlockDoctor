@@ -26,6 +26,9 @@ class AstUtilsTest extends TestCase
         GlobalCache::clear();
     }
 
+    /**
+     * @throws \LogicException
+     */
     public function testResolveSimpleMethodOnThis(): void
     {
         $code = <<<'PHP'
@@ -103,6 +106,9 @@ class AstUtilsTest extends TestCase
         $this->assertSame('My\\Space\\A::foo', $resolvedKey);
     }
 
+    /**
+     * @throws \LogicException
+     */
     public function testResolveNewConstructorCall(): void
     {
         $code = <<<'PHP'
@@ -173,6 +179,9 @@ class AstUtilsTest extends TestCase
         $this->assertSame('TestNS\\B::bar', $resolved);
     }
 
+    /**
+     * @throws \LogicException
+     */
     public function testResolvePromotedPropertyCall(): void
     {
         $code = <<<'PHP'
@@ -219,6 +228,9 @@ class AstUtilsTest extends TestCase
         $this->assertSame('P\\R::bar', $resolved);
     }
 
+    /**
+     * @throws \LogicException
+     */
     public function testResolveTraitPropertyCall(): void
     {
         $code = <<<'PHP'
