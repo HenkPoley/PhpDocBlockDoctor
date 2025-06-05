@@ -35,14 +35,14 @@ class Application
         }
 
         // ------------------------------------------------------------
-        // 2) Next, parse --verbose (or -v) and the optional <path>.
+        // 2) Next, parse --verbose and directory options.
         // ------------------------------------------------------------
-        $verbose = false;
-        $rootDir = null;
-        // Skip $argv[0]; start at 1
-        $counter = count($argv);
+        $verbose    = false;
+        $rootDir    = null;
+        $readDirs   = null;
+        $writeDirs  = null;
+        $counter    = count($argv);
 
-        // Skip $argv[0]; start at 1
         for ($i = 1; $i < $counter; $i++) {
             $arg = $argv[$i];
 
@@ -51,7 +51,18 @@ class Application
                 continue;
             }
 
-            // Treat the first non‐flag (and non‐help) argument as the path
+            if (str_starts_with($arg, '--read-dirs=')) {
+                $dirs     = substr($arg, 12);
+                $readDirs = array_filter(array_map('trim', explode(',', $dirs)));
+                continue;
+            }
+
+            if (str_starts_with($arg, '--write-dirs=')) {
+                $dirs      = substr($arg, 13);
+                $writeDirs = array_filter(array_map('trim', explode(',', $dirs)));
+                continue;
+            }
+
             if ($rootDir === null) {
                 $rootDir = $arg;
             }
@@ -66,8 +77,51 @@ class Application
             $rootDir = $cwd;
         }
 
+        $rootDir = rtrim($rootDir, DIRECTORY_SEPARATOR);
+
+        // Determine directories to read from
+        if ($readDirs === null) {
+            $readDirs = [];
+            if (is_dir($rootDir . DIRECTORY_SEPARATOR . 'src')) {
+                $readDirs[] = $rootDir . DIRECTORY_SEPARATOR . 'src';
+            }
+            if (is_dir($rootDir . DIRECTORY_SEPARATOR . 'tests')) {
+                $readDirs[] = $rootDir . DIRECTORY_SEPARATOR . 'tests';
+            }
+            if ($readDirs === []) {
+                $readDirs[] = $rootDir;
+            }
+        } else {
+            $readDirs = array_map(function (string $d) use ($rootDir) {
+                if (!str_starts_with($d, DIRECTORY_SEPARATOR) && !preg_match('/^[A-Za-z]:\\\\/', $d)) {
+                    return $rootDir . DIRECTORY_SEPARATOR . $d;
+                }
+                return $d;
+            }, $readDirs);
+        }
+
+        // Determine directories eligible for writing
+        if ($writeDirs === null) {
+            $writeDirs = [];
+            if (is_dir($rootDir . DIRECTORY_SEPARATOR . 'src')) {
+                $writeDirs[] = $rootDir . DIRECTORY_SEPARATOR . 'src';
+            }
+            if ($writeDirs === []) {
+                $writeDirs = $readDirs;
+            }
+        } else {
+            $writeDirs = array_map(function (string $d) use ($rootDir) {
+                if (!str_starts_with($d, DIRECTORY_SEPARATOR) && !preg_match('/^[A-Za-z]:\\\\/', $d)) {
+                    return $rootDir . DIRECTORY_SEPARATOR . $d;
+                }
+                return $d;
+            }, $writeDirs);
+        }
+
         if ($verbose) {
             echo "[Verbose] Running DocBlockDoctor on: {$rootDir}\n";
+            echo "[Verbose] Reading from: " . implode(', ', $readDirs) . "\n";
+            echo "[Verbose] Writing to:  " . implode(', ', $writeDirs) . "\n";
         }
 
         // ------------------------------------------------------------
@@ -78,37 +132,46 @@ class Application
         $nodeFinder = new NodeFinder();
         $astUtils   = new AstUtils();
 
-        // Collect all .php files under $rootDir
+        // Collect all .php files from the configured read directories
         $phpFilePaths = [];
-        try {
-            $rii = new RecursiveIteratorIterator(
-                new RecursiveCallbackFilterIterator(
-                    new RecursiveDirectoryIterator(
-                        $rootDir,
-                        RecursiveDirectoryIterator::SKIP_DOTS | RecursiveDirectoryIterator::FOLLOW_SYMLINKS
-                    ),
-                    function ($file, $key, $iterator): bool {
-                        $filename = $file->getFilename();
-                        if ($iterator->hasChildren()) {
-                            // removed 'vendor' from this exclusion list so we read vendor/ now
-                            return !in_array($filename, ['.git', 'node_modules', '.history', 'tests', 'cache'], true);
-                        }
-                        return $file->isFile() && $file->getExtension() === 'php';
-                    }
-                ),
-                RecursiveIteratorIterator::LEAVES_ONLY
-            );
-        } catch (\UnexpectedValueException $e) {
-            // If $rootDir is not a directory (or not accessible), report and exit
-            fwrite(STDERR, "Error: Cannot open directory '{$rootDir}'.\n");
-            return 1;
-        }
+        foreach ($readDirs as $dir) {
+            if (is_file($dir)) {
+                if (pathinfo($dir, PATHINFO_EXTENSION) === 'php') {
+                    $phpFilePaths[] = realpath($dir);
+                }
+                continue;
+            }
 
-        foreach ($rii as $fileInfo) {
-            if ($fileInfo->getRealPath()) {
-                $phpFilePaths[] = $fileInfo->getRealPath();
+            try {
+                $rii = new RecursiveIteratorIterator(
+                    new RecursiveCallbackFilterIterator(
+                        new RecursiveDirectoryIterator(
+                            $dir,
+                            RecursiveDirectoryIterator::SKIP_DOTS | RecursiveDirectoryIterator::FOLLOW_SYMLINKS
+                        ),
+                        function ($file, $key, $iterator): bool {
+                            $filename = $file->getFilename();
+                            if ($iterator->hasChildren()) {
+                                return !in_array($filename, ['.git', 'node_modules', '.history', 'cache'], true);
+                            }
+                            return $file->isFile() && $file->getExtension() === 'php';
+                        }
+                    ),
+                    RecursiveIteratorIterator::LEAVES_ONLY
+                );
+            } catch (\UnexpectedValueException $e) {
+                fwrite(STDERR, "Error: Cannot open directory '{$dir}'.\n");
+                continue;
+            }
+
+            foreach ($rii as $fileInfo) {
+                if ($fileInfo->getRealPath()) {
+                    $phpFilePaths[] = $fileInfo->getRealPath();
+                }
             }
         }
+
+        $phpFilePaths = array_values(array_unique($phpFilePaths));
 
         if ($verbose) {
             echo "Pass 1: Gathering info on " . count($phpFilePaths) . " files...\n";
@@ -232,22 +295,34 @@ class Application
         // ------------------------------------------------------------
         // 5) Pass 2: Update files (skip vendor/)
         // ------------------------------------------------------------
-        // Before starting Pass 2, remove any paths under “vendor/” so that we don’t modify third-party code.
-        $phpFilePaths = array_filter($phpFilePaths, static function (string $path): bool {
-            // On Windows the directory separator may be “\”, so use DIRECTORY_SEPARATOR.
-            $needle = DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR;
-            return strpos($path, $needle) === false;
+        // Build list of files eligible for writing
+        $phpFilesForWriting = array_filter($phpFilePaths, static function (string $path) use ($writeDirs): bool {
+            $vendorNeedle = DIRECTORY_SEPARATOR . "vendor" . DIRECTORY_SEPARATOR;
+            if (strpos($path, $vendorNeedle) !== false) {
+                return false;
+            }
+            $realPath = realpath($path);
+            if ($realPath === false) {
+                return false;
+            }
+            foreach ($writeDirs as $dir) {
+                $dirReal = realpath($dir);
+                if ($dirReal !== false && (str_starts_with($realPath, $dirReal . DIRECTORY_SEPARATOR) || $realPath === $dirReal)) {
+                    return true;
+                }
+            }
+            return false;
         });
 
         echo "\nPass 2: Updating files (excluding vendor/) ...\n";
         if ($verbose) {
-            echo 'Processing ' . count($phpFilePaths) . " files...\n";
+            echo 'Processing ' . count($phpFilesForWriting) . " files...\n";
         }
 
         // Keep track of which files were actually modified (fixed)
         $filesFixed = [];
 
-        foreach ($phpFilePaths as $filePath) {
+        foreach ($phpFilesForWriting as $filePath) {
             if ($verbose) {
                 echo "  • Processing (Pass 2): {$filePath}\n";
             }
@@ -486,6 +561,8 @@ Usage:
 Options:
   -h, --help       Display this help message and exit
   -v, --verbose    Enable verbose output (show each file being processed)
+  --read-dirs=DIRS   Comma-separated list of directories to read
+  --write-dirs=DIRS  Comma-separated list of directories to update
 
 Arguments:
   <path>           Path to a file or directory to process.
