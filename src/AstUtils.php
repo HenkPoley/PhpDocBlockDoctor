@@ -11,6 +11,7 @@ use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Expr\Assign;
 use PhpParser\NodeFinder;
 use PhpParser\Node\Stmt\Return_;
+use Composer\Autoload\ClassLoader;
 
 /**
  * Utility Class for AST operations and Name Resolution
@@ -609,14 +610,16 @@ class AstUtils
                             $useMap,
                             false
                         );
-                        if (class_exists($thrownFqcn, true) && class_exists($caughtTypeFqcn, true)) {
+                        $thrownLoaded = class_exists($thrownFqcn, false);
+                        $caughtLoaded = class_exists($caughtTypeFqcn, false);
+                        if ($thrownLoaded && $caughtLoaded) {
                             if ($thrownFqcn === $caughtTypeFqcn
                                 || is_subclass_of($thrownFqcn, $caughtTypeFqcn)
                             ) {
                                 return true;
                             }
                         } elseif ($thrownFqcn === $caughtTypeFqcn) {
-                            // Fallback if classes not autoloadable during analysis
+                            // Fallback when we cannot determine inheritance
                             return true;
                         }
                     }
@@ -676,6 +679,26 @@ class AstUtils
     }
 
     /**
+     * Check if a class or interface exists without triggering autoload.
+     */
+    public static function classOrInterfaceExistsNoAutoload(string $fqcn): bool
+    {
+        if (class_exists($fqcn, false) || interface_exists($fqcn, false)) {
+            return true;
+        }
+        foreach (spl_autoload_functions() as $fn) {
+            if (is_array($fn) && $fn[0] instanceof ClassLoader) {
+                /** @var ClassLoader $loader */
+                $loader = $fn[0];
+                if ($loader->findFile($fqcn)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
      * Find the class in the inheritance chain that declares the given method.
      *
      * @param string $classFqcn
@@ -688,7 +711,7 @@ class AstUtils
         ?string $callerNamespace,
         array $callerUseMap
     ): ?string {
-        if (class_exists($classFqcn)) {
+        if (class_exists($classFqcn, false)) {
             try {
                 $ref = new \ReflectionClass($classFqcn);
                 while ($ref) {
@@ -714,7 +737,7 @@ class AstUtils
             if (isset(GlobalCache::$astNodeMap[$candidateKey])) {
                 return ltrim($parentFqcn, '\\');
             }
-            if (class_exists($parentFqcn)) {
+            if (class_exists($parentFqcn, false)) {
                 try {
                     $ref = new \ReflectionClass($parentFqcn);
                     if ($ref->hasMethod($method)) {
