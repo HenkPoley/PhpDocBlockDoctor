@@ -241,6 +241,7 @@ class AstUtils
                 /** @var Class_ $classNode */
                 $classNode = $parent;
 
+            }
                 // Look through all properties of this class to find one named `$propertyName`
                 foreach ($classNode->stmts as $stmt) {
                     if (!($stmt instanceof Node\Stmt\Property)) {
@@ -254,28 +255,78 @@ class AstUtils
                             $docComment = $stmt->getDocComment();
                             if ($docComment instanceof \PhpParser\Comment\Doc) {
                                 $text = $docComment->getText();
-                                // Look for “@var Some\Fqcn” in the doc block.
                                 if (preg_match('/@var\s+([^\s]+)/', $text, $m)) {
                                     $annotatedType = $m[1];
-                                    // e.g. “\SimpleSAML\Locale\Translate” or “Translate”
-
-                                    // Resolve to a fully qualified class name, using use‐map + namespace
                                     $fqcn = $this->resolveStringToFqcn(
                                         $annotatedType,
                                         $callerNamespace,
                                         $callerUseMap
                                     );
-
                                     if ($fqcn !== '') {
-                                        // Return “TranslateClassName::methodName”
                                         return ltrim($fqcn, '\\') . '::' . $methodName;
                                     }
+                                }
+                            }
+                            if ($stmt->type instanceof Name) {
+                                $fqcn = $this->resolveNameNodeToFqcn(
+                                    $stmt->type,
+                                    $callerNamespace,
+                                    $callerUseMap,
+                                    false
+                                );
+                                if ($fqcn !== '') {
+                                    return ltrim($fqcn, '\\') . '::' . $methodName;
+                                }
+                            } elseif ($stmt->type instanceof NullableType && $stmt->type->type instanceof Name) {
+                                $fqcn = $this->resolveNameNodeToFqcn(
+                                    $stmt->type->type,
+                                    $callerNamespace,
+                                    $callerUseMap,
+                                    false
+                                );
+                                if ($fqcn !== '') {
+                                    return ltrim($fqcn, '\\') . '::' . $methodName;
                                 }
                             }
                         }
                     }
                 }
-            }
+
+                // Handle constructor property promotion
+                foreach ($classNode->stmts as $stmt) {
+                    if ($stmt instanceof Node\Stmt\ClassMethod && $stmt->name->toString() === '__construct') {
+                        foreach ($stmt->params as $param) {
+                            if (($param->flags & (Class_::MODIFIER_PUBLIC | Class_::MODIFIER_PROTECTED | Class_::MODIFIER_PRIVATE)) !== 0
+                                && $param->var instanceof Variable
+                                && is_string($param->var->name)
+                                && $param->var->name === $propertyName
+                                && $param->type !== null
+                            ) {
+                                $typeNode = $param->type;
+                                if ($typeNode instanceof Name) {
+                                    $fqcn = $this->resolveNameNodeToFqcn(
+                                        $typeNode,
+                                        $callerNamespace,
+                                        $callerUseMap,
+                                        false
+                                    );
+                                } elseif ($typeNode instanceof NullableType && $typeNode->type instanceof Name) {
+                                    $fqcn = $this->resolveNameNodeToFqcn(
+                                        $typeNode->type,
+                                        $callerNamespace,
+                                        $callerUseMap,
+                                        false
+                                    );
+                                } else {
+                                    $fqcn = '';
+                                }
+                                if ($fqcn !== '') {
+                                    return ltrim($fqcn, '\\') . '::' . $methodName;
+                                }
+                            }
+                        }
+                    }
+                }
             // If we didn’t find a matching @var or couldn’t resolve it, fall through:
         }
 
