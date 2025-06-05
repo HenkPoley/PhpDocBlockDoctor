@@ -1,0 +1,8 @@
+{
+  "fullyQualifiedMethodKeys" :{
+    "Pitfalls\\Nonexistent\\Example::foo": [
+    ],
+    "Pitfalls\\Nonexistent\\Example::bar": [
+    ]
+  }
+}

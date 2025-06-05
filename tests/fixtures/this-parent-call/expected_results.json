@@ -1,0 +1,10 @@
+{
+  "fullyQualifiedMethodKeys" :{
+    "Pitfalls\\ThisParentCall\\ParentClass::inner": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\ThisParentCall\\ChildClass::outer": [
+      "RuntimeException"
+    ]
+  }
+}

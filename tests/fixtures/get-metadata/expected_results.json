@@ -1,0 +1,13 @@
+{
+  "fullyQualifiedMethodKeys" :{
+    "Pitfalls\\GetMetadata\\MetaDataStorageSource::getMetaData": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\GetMetadata\\MetaDataStorageSource::getMetaDataForEntitiesIndividually": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\GetMetadata\\MetaDataStorageSource::getMetaDataForEntities": [
+      "RuntimeException"
+    ]
+  }
+}

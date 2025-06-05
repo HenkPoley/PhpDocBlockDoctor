@@ -1,0 +1,10 @@
+{
+  "fullyQualifiedMethodKeys" :{
+    "Pitfalls\\ReturnThisCall\\Sample::inner": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\ReturnThisCall\\Sample::outer": [
+      "RuntimeException"
+    ]
+  }
+}
