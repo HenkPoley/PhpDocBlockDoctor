@@ -19,7 +19,7 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
     }
 
     /** @param Node[] $nodes */
-    public function beforeTraverse($nodes): ?array
+    public function beforeTraverse(array $nodes)
     {
         $this->pendingPatches = [];
         return null;

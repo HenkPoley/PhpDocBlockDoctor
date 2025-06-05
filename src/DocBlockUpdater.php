@@ -104,9 +104,10 @@ class DocBlockUpdater extends NodeVisitorAbstract
             return null;
         }
 
+        /** @var list<class-string> $analyzedThrowsFqcns */
         $analyzedThrowsFqcns = \HenkPoley\DocBlockDoctor\GlobalCache::$resolvedThrows[$nodeKey] ?? [];
         // Filter out any classes or interfaces that don’t actually exist
-        $analyzedThrowsFqcns = array_filter($analyzedThrowsFqcns, fn($fqcn): bool => class_exists($fqcn) || interface_exists($fqcn));
+        $analyzedThrowsFqcns = array_filter($analyzedThrowsFqcns, fn(string $fqcn): bool => class_exists($fqcn) || interface_exists($fqcn));
         $analyzedThrowsFqcns = array_values($analyzedThrowsFqcns);
         sort($analyzedThrowsFqcns);
         $docCommentNode = $node->getDocComment();
