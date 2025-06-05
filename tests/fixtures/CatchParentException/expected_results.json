@@ -1,0 +1,11 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\CatchParentException\\Worker::doSomething": [
+      "Pitfalls\\CatchParentException\\BananaPeelException"
+    ],
+    "Pitfalls\\CatchParentException\\Wrapper::handle": [
+    ],
+    "Pitfalls\\CatchParentException\\Runner::run": [
+    ]
+  }
+}

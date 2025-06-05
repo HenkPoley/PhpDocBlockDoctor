@@ -618,8 +618,12 @@ class AstUtils
                             ) {
                                 return true;
                             }
-                        } elseif (!$thrownLoaded && $caughtLoaded && in_array($caughtTypeFqcn, ['Exception', 'Throwable'], true)) {
-                            // Assume broad catch types like \Exception or \Throwable catch unknown exceptions
+                        } elseif (
+                            self::classOrInterfaceExistsNoAutoload($thrownFqcn)
+                            && self::classOrInterfaceExistsNoAutoload($caughtTypeFqcn)
+                            && is_a($thrownFqcn, $caughtTypeFqcn, true)
+                        ) {
+                            // Use autoload to inspect class hierarchy
                             return true;
                         } elseif ($thrownFqcn === $caughtTypeFqcn) {
                             // Fallback when we cannot determine inheritance
