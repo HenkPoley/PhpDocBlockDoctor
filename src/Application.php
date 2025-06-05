@@ -20,6 +20,7 @@ class Application
      * @param string[] $argv
      *
      * @throws \LogicException
+     * @throws \RuntimeException
      */
     public function run(array $argv): int
     {

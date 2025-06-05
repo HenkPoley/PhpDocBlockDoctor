@@ -168,6 +168,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
 
     /**
      * @param Function_|ClassMethod $funcOrMethodNode
+     *
      * @throws \LogicException
      */
     private function calculateDirectThrowsForNode(Node $funcOrMethodNode): array
