@@ -171,4 +171,41 @@ class ThrowsGathererTest extends TestCase
             GlobalCache::$directThrows[$key]
         );
     }
+
+    /**
+     * @throws \LogicException
+     */
+    public function testCalculateDirectThrowsCaughtByParentException(): void
+    {
+        $code = <<<'PHP'
+        <?php
+        namespace Pitfalls\CatchParentException;
+        class C {
+            public function foo(): void {
+                try {
+                    throw new BananaPeelException('fail');
+                } catch (FruitException $e) {
+                    // handled
+                }
+            }
+        }
+        PHP;
+
+        $loader = new \Composer\Autoload\ClassLoader();
+        $loader->addPsr4('Pitfalls\\CatchParentException\\', __DIR__ . '/../fixtures/CatchParentException');
+        $loader->register(false);
+
+        $parser   = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast      = $parser->parse($code) ?: [];
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
+        $traverser->addVisitor(new ParentConnectingVisitor());
+        $tg = new ThrowsGatherer($this->finder, $this->utils, 'dummyPath');
+        $traverser->addVisitor($tg);
+        $traverser->traverse($ast);
+
+        $key = 'Pitfalls\\CatchParentException\\C::foo';
+        $this->assertArrayHasKey($key, GlobalCache::$directThrows);
+        $this->assertSame([], GlobalCache::$directThrows[$key]);
+    }
 }
