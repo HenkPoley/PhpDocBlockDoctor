@@ -11,10 +11,7 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
 {
     /** @var array<int, array{startPos: int, length: int, replacementText: string}> */
     public $pendingPatches = [];
-    /**
-     * @var \PhpParser\PrettyPrinter\Standard
-     */
-    private $printer;
+    private \PhpParser\PrettyPrinter\Standard $printer;
 
     public function __construct()
     {

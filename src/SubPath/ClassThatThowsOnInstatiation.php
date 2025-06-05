@@ -15,7 +15,7 @@ class ClassThatThowsOnInstatiation
     /**
      * @throws \BadMethodCallException
      */
-    function instantiateSelf()
+    function instantiateSelf(): self
     {
         return new self();
     }

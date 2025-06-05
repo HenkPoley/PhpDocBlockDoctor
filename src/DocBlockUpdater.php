@@ -7,14 +7,8 @@ use PhpParser\Node;
 
 class DocBlockUpdater extends NodeVisitorAbstract
 {
-    /**
-     * @var \HenkPoley\DocBlockDoctor\AstUtils
-     */
-    private $astUtils;
-    /**
-     * @var string
-     */
-    private $currentFilePath;
+    private \HenkPoley\DocBlockDoctor\AstUtils $astUtils;
+    private string $currentFilePath;
     /**
      * @var mixed[]
      */
@@ -57,7 +51,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                 }
             }
         }
-        if (!$hasMeaningfulContent && array_filter($actualContent, function ($l): bool {return trim($l) !== "";}) === []) {
+        if (!$hasMeaningfulContent && array_filter($actualContent, fn($l): bool => trim($l) !== "") === []) {
             return null;
         }
 
@@ -112,9 +106,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
 
         $analyzedThrowsFqcns = \HenkPoley\DocBlockDoctor\GlobalCache::$resolvedThrows[$nodeKey] ?? [];
         // Filter out any classes or interfaces that don’t actually exist
-        $analyzedThrowsFqcns = array_filter($analyzedThrowsFqcns, function ($fqcn): bool {
-            return class_exists($fqcn) || interface_exists($fqcn);
-        });
+        $analyzedThrowsFqcns = array_filter($analyzedThrowsFqcns, fn($fqcn): bool => class_exists($fqcn) || interface_exists($fqcn));
         $analyzedThrowsFqcns = array_values($analyzedThrowsFqcns);
         sort($analyzedThrowsFqcns);
         $docCommentNode = $node->getDocComment();

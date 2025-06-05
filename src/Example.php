@@ -52,7 +52,7 @@ class Example
     /**
      * @throws \ErrorException
      */
-    function usesFunctionOnObjectReturnedFromCallToClassVariable()
+    function usesFunctionOnObjectReturnedFromCallToClassVariable(): void
     {
         $this->externalClass->nonStaticFunction()->someOtherNonStaticFunction();
     }
@@ -60,7 +60,7 @@ class Example
     /**
      * @throws \UnderflowException
      */
-    function usesFunctionOnClassVariable()
+    function usesFunctionOnClassVariable(): void
     {
         $this->externalClass->nonStaticFunctionThatThrows();
     }
@@ -68,7 +68,7 @@ class Example
     /**
      * @throws \UnderflowException
      */
-    function functionVariable(OneMoreClass $oneMoreClass)
+    function functionVariable(OneMoreClass $oneMoreClass): void
     {
         $oneMoreClass->nonStaticFunctionThatThrows();
     }
@@ -76,7 +76,7 @@ class Example
     /**
      * @throws \ErrorException
      */
-    function callOnNewObject()
+    function callOnNewObject(): void
     {
         $foo = new ThirdExampleClass();
         $foo->someOtherNonStaticFunction();
