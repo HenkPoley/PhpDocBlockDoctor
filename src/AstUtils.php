@@ -231,18 +231,17 @@ class AstUtils
             // The method name, e.g. "getLanguage"
             $methodName = $callNode->name->toString();
 
-            // Walk up from the current method/function node to find the enclosing Class_ node.
+            // Walk up from the current method/function node to find the enclosing Class_ or Trait_ node.
             $parent = $callerFuncOrMethodNode;
-            while ($parent !== null && !($parent instanceof Class_)) {
+            while ($parent !== null && !($parent instanceof Class_ || $parent instanceof Node\Stmt\Trait_)) {
                 $parent = $parent->getAttribute('parent');
             }
 
-            if ($parent instanceof Class_) {
-                /** @var Class_ $classNode */
+            if ($parent instanceof Class_ || $parent instanceof Node\Stmt\Trait_) {
+                /** @var Class_|Node\Stmt\Trait_ $classNode */
                 $classNode = $parent;
 
-            }
-                // Look through all properties of this class to find one named `$propertyName`
+                // Look through all properties of this class/trait to find one named `$propertyName`
                 foreach ($classNode->stmts as $stmt) {
                     if (!($stmt instanceof Node\Stmt\Property)) {
                         continue;
@@ -327,6 +326,7 @@ class AstUtils
                         }
                     }
                 }
+            }
             // If we didn’t find a matching @var or couldn’t resolve it, fall through:
         }
 
