@@ -5,6 +5,7 @@ require 'vendor/autoload.php';
 require 'vendor/scheb/tombstone-logger/tombstone-function.php';
 
 use HenkPoley\DocBlockDoctor\Application;
+use Rector\Console\ExitCode;
 use Scheb\Tombstone\Logger\Graveyard\GraveyardBuilder;
 use Scheb\Tombstone\Logger\Handler\AnalyzerLogHandler;
 use Scheb\Tombstone\Logger\Handler\StreamHandler;
@@ -22,7 +23,14 @@ $analyzerLogHandler = new AnalyzerLogHandler('logs/tombstones');
 $app = new Application();
 
 echo 'Increasing memory limit to 3 GB RAM, vendor/ directories are huge 😰.' . PHP_EOL;
+ini_set('memory_limit', '3G');
 
-ini_set('memory_limit', '3000M');
+try {
+    $exitCode = $app->run($argv);
+    echo 'Peak memory usage: ' . round(memory_get_peak_usage() / 1024 / 1024 / 1024, 2) . 'GB' . PHP_EOL;
+    exit($exitCode);
+} catch (\Throwable $t) {
+    echo 'Something crashed: ' . $t->getTraceAsString() . PHP_EOL;
+}
 
-$app->run();
+exit(-1);
