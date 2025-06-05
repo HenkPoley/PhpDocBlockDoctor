@@ -113,45 +113,38 @@ class DocBlockUpdaterIntegrationTest extends TestCase
         foreach ($patches as $p) {
             if ($p['type'] === 'remove') {
                 $replacement = '';
+                $startPos    = $p['patchStart'];
+                $length      = $p['patchEnd'] - $p['patchStart'] + 1;
             } elseif ($p['type'] === 'update') {
-                // Compute indent from the original docblock line
-                $lineStartPos = strrpos(substr($patchedCode, 0, $p['patchStart']), "\n");
-                if ($lineStartPos !== false) {
-                    $indent = substr(
-                        $patchedCode,
-                        $lineStartPos + 1,
-                        $p['patchStart'] - ($lineStartPos + 1)
-                    );
-                } else {
-                    $indent = '';
-                }
+                $lineStartPos = strrpos($patchedCode, "\n", -strlen($patchedCode) + $p['patchStart']);
+                $startPos     = $lineStartPos !== false ? $lineStartPos + 1 : 0;
+                $indent       = $lineStartPos !== false
+                    ? substr($patchedCode, $startPos, $p['patchStart'] - $startPos)
+                    : '';
                 $lines = explode("\n", $p['newDocText']);
                 foreach ($lines as &$l) {
                     $l = $indent . $l;
                 }
-                $replacement = implode("\n", $lines) . "\n";
+                $replacement = implode("\n", $lines);
+                $length      = $p['patchEnd'] - $startPos + 1;
             } else { // 'add'
-                // Compute indentation for new DocBlock addition
-                $indent = '';
-                $newlinePos = strrpos($patchedCode, "\n", -strlen($patchedCode) + $p['patchStart']);
-                if ($newlinePos !== false) {
-                    $indent = substr(
-                        $patchedCode,
-                        $newlinePos + 1,
-                        $p['patchStart'] - ($newlinePos + 1)
-                    );
-                }
+                $lineStartPos = strrpos($patchedCode, "\n", -strlen($patchedCode) + $p['patchStart']);
+                $startPos     = $lineStartPos !== false ? $lineStartPos + 1 : 0;
+                $indent       = $lineStartPos !== false
+                    ? substr($patchedCode, $startPos, $p['patchStart'] - $startPos)
+                    : '';
                 $lines = explode("\n", $p['newDocText']);
                 foreach ($lines as &$l) {
                     $l = $indent . $l;
                 }
                 $replacement = implode("\n", $lines) . "\n";
+                $length      = 0;
             }
-            $len = $p['patchEnd'] - $p['patchStart'] + 1;
-            if ($len < 0) {
-                $len = 0;
+
+            if ($length < 0) {
+                $length = 0;
             }
-            $patchedCode = substr_replace($patchedCode, $replacement, $p['patchStart'], $len);
+            $patchedCode = substr_replace($patchedCode, $replacement, $startPos, $length);
         }
 
         // 6) Compare with expected rewritten code
