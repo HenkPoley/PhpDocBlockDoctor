@@ -125,8 +125,16 @@ class DocBlockUpdater extends NodeVisitorAbstract
             $currentGenericTagLines = [];
             $isInsideGenericTag = false;
 
-            for ($lineIdx = 1; $lineIdx < count($originalLines) - 1; $lineIdx++) {
+            for ($lineIdx = 0; $lineIdx < count($originalLines); $lineIdx++) {
                 $currentDocLine = $originalLines[$lineIdx];
+                $isFirst = ($lineIdx === 0 && preg_match('/^\s*\/\*\*/', $currentDocLine));
+                $isLast  = ($lineIdx === count($originalLines) - 1 && preg_match('/\*\/\s*$/', $currentDocLine));
+                if ($isFirst) {
+                    $currentDocLine = preg_replace('/^\s*\/\*\*\s?/', '', $currentDocLine);
+                }
+                if ($isLast) {
+                    $currentDocLine = preg_replace('/\s*\*\/$/', '', $currentDocLine);
+                }
                 $lineContent = preg_replace('/^\s*\*?\s?/', '', $currentDocLine);
                 $trimmedLineContent = trim((string)$lineContent);
 
@@ -219,9 +227,18 @@ class DocBlockUpdater extends NodeVisitorAbstract
             $originalDocText = $docCommentNode->getText();
             $originalContentOnlyLines = [];
             $lines = preg_split('/\R/u', $originalDocText) ?: [];
-            if (count($lines) > 1) {
-                for ($i = 1; $i < count($lines) - 1; $i++) {
-                    $originalContentOnlyLines[] = preg_replace('/^\s*\*?\s?/', '', $lines[$i]);
+            if ($lines !== []) {
+                foreach ($lines as $i => $line) {
+                    $isFirst = ($i === 0 && preg_match('/^\s*\/\*\*/', $line));
+                    $isLast  = ($i === count($lines) - 1 && preg_match('/\*\/\s*$/', $line));
+                    if ($isFirst) {
+                        $line = preg_replace('/^\s*\/\*\*\s?/', '', $line);
+                    }
+                    if ($isLast) {
+                        $line = preg_replace('/\s*\*\/$/', '', $line);
+                    }
+                    $line = preg_replace('/^\s*\*?\s?/', '', $line);
+                    $originalContentOnlyLines[] = $line;
                 }
                 $originalTextToNormalize = implode("\n", $originalContentOnlyLines);
                 $originalNormalizedDocText = $this->normalizeDocBlockString($originalTextToNormalize);

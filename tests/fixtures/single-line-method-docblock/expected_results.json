@@ -1,0 +1,10 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\SingleLineMethodDocblock\\InlineDocblock::compute": [
+      "LogicException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\SingleLineMethodDocblock\\InlineDocblock::run": [
+      "LogicException"
+    ]
+  }
+}
