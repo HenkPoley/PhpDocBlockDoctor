@@ -332,6 +332,7 @@ class Application
                         break;
                     }
 
+                    $lineEnding = strpos($currentFileContent, "\r\n") !== false ? "\r\n" : "\n";
                     $originalLinesForIndent = explode("\n", $currentFileContent);
                     $patchesForFile = $docBlockUpdater->pendingPatches;
                     usort($patchesForFile, fn(array $a, array $b): int => $b['patchStart'] <=> $a['patchStart']);
@@ -351,16 +352,14 @@ class Application
                             }
 
                             $docBlockLines   = explode("\n", (string)$patch['newDocText']);
-                            $indentedDocBlock = "";
-                            foreach ($docBlockLines as $idx => $docLine) {
-                                $indentedDocBlock .= $baseIndent . $docLine;
-                                if ($idx < count($docBlockLines) - 1) {
-                                    $indentedDocBlock .= "\n";
-                                }
+                            $indentedLines = [];
+                            foreach ($docBlockLines as $docLine) {
+                                $indentedLines[] = $baseIndent . $docLine;
                             }
+                            $indentedDocBlock = implode($lineEnding, $indentedLines);
 
                             if ($patch['type'] === 'add') {
-                                $replacementText = $indentedDocBlock . "\n";
+                                $replacementText = $indentedDocBlock . $lineEnding;
                                 $lineStartPos    = strrpos(
                                     (string) substr($newFileContent, 0, $patch['patchStart']),
                                     "\n"
