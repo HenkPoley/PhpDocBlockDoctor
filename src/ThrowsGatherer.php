@@ -232,7 +232,10 @@ class ThrowsGatherer extends NodeVisitorAbstract
                 }
             }
         }
-        $filtered = array_filter($fqcns, fn($fqcn): bool => class_exists($fqcn) || interface_exists($fqcn));
+        $filtered = array_filter(
+            $fqcns,
+            static fn(string $fqcn): bool => class_exists($fqcn) || interface_exists($fqcn)
+        );
         return array_values(array_unique($filtered));
     }
 

@@ -453,7 +453,10 @@ class AstUtils
         ) {
             $callerClass = $this->getContextClassName($callerFuncOrMethodNode, $callerNamespace);
             if ($callerClass) {
-                return $callerClass . '::' . $callNode->name->toString();
+                $methodName  = $callNode->name->toString();
+                $declaring   = $this->findDeclaringClassForMethod($callerClass, $methodName, $callerFuncOrMethodNode, $callerNamespace, $callerUseMap);
+                $targetClass = $declaring ?? $callerClass;
+                return $targetClass . '::' . $methodName;
             }
         }
 
@@ -670,5 +673,69 @@ class AstUtils
         }
 
         return false;
+    }
+
+    /**
+     * Find the class in the inheritance chain that declares the given method.
+     *
+     * @param string $classFqcn
+     * @param string $method
+     */
+    private function findDeclaringClassForMethod(
+        string $classFqcn,
+        string $method,
+        Node $callerFuncOrMethodNode,
+        ?string $callerNamespace,
+        array $callerUseMap
+    ): ?string {
+        if (class_exists($classFqcn)) {
+            try {
+                $ref = new \ReflectionClass($classFqcn);
+                while ($ref) {
+                    if ($ref->hasMethod($method)) {
+                        $decl = $ref->getMethod($method)->getDeclaringClass()->getName();
+                        return ltrim($decl, '\\');
+                    }
+                    $ref = $ref->getParentClass();
+                }
+            } catch (\ReflectionException $e) {
+                // ignore and fall back to AST
+            }
+        }
+
+        $classNode = $callerFuncOrMethodNode->getAttribute('parent');
+        while ($classNode && !$classNode instanceof Node\Stmt\Class_) {
+            $classNode = $classNode->getAttribute('parent');
+        }
+
+        while ($classNode instanceof Node\Stmt\Class_ && $classNode->extends instanceof Node\Name) {
+            $parentFqcn = $this->resolveNameNodeToFqcn($classNode->extends, $callerNamespace, $callerUseMap, false);
+            $candidateKey = ltrim($parentFqcn, '\\') . '::' . $method;
+            if (isset(GlobalCache::$astNodeMap[$candidateKey])) {
+                return ltrim($parentFqcn, '\\');
+            }
+            if (class_exists($parentFqcn)) {
+                try {
+                    $ref = new \ReflectionClass($parentFqcn);
+                    if ($ref->hasMethod($method)) {
+                        return ltrim($ref->getMethod($method)->getDeclaringClass()->getName(), '\\');
+                    }
+                    $classNode = null;
+                    if ($ref->getParentClass()) {
+                        $parentFqcn = $ref->getParentClass()->getName();
+                        $candidateKey = ltrim($parentFqcn, '\\') . '::' . $method;
+                        if (isset(GlobalCache::$astNodeMap[$candidateKey])) {
+                            return ltrim($parentFqcn, '\\');
+                        }
+                    }
+                } catch (\ReflectionException $e) {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+
+        return null;
     }
 }
