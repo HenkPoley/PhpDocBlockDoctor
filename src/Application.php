@@ -294,14 +294,10 @@ class Application
         echo "Global Throws Resolution Complete.\n";
 
         // ------------------------------------------------------------
-        // 5) Pass 2: Update files (skip vendor/)
+        // 5) Pass 2: Update files
         // ------------------------------------------------------------
         // Build list of files eligible for writing
         $phpFilesForWriting = array_filter($phpFilePaths, static function (string $path) use ($writeDirs): bool {
-            $vendorNeedle = DIRECTORY_SEPARATOR . "vendor" . DIRECTORY_SEPARATOR;
-            if (strpos($path, $vendorNeedle) !== false) {
-                return false;
-            }
             $realPath = realpath($path);
             if ($realPath === false) {
                 return false;
@@ -315,7 +311,7 @@ class Application
             return false;
         });
 
-        echo "\nPass 2: Updating files (excluding vendor/) ...\n";
+        echo "\nPass 2: Updating files ...\n";
         if ($verbose) {
             echo 'Processing ' . count($phpFilesForWriting) . " files...\n";
         }
