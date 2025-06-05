@@ -22,7 +22,7 @@ class AstUtils
      * @param \PhpParser\Node $node
      * @param string $currentNamespace
      */
-    public function getNodeKey($node, $currentNamespace): ?string
+    public function getNodeKey($node, ?string $currentNamespace): ?string
     {
         if ($node instanceof Node\Stmt\ClassMethod) {
             $className = $this->getContextClassName($node, $currentNamespace);
@@ -46,7 +46,7 @@ class AstUtils
      * @param \PhpParser\Node $nodeContext
      * @param string $currentNamespace
      */
-    public function getContextClassName($nodeContext, $currentNamespace): ?string
+    public function getContextClassName($nodeContext, ?string $currentNamespace): ?string
     {
         $current = $nodeContext;
         while ($current = $current->getAttribute('parent')) {
@@ -74,7 +74,7 @@ class AstUtils
      * @param mixed[] $useMap
      * @param bool $isFunctionContext
      */
-    public function resolveNameNodeToFqcn($nameNode, $currentNamespace, $useMap, $isFunctionContext): string
+    public function resolveNameNodeToFqcn($nameNode, ?string $currentNamespace, $useMap, $isFunctionContext): string
     {
         if ($nameNode->hasAttribute('resolvedName') && $nameNode->getAttribute('resolvedName') instanceof Node\Name\FullyQualified) {
             return $nameNode->getAttribute('resolvedName')->toString();
@@ -105,7 +105,7 @@ class AstUtils
      * @param string $currentNamespace
      * @param mixed[] $useMap
      */
-    public function resolveStringToFqcn($name, $currentNamespace, $useMap): string
+    public function resolveStringToFqcn($name, ?string $currentNamespace, $useMap): string
     {
         if ($name === null || $name === '' || $name === '0') {
             return '';
@@ -204,7 +204,7 @@ class AstUtils
                                 false
                             );
 
-                            if ($returnedFqcn) {
+                            if ($returnedFqcn !== '' && $returnedFqcn !== '0') {
                                 // 4) Synthesize “ReturnedClass::outerMethod”
                                 return ltrim($returnedFqcn, '\\') . '::' . $callNode->name->toString();
                             }
@@ -233,7 +233,7 @@ class AstUtils
 
             // Walk up from the current method/function node to find the enclosing Class_ or Trait_ node.
             $parent = $callerFuncOrMethodNode;
-            while ($parent !== null && !($parent instanceof Class_ || $parent instanceof Node\Stmt\Trait_)) {
+            while ($parent !== null && (!$parent instanceof Class_ && !$parent instanceof Node\Stmt\Trait_)) {
                 $parent = $parent->getAttribute('parent');
             }
 
@@ -372,7 +372,7 @@ class AstUtils
                         continue;
                     }
 
-                    if ($paramFqcn) {
+                    if ($paramFqcn !== '' && $paramFqcn !== '0') {
                         // Successfully mapped $oneMoreClass → FQCN
                         return ltrim($paramFqcn, '\\') . '::' . $methodName;
                     }
@@ -413,11 +413,9 @@ class AstUtils
                         $pos = $assignNode->getStartFilePos() ?? -1;
                         $callPos = $callNode->getStartFilePos() ?? PHP_INT_MAX;
                         // Only consider assignments that happen earlier in the file than the call:
-                        if ($pos !== null && $pos < $callPos) {
-                            if ($pos > $bestPosition) {
-                                $bestPosition = $pos;
-                                $bestAssign   = $assignNode;
-                            }
+                        if ($pos !== null && $pos < $callPos && $pos > $bestPosition) {
+                            $bestPosition = $pos;
+                            $bestAssign   = $assignNode;
                         }
                     }
                 }
@@ -431,7 +429,7 @@ class AstUtils
                         $callerUseMap,
                         false
                     );
-                    if ($classFqcn) {
+                    if ($classFqcn !== '' && $classFqcn !== '0') {
                         return ltrim($classFqcn, '\\') . '::' . $methodName;
                     }
                 }
@@ -548,7 +546,7 @@ class AstUtils
                         $callerUseMap,
                         false
                     );
-                    if ($parentFqcn) {
+                    if ($parentFqcn !== '' && $parentFqcn !== '0') {
                         return ltrim($parentFqcn, '\\') . '::__construct';
                     }
                 }
@@ -640,7 +638,7 @@ class AstUtils
      * @param \PhpParser\Node $node        The node to check reachability for
      * @param \PhpParser\Node $boundary    Typically a function or method node
      */
-    public function isNodeAfterExecutionEndingStmt(Node $node, Node $boundary): bool
+    public function isNodeAfterExecutionEndingStmt($node, $boundary): bool
     {
         $current = $node;
         while ($current && $current !== $boundary) {
