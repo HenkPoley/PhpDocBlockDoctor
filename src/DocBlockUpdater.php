@@ -4,6 +4,7 @@ namespace HenkPoley\DocBlockDoctor;
 
 use PhpParser\NodeVisitorAbstract;
 use PhpParser\Node;
+use HenkPoley\DocBlockDoctor\AstUtils;
 
 class DocBlockUpdater extends NodeVisitorAbstract
 {
@@ -109,7 +110,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
         // Filter out any classes or interfaces that don’t actually exist
         $analyzedThrowsFqcns = array_filter(
             $analyzedThrowsFqcns,
-            static fn(string $fqcn): bool => class_exists($fqcn) || interface_exists($fqcn)
+            static fn(string $fqcn): bool => AstUtils::classOrInterfaceExistsNoAutoload($fqcn)
         );
         $analyzedThrowsFqcns = array_values($analyzedThrowsFqcns);
         sort($analyzedThrowsFqcns);

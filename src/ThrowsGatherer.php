@@ -7,6 +7,7 @@ use PhpParser\NodeFinder;
 use PhpParser\NodeVisitorAbstract;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
+use HenkPoley\DocBlockDoctor\AstUtils;
 
 class ThrowsGatherer extends NodeVisitorAbstract
 {
@@ -235,7 +236,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         }
         $filtered = array_filter(
             $fqcns,
-            static fn(string $fqcn): bool => class_exists($fqcn) || interface_exists($fqcn)
+            static fn(string $fqcn): bool => AstUtils::classOrInterfaceExistsNoAutoload($fqcn)
         );
         return array_values(array_unique($filtered));
     }
