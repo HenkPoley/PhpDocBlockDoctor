@@ -169,7 +169,8 @@ class AstUtils
                             false
                         );
                         if ($returnedFqcn !== '') {
-                            return ltrim($returnedFqcn, '\\') . '::' . $callNode->name->toString();
+                            $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
+                            return ltrim($returnedFqcn, '\\') . '::' . $methodName;
                         }
                     } elseif ($returnType instanceof Node\NullableType && $returnType->type instanceof Node\Name) {
                         $returnedFqcn = $this->resolveNameNodeToFqcn(
@@ -179,7 +180,8 @@ class AstUtils
                             false
                         );
                         if ($returnedFqcn !== '') {
-                            return ltrim($returnedFqcn, '\\') . '::' . $callNode->name->toString();
+                            $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
+                            return ltrim($returnedFqcn, '\\') . '::' . $methodName;
                         }
                     }
 
@@ -205,7 +207,8 @@ class AstUtils
 
                             if ($returnedFqcn !== '' && $returnedFqcn !== '0') {
                                 // 4) Synthesize “ReturnedClass::outerMethod”
-                                return ltrim($returnedFqcn, '\\') . '::' . $callNode->name->toString();
+                                $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
+                                return ltrim($returnedFqcn, '\\') . '::' . $methodName;
                             }
                         }
                     }
@@ -424,15 +427,17 @@ class AstUtils
                     // Resolve "new Something()" → FQCN
                     /** @var Node\Expr\New_ $newExpr */
                     $newExpr = $bestAssign->expr;
-                    $newClassNode = $newExpr->class; // a Node\Name
-                    $classFqcn    = $this->resolveNameNodeToFqcn(
-                        $newClassNode,
-                        $callerNamespace,
-                        $callerUseMap,
-                        false
-                    );
-                    if ($classFqcn !== '' && $classFqcn !== '0') {
-                        return ltrim($classFqcn, '\\') . '::' . $methodName;
+                    if ($newExpr->class instanceof Node\Name) {
+                        $newClassNode = $newExpr->class;
+                        $classFqcn    = $this->resolveNameNodeToFqcn(
+                            $newClassNode,
+                            $callerNamespace,
+                            $callerUseMap,
+                            false
+                        );
+                        if ($classFqcn !== '' && $classFqcn !== '0') {
+                            return ltrim($classFqcn, '\\') . '::' . $methodName;
+                        }
                     }
                 }
             }

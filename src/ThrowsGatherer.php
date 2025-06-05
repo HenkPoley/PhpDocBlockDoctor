@@ -102,7 +102,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         $docComment = $node->getDocComment();
         if ($docComment instanceof \PhpParser\Comment\Doc) {
             $docText = $docComment->getText();
-            $docLines = preg_split('/\R/u', $docText);
+            $docLines = preg_split('/\R/u', $docText) ?: [];
             $currentThrowsFqcnForDesc = null;
             $accumulatedDescription = "";
             foreach ($docLines as $docLineIdx => $docLine) {
@@ -236,6 +236,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         return array_values(array_unique($filtered));
     }
 
+    /** @param Node[] $stmts */
     private function getInstanceofTypesBeforeThrow(array $stmts, Node\Expr\Throw_ $throwExpr, string $varName): array
     {
         $types = [];
@@ -257,7 +258,9 @@ class ThrowsGatherer extends NodeVisitorAbstract
         $types = [];
         foreach ($matches as $ins) {
             /** @var Node\Expr\Instanceof_ $ins */
-            $types[] = $this->astUtils->resolveNameNodeToFqcn($ins->class, $this->currentNamespace, $this->useMap, false);
+            if ($ins->class instanceof Node\Name) {
+                $types[] = $this->astUtils->resolveNameNodeToFqcn($ins->class, $this->currentNamespace, $this->useMap, false);
+            }
         }
         return $types;
     }

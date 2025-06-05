@@ -39,7 +39,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
         if ($contentOnlyText === null) {
             return null;
         }
-        $contentLines = preg_split('/\R/u', $contentOnlyText);
+        $contentLines = preg_split('/\R/u', $contentOnlyText) ?: [];
         $actualContent = [];
         $hasMeaningfulContent = false;
         foreach ($contentLines as $line) {
@@ -117,7 +117,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
         $hasAnyContentForNewDocBlock = false;
 
         if ($docCommentNode instanceof \PhpParser\Comment\Doc) {
-            $originalLines = preg_split('/\R/u', $docCommentNode->getText());
+            $originalLines = preg_split('/\R/u', $docCommentNode->getText()) ?: [];
             $currentGenericTagLines = [];
             $isInsideGenericTag = false;
 
@@ -214,7 +214,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
         if ($docCommentNode instanceof \PhpParser\Comment\Doc) {
             $originalDocText = $docCommentNode->getText();
             $originalContentOnlyLines = [];
-            $lines = preg_split('/\R/u', $originalDocText);
+            $lines = preg_split('/\R/u', $originalDocText) ?: [];
             if (count($lines) > 1) {
                 for ($i = 1; $i < count($lines) - 1; $i++) {
                     $originalContentOnlyLines[] = preg_replace('/^\s*\*?\s?/', '', $lines[$i]);
@@ -230,7 +230,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
             $patchType = '';
             $patchStart = 0;
             $patchEnd = 0;
-            if ($finalNormalizedNewDocText === null && $originalNormalizedDocText !== null) {
+            if ($finalNormalizedNewDocText === null && $originalNormalizedDocText !== null && $docCommentNode instanceof \PhpParser\Comment\Doc) {
                 $patchType = 'remove';
                 $patchStart = $docCommentNode->getStartFilePos();
                 $patchEnd = $docCommentNode->getEndFilePos();
@@ -243,8 +243,13 @@ class DocBlockUpdater extends NodeVisitorAbstract
                     $patchEnd = $node->getStartFilePos() - 1; // No original length
                 } else {
                     $patchType = 'update';
-                    $patchStart = $docCommentNode->getStartFilePos();
-                    $patchEnd = $docCommentNode->getEndFilePos();
+                    if ($docCommentNode instanceof \PhpParser\Comment\Doc) {
+                        $patchStart = $docCommentNode->getStartFilePos();
+                        $patchEnd = $docCommentNode->getEndFilePos();
+                    } else {
+                        $patchStart = $node->getStartFilePos();
+                        $patchEnd = $node->getStartFilePos();
+                    }
                 }
             }
             if ($patchType !== '') {

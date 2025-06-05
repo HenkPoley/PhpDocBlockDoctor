@@ -59,7 +59,11 @@ class Application
 
         // Default to current working directory if no path provided
         if ($rootDir === null) {
-            $rootDir = getcwd();
+            $cwd = getcwd();
+            if ($cwd === false) {
+                throw new \RuntimeException('Cannot determine current working directory');
+            }
+            $rootDir = $cwd;
         }
 
         if ($verbose) {
@@ -358,7 +362,7 @@ class Application
                             if ($patch['type'] === 'add') {
                                 $replacementText = $indentedDocBlock . "\n";
                                 $lineStartPos    = strrpos(
-                                    substr($newFileContent, 0, $patch['patchStart']),
+                                    (string) substr($newFileContent, 0, $patch['patchStart']),
                                     "\n"
                                 );
                                 $currentAppliedPatchStartPos = ($lineStartPos !== false ? $lineStartPos + 1 : 0);
@@ -366,7 +370,7 @@ class Application
                             } else {
                                 $lf      = "\n";
                                 $upToSlash = substr($newFileContent, 0, $patch['patchStart']);
-                                $lastNl  = strrpos($upToSlash, $lf);
+                                $lastNl  = strrpos((string) $upToSlash, $lf);
                                 $lineStart = $lastNl === false ? 0 : $lastNl + 1;
 
                                 $currentAppliedPatchStartPos = $lineStart;
@@ -380,7 +384,7 @@ class Application
 
                             if ($currentAppliedPatchStartPos > 0) {
                                 $startOfLine = strrpos(
-                                    substr($newFileContent, 0, $currentAppliedPatchStartPos),
+                                    (string) substr($newFileContent, 0, $currentAppliedPatchStartPos),
                                     "\n"
                                 );
                                 $startOfLine = ($startOfLine === false) ? 0 : $startOfLine + 1;
@@ -389,7 +393,7 @@ class Application
                             }
 
                             $isDocBlockAlone = trim(
-                                    substr($newFileContent, $startOfLine,
+                                    (string) substr($newFileContent, $startOfLine,
                                         $currentAppliedPatchStartPos - $startOfLine
                                     )
                                 ) === '';

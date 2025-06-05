@@ -18,7 +18,7 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
         $this->printer = new PrettyPrinter\Standard();
     }
 
-    /** @param Node[] $nodes */
+    /** @param array $nodes */
     public function beforeTraverse(array $nodes)
     {
         $this->pendingPatches = [];
@@ -65,16 +65,16 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
             $phpPrefixSpaceNewline = "<?php \n";
 
             if (strncmp($replacementCode, $phpPrefixSpaceNewline, strlen($phpPrefixSpaceNewline)) === 0) {
-                $replacementCode = substr($replacementCode, strlen($phpPrefixSpaceNewline));
+                $replacementCode = (string) substr($replacementCode, strlen($phpPrefixSpaceNewline));
             } elseif (strncmp($replacementCode, $phpPrefixNewline, strlen($phpPrefixNewline)) === 0) {
-                $replacementCode = substr($replacementCode, strlen($phpPrefixNewline));
+                $replacementCode = (string) substr($replacementCode, strlen($phpPrefixNewline));
             } elseif (strncmp($replacementCode, $phpPrefixSpace, strlen($phpPrefixSpace)) === 0) {
-                $replacementCode = substr($replacementCode, strlen($phpPrefixSpace));
+                $replacementCode = (string) substr($replacementCode, strlen($phpPrefixSpace));
             }
 
             // Ensure it ends with a newline, as use statements are typically on their own line.
             // prettyPrint() on an array of statements usually adds this.
-            if (substr_compare($replacementCode, "\n", -strlen("\n")) !== 0) {
+            if (substr_compare((string) $replacementCode, "\n", -strlen("\n")) !== 0) {
                 $replacementCode .= "\n";
             }
 
