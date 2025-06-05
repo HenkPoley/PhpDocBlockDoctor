@@ -332,8 +332,15 @@ class Application
                         break;
                     }
 
-                    $lineEnding = strpos($currentFileContent, "\r\n") !== false ? "\r\n" : "\n";
-                    $originalLinesForIndent = explode("\n", $currentFileContent);
+                    if (strpos($currentFileContent, "\r\n") !== false) {
+                        $lineEnding = "\r\n";
+                    } elseif (strpos($currentFileContent, "\r") !== false) {
+                        $lineEnding = "\r";
+                    } else {
+                        $lineEnding = "\n";
+                    }
+                    $originalLinesForIndent = preg_split('/\R/u', $currentFileContent) ?: [];
+                    $newlineSearch = $lineEnding === "\r\n" ? "\n" : $lineEnding;
                     $patchesForFile = $docBlockUpdater->pendingPatches;
                     usort($patchesForFile, fn(array $a, array $b): int => $b['patchStart'] <=> $a['patchStart']);
 
@@ -362,12 +369,12 @@ class Application
                                 $replacementText = $indentedDocBlock . $lineEnding;
                                 $lineStartPos    = strrpos(
                                     (string) substr($newFileContent, 0, $patch['patchStart']),
-                                    "\n"
+                                    $newlineSearch
                                 );
                                 $currentAppliedPatchStartPos = ($lineStartPos !== false ? $lineStartPos + 1 : 0);
                                 $currentAppliedOriginalLength = 0;
                             } else {
-                                $lf      = "\n";
+                                $lf      = $newlineSearch;
                                 $upToSlash = substr($newFileContent, 0, $patch['patchStart']);
                                 $lastNl  = strrpos((string) $upToSlash, $lf);
                                 $lineStart = $lastNl === false ? 0 : $lastNl + 1;
@@ -384,7 +391,7 @@ class Application
                             if ($currentAppliedPatchStartPos > 0) {
                                 $startOfLine = strrpos(
                                     (string) substr($newFileContent, 0, $currentAppliedPatchStartPos),
-                                    "\n"
+                                    $newlineSearch
                                 );
                                 $startOfLine = ($startOfLine === false) ? 0 : $startOfLine + 1;
                             } else {
@@ -401,13 +408,8 @@ class Application
                                 ? $newFileContent[$patch['patchEnd'] + 1]
                                 : '';
                             $newlineLenAfter = 0;
-                            if ($charAfter === "\n") {
-                                $newlineLenAfter = 1;
-                            } elseif ($charAfter === "\r"
-                                && ($patch['patchEnd'] + 2 < strlen($newFileContent))
-                                && $newFileContent[$patch['patchEnd'] + 2] === "\n"
-                            ) {
-                                $newlineLenAfter = 2;
+                            if (substr($newFileContent, $patch['patchEnd'] + 1, strlen($lineEnding)) === $lineEnding) {
+                                $newlineLenAfter = strlen($lineEnding);
                             }
 
                             if ($isDocBlockAlone && $newlineLenAfter > 0) {
