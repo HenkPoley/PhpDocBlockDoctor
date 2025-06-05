@@ -31,7 +31,11 @@ Add to your `composer.json`:
 ## Commandline syntax
 
 ```shell
-php ./vendor/bin/doc-block-doctor <path>
+php ./vendor/bin/doc-block-doctor [options] <path>
+
+Options:
+  --read-dirs=DIRS   Comma-separated list of directories to read when gathering info (default: src,tests)
+  --write-dirs=DIRS  Comma-separated list of directories that may be modified (default: src)
 ```
 
 ## Result

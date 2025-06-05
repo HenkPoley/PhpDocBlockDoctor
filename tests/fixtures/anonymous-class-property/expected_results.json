@@ -1,0 +1,10 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\AnonymousClassProperty\\Store\\RedisStore::__construct": [
+      "RuntimeException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\AnonymousClassProperty\\RedisStoreTest::setUp": [
+      "RuntimeException"
+    ]
+  }
+}
