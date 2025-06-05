@@ -1,0 +1,13 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\CatchRootException\\Worker::doSomething": [
+      "Pitfalls\\CatchRootException\\MyException"
+    ],
+    "Pitfalls\\CatchRootException\\Wrapper::__construct": [
+      "Exception"
+    ],
+    "Pitfalls\\CatchRootException\\Runner::run": [
+      "Exception"
+    ]
+  }
+}

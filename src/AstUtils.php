@@ -618,6 +618,9 @@ class AstUtils
                             ) {
                                 return true;
                             }
+                        } elseif (!$thrownLoaded && $caughtLoaded && in_array($caughtTypeFqcn, ['Exception', 'Throwable'], true)) {
+                            // Assume broad catch types like \Exception or \Throwable catch unknown exceptions
+                            return true;
                         } elseif ($thrownFqcn === $caughtTypeFqcn) {
                             // Fallback when we cannot determine inheritance
                             return true;
