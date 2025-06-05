@@ -9,8 +9,8 @@ return RectorConfig::configure()
         __DIR__ . '/src',
     ])
     // uncomment to reach your current PHP version
-    ->withPhpSets(php71: true)
-    ->withDowngradeSets(php71: true)
+    ->withPhpSets(php74: true)
+    ->withDowngradeSets(php74: true)
     // ->withPreparedSets(typeDeclarations:true, deadCode: true, codeQuality: true)
     ->withTypeCoverageLevel(50) // max: 50
     ->withDeadCodeLevel(49) // max: 49

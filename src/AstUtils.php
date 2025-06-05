@@ -578,7 +578,7 @@ class AstUtils
         $throwNode,
         $thrownFqcn,
         $boundaryNode,
-        $currentNamespace,
+        ?string $currentNamespace,
         $useMap
     ): bool {
         $parent = $throwNode->getAttribute('parent');

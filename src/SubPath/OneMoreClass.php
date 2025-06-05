@@ -21,7 +21,7 @@ class OneMoreClass
     }
 
     /** Does not throw any exception by itself */
-    public function nonStaticFunction() {
+    public function nonStaticFunction(): \HenkPoley\DocBlockDoctor\SubPath\ThirdExampleClass {
         return new ThirdExampleClass();
     }
 

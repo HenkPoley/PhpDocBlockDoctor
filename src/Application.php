@@ -21,7 +21,7 @@ class Application
      *
      * @throws \LogicException
      */
-    public function run($argv): int
+    public function run(array $argv): int
     {
         // ------------------------------------------------------------
         // 1) First, check for help flags. If --help or -h is anywhere
@@ -294,9 +294,7 @@ class Application
                 if ($useSimplifierSurgical->pendingPatches !== []) {
                     $newCode = $codeAtStart;
                     $patches = $useSimplifierSurgical->pendingPatches;
-                    usort($patches, function (array $a, array $b): int {
-                        return $b['startPos'] <=> $a['startPos'];
-                    });
+                    usort($patches, fn(array $a, array $b): int => $b['startPos'] <=> $a['startPos']);
 
                     foreach ($patches as $patch) {
                         $newCode = substr_replace(
@@ -332,9 +330,7 @@ class Application
 
                     $originalLinesForIndent = explode("\n", $currentFileContent);
                     $patchesForFile = $docBlockUpdater->pendingPatches;
-                    usort($patchesForFile, function (array $a, array $b): int {
-                        return $b['patchStart'] <=> $a['patchStart'];
-                    });
+                    usort($patchesForFile, fn(array $a, array $b): int => $b['patchStart'] <=> $a['patchStart']);
 
                     $newFileContent = $currentFileContent;
                     foreach ($patchesForFile as $patch) {

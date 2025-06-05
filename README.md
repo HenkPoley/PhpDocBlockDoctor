@@ -33,7 +33,9 @@ It cannot track runtime dynamically attached class functions. To compensate it j
 
 Uses `nikic/php-parser` AST parser for PHP.
 
-It may run down to PHP 7.1, made sure using Rector 2.0.17 (`php composer global require rector/rector 2.0.17`), end of May 2025. But then you need to use php-parser 4.x.
+`nikic/php-parser` 5.x requires PHP 7.4 or higher, so DocBlockDoctor now
+needs at least PHP 7.4 to run. If you require PHP 7.1 compatibility you will
+have to rely on `php-parser` 4.x and an older Rector version.
 
 ## Backstory
 

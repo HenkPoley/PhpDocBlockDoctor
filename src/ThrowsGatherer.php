@@ -8,18 +8,9 @@ use PhpParser\NodeVisitorAbstract;
 
 class ThrowsGatherer extends NodeVisitorAbstract
 {
-    /**
-     * @var \PhpParser\NodeFinder
-     */
-    private $nodeFinder;
-    /**
-     * @var \HenkPoley\DocBlockDoctor\AstUtils
-     */
-    private $astUtils;
-    /**
-     * @var string
-     */
-    private $filePath;
+    private \PhpParser\NodeFinder $nodeFinder;
+    private \HenkPoley\DocBlockDoctor\AstUtils $astUtils;
+    private string $filePath;
     /**
      * @var string
      */
@@ -27,7 +18,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
     /**
      * @var mixed[]
      */
-    private $useMap = [];
+    private array $useMap = [];
 
     public function __construct(NodeFinder $nodeFinder, \HenkPoley\DocBlockDoctor\AstUtils $astUtils, string $filePath)
     {
@@ -51,9 +42,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         }
         \HenkPoley\DocBlockDoctor\GlobalCache::$fileNamespaces[$this->filePath] = $this->currentNamespace;
 
-        foreach ($this->nodeFinder->find($nodes, function (Node $n): bool {
-            return $n instanceof Node\Stmt\Use_ || $n instanceof Node\Stmt\GroupUse;
-        }) as $useNode) {
+        foreach ($this->nodeFinder->find($nodes, fn(Node $n): bool => $n instanceof Node\Stmt\Use_ || $n instanceof Node\Stmt\GroupUse) as $useNode) {
             if ($useNode instanceof Node\Stmt\Use_) {
                 if ($useNode->type !== Node\Stmt\Use_::TYPE_NORMAL) {
                     continue;
@@ -240,9 +229,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                 }
             }
         }
-        $filtered = array_filter($fqcns, function ($fqcn): bool {
-            return class_exists($fqcn) || interface_exists($fqcn);
-        });
+        $filtered = array_filter($fqcns, fn($fqcn): bool => class_exists($fqcn) || interface_exists($fqcn));
         return array_values(array_unique($filtered));
     }
 
@@ -251,9 +238,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         $types = [];
         foreach ($stmts as $stmt) {
             $types = array_merge($types, $this->findInstanceofTypes($stmt, $varName));
-            if ($this->nodeFinder->findFirst($stmt, static function (Node $n) use ($throwExpr): bool {
-                return $n === $throwExpr;
-            })) {
+            if ($this->nodeFinder->findFirst($stmt, static fn(Node $n): bool => $n === $throwExpr)) {
                 break;
             }
         }
@@ -262,12 +247,10 @@ class ThrowsGatherer extends NodeVisitorAbstract
 
     private function findInstanceofTypes(Node $node, string $varName): array
     {
-        $matches = $this->nodeFinder->find($node, static function (Node $n) use ($varName): bool {
-            return $n instanceof Node\Expr\Instanceof_
-                && $n->expr instanceof Node\Expr\Variable
-                && $n->expr->name === $varName
-                && $n->class instanceof Node\Name;
-        });
+        $matches = $this->nodeFinder->find($node, static fn(Node $n): bool => $n instanceof Node\Expr\Instanceof_
+            && $n->expr instanceof Node\Expr\Variable
+            && $n->expr->name === $varName
+            && $n->class instanceof Node\Name);
         $types = [];
         foreach ($matches as $ins) {
             $types[] = $this->astUtils->resolveNameNodeToFqcn($ins->class, $this->currentNamespace, $this->useMap, false);
