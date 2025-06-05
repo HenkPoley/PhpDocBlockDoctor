@@ -107,6 +107,13 @@ class DocBlockUpdaterIntegrationTest extends TestCase
 
         // 5) Apply textual patches collected by DocBlockUpdater so we compare exact source formatting
         $patchedCode = $code;
+        if (strpos($code, "\r\n") !== false) {
+            $lineEnding = "\r\n";
+        } elseif (strpos($code, "\r") !== false) {
+            $lineEnding = "\r";
+        } else {
+            $lineEnding = "\n";
+        }
         $patches     = $docUpd->pendingPatches;
         usort($patches, static fn(array $a, array $b): int => $b['patchStart'] <=> $a['patchStart']);
 
@@ -125,7 +132,7 @@ class DocBlockUpdaterIntegrationTest extends TestCase
                 foreach ($lines as &$l) {
                     $l = $indent . $l;
                 }
-                $replacement = implode("\n", $lines);
+                $replacement = implode($lineEnding, $lines);
                 $length      = $p['patchEnd'] - $startPos + 1;
             } else { // 'add'
                 $lineStartPos = strrpos($patchedCode, "\n", -strlen($patchedCode) + $p['patchStart']);
@@ -137,7 +144,7 @@ class DocBlockUpdaterIntegrationTest extends TestCase
                 foreach ($lines as &$l) {
                     $l = $indent . $l;
                 }
-                $replacement = implode("\n", $lines) . "\n";
+                $replacement = implode($lineEnding, $lines) . $lineEnding;
                 $length      = 0;
             }
 
