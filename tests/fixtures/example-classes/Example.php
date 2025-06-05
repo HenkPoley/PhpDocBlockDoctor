@@ -1,11 +1,11 @@
 <?php
 
-// src/Example.php
-namespace HenkPoley\DocBlockDoctor;
+// tests/fixtures/example-classes/Example.php
+namespace HenkPoley\DocBlockDoctor\TestFixtures\ExampleClasses;
 
 use Exception;
-use HenkPoley\DocBlockDoctor\SubPath\OneMoreClass;
-use HenkPoley\DocBlockDoctor\SubPath\ThirdExampleClass;
+use HenkPoley\DocBlockDoctor\TestFixtures\ExampleClasses\SubPath\OneMoreClass;
+use HenkPoley\DocBlockDoctor\TestFixtures\ExampleClasses\SubPath\ThirdExampleClass;
 use LogicException;
 
 class Example
