@@ -25,5 +25,8 @@
 		"phpunit/phpunit": "^11",
 		"rector/rector": "^2.0",
 		"vimeo/psalm": "6.4.0"
+	},
+	"scripts": {
+		"doctor-heal-thyself": "@php ./bin/doc-block-doctor --read-dirs=bin,src,vendor,tests --write-dirs=bin,src,tests/Unit,tests/NewIntegration"
 	}
 }
