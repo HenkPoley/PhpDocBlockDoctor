@@ -23,6 +23,11 @@ class ThrowsResolutionIntegrationTest extends TestCase
     #[DataProvider('fixtureProvider')]
     public function testResolvedThrowsMatchFixture(string $scenario): void
     {
+        // Register an autoloader so class existence checks succeed for fixtures
+        $loader = new \Composer\Autoload\ClassLoader();
+        $loader->addPsr4('Pitfalls\\', __DIR__ . '/../fixtures');
+        $loader->register(false);
+
         $fixtureRoot = __DIR__ . '/../fixtures/' . $scenario;
 
         $phpFiles = [];

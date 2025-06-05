@@ -131,4 +131,44 @@ class ThrowsGathererTest extends TestCase
             GlobalCache::$directThrows[$key]
         );
     }
+
+    /**
+     * @throws \LogicException
+     */
+    public function testCalculateDirectThrowsCaughtByRootException(): void
+    {
+        $code = <<<'PHP'
+        <?php
+        namespace Pitfalls\CatchRootException;
+        class C {
+            public function foo(): void {
+                try {
+                    throw new MyException('fail');
+                } catch (\Exception $e) {
+                    throw new \Exception('wrap');
+                }
+            }
+        }
+        PHP;
+
+        $loader = new \Composer\Autoload\ClassLoader();
+        $loader->addPsr4('Pitfalls\\CatchRootException\\', __DIR__ . '/../fixtures/catch-root-exception');
+        $loader->register(false);
+
+        $parser   = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast      = $parser->parse($code) ?: [];
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
+        $traverser->addVisitor(new ParentConnectingVisitor());
+        $tg = new ThrowsGatherer($this->finder, $this->utils, 'dummyPath');
+        $traverser->addVisitor($tg);
+        $traverser->traverse($ast);
+
+        $key = 'Pitfalls\\CatchRootException\\C::foo';
+        $this->assertArrayHasKey($key, GlobalCache::$directThrows);
+        $this->assertEqualsCanonicalizing(
+            ['Exception'],
+            GlobalCache::$directThrows[$key]
+        );
+    }
 }
