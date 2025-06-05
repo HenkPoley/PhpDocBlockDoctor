@@ -127,7 +127,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                     $resolvedFqcnForAnnotation = $this->astUtils->resolveStringToFqcn($exceptionNameInAnnotation, $this->currentNamespace, $this->useMap);
                     $currentThrowsFqcnForDesc = $resolvedFqcnForAnnotation;
                     $accumulatedDescription = trim($matches[2]);
-                    if ($resolvedFqcnForAnnotation) {
+                    if ($resolvedFqcnForAnnotation !== '' && $resolvedFqcnForAnnotation !== '0') {
                         $currentAnnotatedThrowsFqcns[] = $resolvedFqcnForAnnotation;
                     }
 
@@ -247,7 +247,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         $types = [];
         foreach ($stmts as $stmt) {
             $types = array_merge($types, $this->findInstanceofTypes($stmt, $varName));
-            if ($this->nodeFinder->findFirst($stmt, static fn(Node $n): bool => $n === $throwExpr)) {
+            if ($this->nodeFinder->findFirst($stmt, static fn(Node $n): bool => $n === $throwExpr) instanceof \PhpParser\Node) {
                 break;
             }
         }

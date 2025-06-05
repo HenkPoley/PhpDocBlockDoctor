@@ -52,13 +52,13 @@ class Application
                 continue;
             }
 
-            if (str_starts_with($arg, '--read-dirs=')) {
+            if (strncmp($arg, '--read-dirs=', strlen('--read-dirs=')) === 0) {
                 $dirs     = substr($arg, 12);
                 $readDirs = array_filter(array_map('trim', explode(',', $dirs)));
                 continue;
             }
 
-            if (str_starts_with($arg, '--write-dirs=')) {
+            if (strncmp($arg, '--write-dirs=', strlen('--write-dirs=')) === 0) {
                 $dirs      = substr($arg, 13);
                 $writeDirs = array_filter(array_map('trim', explode(',', $dirs)));
                 continue;
@@ -93,8 +93,8 @@ class Application
                 $readDirs[] = $rootDir;
             }
         } else {
-            $readDirs = array_map(function (string $d) use ($rootDir) {
-                if (!str_starts_with($d, DIRECTORY_SEPARATOR) && !preg_match('/^[A-Za-z]:\\\\/', $d)) {
+            $readDirs = array_map(function (string $d) use ($rootDir): string {
+                if (strncmp($d, DIRECTORY_SEPARATOR, strlen(DIRECTORY_SEPARATOR)) !== 0 && !preg_match('/^[A-Za-z]:\\\\/', $d)) {
                     return $rootDir . DIRECTORY_SEPARATOR . $d;
                 }
                 return $d;
@@ -111,8 +111,8 @@ class Application
                 $writeDirs = $readDirs;
             }
         } else {
-            $writeDirs = array_map(function (string $d) use ($rootDir) {
-                if (!str_starts_with($d, DIRECTORY_SEPARATOR) && !preg_match('/^[A-Za-z]:\\\\/', $d)) {
+            $writeDirs = array_map(function (string $d) use ($rootDir): string {
+                if (strncmp($d, DIRECTORY_SEPARATOR, strlen(DIRECTORY_SEPARATOR)) !== 0 && !preg_match('/^[A-Za-z]:\\\\/', $d)) {
                     return $rootDir . DIRECTORY_SEPARATOR . $d;
                 }
                 return $d;
@@ -304,7 +304,7 @@ class Application
             }
             foreach ($writeDirs as $dir) {
                 $dirReal = realpath($dir);
-                if ($dirReal !== false && (str_starts_with($realPath, $dirReal . DIRECTORY_SEPARATOR) || $realPath === $dirReal)) {
+                if ($dirReal !== false && (strncmp($realPath, $dirReal . DIRECTORY_SEPARATOR, strlen($dirReal . DIRECTORY_SEPARATOR)) === 0 || $realPath === $dirReal)) {
                     return true;
                 }
             }
@@ -440,7 +440,7 @@ class Application
                             if ($patch['type'] === 'add') {
                                 $replacementText = $indentedDocBlock . $lineEnding;
                                 $lineStartPos    = strrpos(
-                                    (string) substr($newFileContent, 0, $patch['patchStart']),
+                                    substr($newFileContent, 0, $patch['patchStart']),
                                     $newlineSearch
                                 );
                                 $currentAppliedPatchStartPos = ($lineStartPos !== false ? $lineStartPos + 1 : 0);
@@ -448,7 +448,7 @@ class Application
                             } else {
                                 $lf      = $newlineSearch;
                                 $upToSlash = substr($newFileContent, 0, $patch['patchStart']);
-                                $lastNl  = strrpos((string) $upToSlash, $lf);
+                                $lastNl  = strrpos($upToSlash, $lf);
                                 $lineStart = $lastNl === false ? 0 : $lastNl + 1;
 
                                 $currentAppliedPatchStartPos = $lineStart;
@@ -462,7 +462,7 @@ class Application
 
                             if ($currentAppliedPatchStartPos > 0) {
                                 $startOfLine = strrpos(
-                                    (string) substr($newFileContent, 0, $currentAppliedPatchStartPos),
+                                    substr($newFileContent, 0, $currentAppliedPatchStartPos),
                                     $newlineSearch
                                 );
                                 $startOfLine = ($startOfLine === false) ? 0 : $startOfLine + 1;
@@ -471,7 +471,7 @@ class Application
                             }
 
                             $isDocBlockAlone = trim(
-                                    (string) substr($newFileContent, $startOfLine,
+                                    substr($newFileContent, $startOfLine,
                                         $currentAppliedPatchStartPos - $startOfLine
                                     )
                                 ) === '';

@@ -700,9 +700,6 @@ class AstUtils
 
     /**
      * Find the class in the inheritance chain that declares the given method.
-     *
-     * @param string $classFqcn
-     * @param string $method
      */
     private function findDeclaringClassForMethod(
         string $classFqcn,
