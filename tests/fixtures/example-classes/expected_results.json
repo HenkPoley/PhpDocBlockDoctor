@@ -1,0 +1,47 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ExampleClasses\\Example::one": [
+      "Exception",
+      "LogicException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ExampleClasses\\Example::two": [
+      "LogicException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ExampleClasses\\Example::three": [
+      "Exception"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ExampleClasses\\Example::usesFunctionOnObjectReturnedFromCallToClassVariable": [
+      "ErrorException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ExampleClasses\\Example::usesFunctionOnClassVariable": [
+      "UnderflowException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ExampleClasses\\Example::functionVariable": [
+      "UnderflowException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ExampleClasses\\Example::callOnNewObject": [
+      "ErrorException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ExampleClasses\\Example::surelyThisReturnsAnObject": [],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ExampleClasses\\Example::weTrustReturnAnnotations": [],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ExampleClasses\\SubPath\\ClassThatThowsOnInstatiation::__construct": [
+      "BadMethodCallException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ExampleClasses\\SubPath\\ClassThatThowsOnInstatiation::instantiateSelf": [
+      "BadMethodCallException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ExampleClasses\\SubPath\\OneMoreClass::aFunction": [
+      "LogicException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ExampleClasses\\SubPath\\OneMoreClass::bFunction": [
+      "LogicException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ExampleClasses\\SubPath\\OneMoreClass::nonStaticFunction": [],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ExampleClasses\\SubPath\\OneMoreClass::nonStaticFunctionThatThrows": [
+      "UnderflowException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ExampleClasses\\SubPath\\ThirdExampleClass::someOtherNonStaticFunction": [
+      "ErrorException"
+    ]
+  }
+}

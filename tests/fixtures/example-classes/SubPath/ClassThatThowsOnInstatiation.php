@@ -1,6 +1,7 @@
 <?php
 
-namespace HenkPoley\DocBlockDoctor\SubPath;
+// tests/fixtures/example-classes/SubPath/ClassThatThowsOnInstatiation.php
+namespace HenkPoley\DocBlockDoctor\TestFixtures\ExampleClasses\SubPath;
 
 class ClassThatThowsOnInstatiation
 {

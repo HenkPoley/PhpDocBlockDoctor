@@ -1,6 +1,7 @@
 <?php
 
-namespace HenkPoley\DocBlockDoctor\SubPath;
+// tests/fixtures/example-classes/SubPath/ThirdExampleClass.php
+namespace HenkPoley\DocBlockDoctor\TestFixtures\ExampleClasses\SubPath;
 
 class ThirdExampleClass
 {
