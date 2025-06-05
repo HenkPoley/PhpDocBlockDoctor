@@ -89,6 +89,9 @@ class Application
             if (is_dir($rootDir . DIRECTORY_SEPARATOR . 'tests')) {
                 $readDirs[] = $rootDir . DIRECTORY_SEPARATOR . 'tests';
             }
+            if (is_dir($rootDir . DIRECTORY_SEPARATOR . 'vendor')) {
+                $readDirs[] = $rootDir . DIRECTORY_SEPARATOR . 'vendor';
+            }
             if ($readDirs === []) {
                 $readDirs[] = $rootDir;
             }
