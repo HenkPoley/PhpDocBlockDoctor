@@ -21,11 +21,11 @@ use HenkPoley\DocBlockDoctor\DocBlockUpdater;
  */
 class DocBlockUpdaterIntegrationTest extends TestCase
 {
-    public function testRewrittenDocblocksMatchExpected(): void
+    #[\PHPUnit\Framework\Attributes\DataProvider('fixtureProvider')]
+    public function testRewrittenDocblocksMatchExpected(string $scenario, string $fileName): void
     {
-        // Use the constructor-throws fixture to validate docblock rewriting
-        $fixtureDir = __DIR__ . '/../fixtures/constructor-throws';
-        $inputFile  = $fixtureDir . '/ThrowsInConstructor.php';
+        $fixtureDir = __DIR__ . '/../fixtures/' . $scenario;
+        $inputFile  = $fixtureDir . '/' . $fileName;
         $expectedOut = $fixtureDir . '/expected_rewritten.php';
 
         // 1) Read input
@@ -158,5 +158,13 @@ class DocBlockUpdaterIntegrationTest extends TestCase
         $expectedCode = file_get_contents($expectedOut);
         $this->assertNotFalse($expectedCode);
         $this->assertSame($expectedCode, $patchedCode, 'Rewritten code did not match expected for docblock rewrite');
+    }
+
+    public static function fixtureProvider(): array
+    {
+        return [
+            ['constructor-throws', 'ThrowsInConstructor.php'],
+            ['single-line-method-docblock', 'InlineDocblock.php'],
+        ];
     }
 }
