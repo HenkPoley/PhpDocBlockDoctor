@@ -7,18 +7,18 @@ namespace HenkPoley\DocBlockDoctor\TestFixtures\ConstructorThrows;
 
 class ThrowsInConstructor
 {
-        /**
+    /**
      * @throws \LogicException
      */
-public function __construct()
+    public function __construct()
     {
         throw new \LogicException("fail");
     }
 
-        /**
+    /**
      * @throws \LogicException
      */
-public function createAndCall()
+    public function createAndCall()
     {
         $obj = new ThrowsInConstructor();
         $obj->someMethod();
