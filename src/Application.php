@@ -294,7 +294,12 @@ class Application
                                 if (!isset($originsFromCallees[$ex])) {
                                     $originsFromCallees[$ex] = [];
                                 }
-                                $originsFromCallees[$ex] = array_merge($originsFromCallees[$ex], $orig);
+                                foreach ($orig as $chain) {
+                                    $newChain = $chain;
+                                    $insertPos = count($newChain) - 1;
+                                    array_splice($newChain, $insertPos, 0, [$funcKey]);
+                                    $originsFromCallees[$ex][] = $newChain;
+                                }
                             }
                         }
                     }
@@ -311,7 +316,7 @@ class Application
                     $newOrigins[$ex] = array_merge($newOrigins[$ex], $list);
                 }
                 foreach ($newOrigins as $ex => $list) {
-                    $newOrigins[$ex] = array_values(array_unique($list));
+                    $newOrigins[$ex] = array_values(array_map('unserialize', array_unique(array_map('serialize', $list))));
                 }
 
                 $oldThrows = GlobalCache::$resolvedThrows[$funcKey] ?? [];
@@ -598,7 +603,7 @@ Options:
   -v, --verbose    Enable verbose output (show each file being processed)
   --read-dirs=DIRS   Comma-separated list of directories to read
   --write-dirs=DIRS  Comma-separated list of directories to update
-  --trace-throw-origins  Replace @throws descriptions with origin locations
+  --trace-throw-origins  Replace @throws descriptions with origin locations and call chain
 
 Arguments:
   <path>           Path to a file or directory to process.

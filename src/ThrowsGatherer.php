@@ -208,7 +208,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                     )) {
                         $fqcns[] = $thrownFqcn;
                         $loc = $this->filePath . ':' . $throwExpr->getStartLine();
-                        \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn][] = $loc;
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn][] = [$funcKey, $loc];
                     }
                 } elseif ($newExpr->class instanceof Node\Expr\Variable) {
                     $varName = $newExpr->class->name;
@@ -227,7 +227,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                         )) {
                             $fqcns[] = $classFqcn;
                             $loc = $this->filePath . ':' . $throwExpr->getStartLine();
-                            \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$classFqcn][] = $loc;
+                            \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$classFqcn][] = [$funcKey, $loc];
                         }
                     }
                 }
@@ -253,7 +253,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                                 if (!$this->astUtils->isExceptionCaught($throwExpr, $thrownFqcn, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
                                     $fqcns[] = $thrownFqcn;
                                     $loc = $this->filePath . ':' . $throwExpr->getStartLine();
-                                    \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn][] = $loc;
+                                    \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn][] = [$funcKey, $loc];
                                 }
                             }
                         }
@@ -262,7 +262,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                             if (!$this->astUtils->isExceptionCaught($throwExpr, $fq, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
                                 $fqcns[] = $fq;
                                 $loc = $this->filePath . ':' . $throwExpr->getStartLine();
-                                \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq][] = $loc;
+                                \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq][] = [$funcKey, $loc];
                             }
                         }
                     } else {
@@ -271,7 +271,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                             if (!$this->astUtils->isExceptionCaught($throwExpr, $fq, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
                                 $fqcns[] = $fq;
                                 $loc = $this->filePath . ':' . $throwExpr->getStartLine();
-                                \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq][] = $loc;
+                                \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq][] = [$funcKey, $loc];
                             }
                         }
                     }
@@ -284,7 +284,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
         );
 
         foreach (\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey] as $ex => $origins) {
-            \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$ex] = array_values(array_unique($origins));
+            $unique = array_values(array_map('unserialize', array_unique(array_map('serialize', $origins))));
+            \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$ex] = $unique;
         }
 
         return array_values(array_unique($filtered));

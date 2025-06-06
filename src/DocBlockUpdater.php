@@ -195,8 +195,11 @@ class DocBlockUpdater extends NodeVisitorAbstract
                 // tombstone("ERROR: NoValue - src/DocBlockUpdater.php:188:46 - All possible types for this assignment were invalidated - This may be dead code (see https://psalm.dev/179)");
                 $fqcnWithBackslash = '\\' . ltrim((string)$fqcn, '\\');
                 if ($this->traceOrigins) {
-                    $origins = \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$nodeKey][$fqcn] ?? [];
-                    $description = implode(', ', $origins);
+                    $originChains = \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$nodeKey][$fqcn] ?? [];
+                    $originStrings = array_map(static function (array $chain): string {
+                        return implode(' <- ', $chain);
+                    }, $originChains);
+                    $description = implode(', ', $originStrings);
                 } else {
                     $description = $originalNodeDescriptions[$fqcn] ?? ($originalNodeDescriptions[ltrim((string)$fqcn, '\\')] ?? '');
                 }

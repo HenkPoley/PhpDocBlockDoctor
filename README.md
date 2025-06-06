@@ -36,7 +36,7 @@ php ./vendor/bin/doc-block-doctor [options] <path>
 Options:
   --read-dirs=DIRS   Comma-separated list of directories to read when gathering info (default: src,tests)
   --write-dirs=DIRS  Comma-separated list of directories that may be modified (default: src)
-  --trace-throw-origins  Replace @throws descriptions with origin locations
+  --trace-throw-origins  Replace @throws descriptions with origin locations and call chain
 ```
 
 ## Result

@@ -51,7 +51,7 @@ class TraceOriginsTest extends TestCase
 
         $this->assertNotEmpty($updater->pendingPatches);
         $patch = $updater->pendingPatches[0];
-        $this->assertStringContainsString('@throws \\RuntimeException dummy.php:3', $patch['newDocText']);
+        $this->assertStringContainsString('@throws \\RuntimeException foo <- dummy.php:3', $patch['newDocText']);
     }
 }
 
