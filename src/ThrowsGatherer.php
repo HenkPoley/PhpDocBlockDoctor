@@ -188,9 +188,38 @@ class ThrowsGatherer extends NodeVisitorAbstract
             if ($throwExpr->expr instanceof Node\Expr\New_) {
                 $newExpr = $throwExpr->expr;
                 if ($newExpr->class instanceof Node\Name) {
-                    $thrownFqcn = $this->astUtils->resolveNameNodeToFqcn($newExpr->class, $this->currentNamespace, $this->useMap, false);
-                    if (!$this->astUtils->isExceptionCaught($throwExpr, $thrownFqcn, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
+                    $thrownFqcn = $this->astUtils->resolveNameNodeToFqcn(
+                        $newExpr->class,
+                        $this->currentNamespace,
+                        $this->useMap,
+                        false
+                    );
+                    if (!$this->astUtils->isExceptionCaught(
+                        $throwExpr,
+                        $thrownFqcn,
+                        $funcOrMethodNode,
+                        $this->currentNamespace,
+                        $this->useMap
+                    )) {
                         $fqcns[] = $thrownFqcn;
+                    }
+                } elseif ($newExpr->class instanceof Node\Expr\Variable) {
+                    $varName = $newExpr->class->name;
+                    if (is_string($varName)) {
+                        $classFqcn = $this->findClassStringAssignment(
+                            $funcOrMethodNode->stmts,
+                            $newExpr,
+                            $varName
+                        );
+                        if ($classFqcn !== null && !$this->astUtils->isExceptionCaught(
+                            $throwExpr,
+                            $classFqcn,
+                            $funcOrMethodNode,
+                            $this->currentNamespace,
+                            $this->useMap
+                        )) {
+                            $fqcns[] = $classFqcn;
+                        }
                     }
                 }
             } elseif ($throwExpr->expr instanceof Node\Expr\Variable) {
@@ -275,5 +304,48 @@ class ThrowsGatherer extends NodeVisitorAbstract
             }
         }
         return $types;
+    }
+
+    /**
+     * Find the class-string assignment for a variable prior to the given node.
+     *
+     * @param Node[] $stmts
+     */
+    private function findClassStringAssignment(array $stmts, Node $reference, string $varName): ?string
+    {
+        $assigns = $this->nodeFinder->findInstanceOf($stmts, Node\Expr\Assign::class);
+        $bestPos = -1;
+        $bestFqcn = null;
+        foreach ($assigns as $assign) {
+            if ($assign->var instanceof Node\Expr\Variable && $assign->var->name === $varName) {
+                $pos = $assign->getStartFilePos() ?? -1;
+                $refPos = $reference->getStartFilePos() ?? 0;
+                if ($pos >= $refPos) {
+                    continue;
+                }
+                if ($pos > $bestPos) {
+                    if ($assign->expr instanceof Node\Expr\ClassConstFetch
+                        && $assign->expr->class instanceof Node\Name
+                        && $assign->expr->name instanceof Node\Identifier
+                        && $assign->expr->name->toLowerString() === 'class') {
+                        $bestFqcn = $this->astUtils->resolveNameNodeToFqcn(
+                            $assign->expr->class,
+                            $this->currentNamespace,
+                            $this->useMap,
+                            false
+                        );
+                        $bestPos = $pos;
+                    } elseif ($assign->expr instanceof Node\Scalar\String_) {
+                        $bestFqcn = $this->astUtils->resolveStringToFqcn(
+                            $assign->expr->value,
+                            $this->currentNamespace,
+                            $this->useMap
+                        );
+                        $bestPos = $pos;
+                    }
+                }
+            }
+        }
+        return $bestFqcn;
     }
 }
