@@ -6,7 +6,6 @@
     "Pitfalls\\ThrowClassString\\ThingThatCalls::second": [
       "BadMethodCallException"
     ],
-    ,
     "Pitfalls\\ThrowClassString\\ThingThatCalls::third": [
       "DivisionByZeroError"
     ]
