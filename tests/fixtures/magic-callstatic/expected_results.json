@@ -1,0 +1,10 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\MagicStaticCall\\Assert::__callStatic": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\MagicStaticCall\\User::doAssert": [
+      "RuntimeException"
+    ]
+  }
+}
