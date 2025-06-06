@@ -64,4 +64,50 @@ class AutoloadingTest extends TestCase
         // Non-existent classes should be filtered out
         $this->assertSame([], GlobalCache::$directThrows['foo'] ?? []);
     }
+
+    /**
+     * @throws \LogicException
+     */
+    public function testThrowsGathererDoesNotAutoloadVendorClasses(): void
+    {
+
+        $code = "<?php
+use Vend\\ChildException;
+use Vend\\ParentException;
+function fooVendor() {
+    try {
+        throw new ChildException();
+    } catch (ParentException \$e) {
+    }
+}
+";
+        // Prepare a Composer class loader that points to a directory containing
+        // "vendor" in its path, simulating third-party dependencies.
+        $loader = new class extends \Composer\Autoload\ClassLoader {
+            public bool $loaded = false;
+            public function loadClass($class)
+            {
+                $this->loaded = true;
+                return parent::loadClass($class);
+            }
+        };
+        $loader->addPsr4('Vend\\', __DIR__ . '/../unit_fixtures/vendor-catch/vendor/Vend');
+        $loader->register(false);
+
+        try {
+            $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+            $ast = $parser->parse($code) ?: [];
+            $traverser = new NodeTraverser();
+            $traverser->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
+            $traverser->addVisitor(new ParentConnectingVisitor());
+            $tg = new ThrowsGatherer($this->finder, $this->utils, 'dummy');
+            $traverser->addVisitor($tg);
+            $traverser->traverse($ast);
+        } finally {
+            $loader->unregister();
+        }
+
+        // The vendor class loader should not have been triggered.
+        $this->assertFalse($loader->loaded, 'Vendor classes should not be autoloaded');
+    }
 }

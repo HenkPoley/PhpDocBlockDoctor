@@ -644,17 +644,20 @@ class AstUtils
                         $thrownLoaded = class_exists($thrownFqcn, false);
                         $caughtLoaded = class_exists($caughtTypeFqcn, false);
                         if ($thrownLoaded && $caughtLoaded) {
-                            if ($thrownFqcn === $caughtTypeFqcn
-                                || is_subclass_of($thrownFqcn, $caughtTypeFqcn)
+                            if (
+                                $thrownFqcn === $caughtTypeFqcn ||
+                                is_subclass_of($thrownFqcn, $caughtTypeFqcn)
                             ) {
                                 return true;
                             }
                         } elseif (
-                            self::classOrInterfaceExistsNoAutoload($thrownFqcn)
-                            && self::classOrInterfaceExistsNoAutoload($caughtTypeFqcn)
-                            && is_a($thrownFqcn, $caughtTypeFqcn, true)
+                            self::classOrInterfaceExistsNoAutoload($thrownFqcn) &&
+                            self::classOrInterfaceExistsNoAutoload($caughtTypeFqcn) &&
+                            !self::classFileIsInVendor($thrownFqcn) &&
+                            !self::classFileIsInVendor($caughtTypeFqcn) &&
+                            is_a($thrownFqcn, $caughtTypeFqcn, true)
                         ) {
-                            // Use autoload to inspect class hierarchy
+                            // Use autoload to inspect class hierarchy for non-vendor classes
                             return true;
                         } elseif ($thrownFqcn === $caughtTypeFqcn) {
                             // Fallback when we cannot determine inheritance
@@ -729,6 +732,27 @@ class AstUtils
                 /** @var ClassLoader $loader */
                 $loader = $fn[0];
                 if ($loader->findFile($fqcn)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Determine if a class would be loaded from a vendor directory.
+     */
+    public static function classFileIsInVendor(string $fqcn): bool
+    {
+        foreach (spl_autoload_functions() as $fn) {
+            if (is_array($fn) && $fn[0] instanceof ClassLoader) {
+                /** @var ClassLoader $loader */
+                $loader = $fn[0];
+                $file   = $loader->findFile($fqcn);
+                if (
+                    $file &&
+                    strpos($file, DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR) !== false
+                ) {
                     return true;
                 }
             }
