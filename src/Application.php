@@ -38,10 +38,11 @@ class Application
         // ------------------------------------------------------------
         // 2) Next, parse --verbose and directory options.
         // ------------------------------------------------------------
-        $verbose    = false;
-        $rootDir    = null;
-        $readDirs   = null;
-        $writeDirs  = null;
+        $verbose       = false;
+        $traceOrigins  = false;
+        $rootDir       = null;
+        $readDirs      = null;
+        $writeDirs     = null;
         $counter    = count($argv);
 
         for ($i = 1; $i < $counter; $i++) {
@@ -49,6 +50,11 @@ class Application
 
             if ($arg === '--verbose' || $arg === '-v') {
                 $verbose = true;
+                continue;
+            }
+
+            if ($arg === '--trace-throw-origins') {
+                $traceOrigins = true;
                 continue;
             }
 
@@ -238,6 +244,14 @@ class Application
             $initial   = array_values(array_unique(array_merge($direct, $annotated)));
             sort($initial);
             GlobalCache::$resolvedThrows[$funcKey] = $initial;
+            if (!isset(GlobalCache::$throwOrigins[$funcKey])) {
+                GlobalCache::$throwOrigins[$funcKey] = [];
+            }
+            foreach (array_merge($direct, $annotated) as $ex) {
+                if (!isset(GlobalCache::$throwOrigins[$funcKey][$ex])) {
+                    GlobalCache::$throwOrigins[$funcKey][$ex] = [];
+                }
+            }
         }
 
         $maxGlobalIterations   = count(GlobalCache::$astNodeMap) + 5;
@@ -258,6 +272,7 @@ class Application
                 )));
 
                 $throwsFromCallees = [];
+                $originsFromCallees = [];
                 if (isset($funcNode->stmts) && is_array($funcNode->stmts)) {
                     $callNodes = array_merge(
                         $nodeFinder->findInstanceOf($funcNode->stmts, Node\Expr\MethodCall::class),
@@ -273,7 +288,14 @@ class Application
                         $calleeKey = $astUtils->getCalleeKey($callNode, $callerNamespace, $callerUseMap, $funcNode);
                         if ($calleeKey && $calleeKey !== $funcKey) {
                             $exceptionsFromCallee = GlobalCache::$resolvedThrows[$calleeKey] ?? [];
-                            $throwsFromCallees = array_merge($throwsFromCallees, $exceptionsFromCallee);
+                            foreach ($exceptionsFromCallee as $ex) {
+                                $throwsFromCallees[] = $ex;
+                                $orig = GlobalCache::$throwOrigins[$calleeKey][$ex] ?? [];
+                                if (!isset($originsFromCallees[$ex])) {
+                                    $originsFromCallees[$ex] = [];
+                                }
+                                $originsFromCallees[$ex] = array_merge($originsFromCallees[$ex], $orig);
+                            }
                         }
                     }
                 }
@@ -281,9 +303,22 @@ class Application
                 $newThrows = array_values(array_unique(array_merge($baseThrows, $throwsFromCallees)));
                 sort($newThrows);
 
+                $newOrigins = GlobalCache::$throwOrigins[$funcKey] ?? [];
+                foreach ($originsFromCallees as $ex => $list) {
+                    if (!isset($newOrigins[$ex])) {
+                        $newOrigins[$ex] = [];
+                    }
+                    $newOrigins[$ex] = array_merge($newOrigins[$ex], $list);
+                }
+                foreach ($newOrigins as $ex => $list) {
+                    $newOrigins[$ex] = array_values(array_unique($list));
+                }
+
                 $oldThrows = GlobalCache::$resolvedThrows[$funcKey] ?? [];
-                if ($newThrows !== $oldThrows) {
+                $oldOrigins = GlobalCache::$throwOrigins[$funcKey] ?? [];
+                if ($newThrows !== $oldThrows || $newOrigins !== $oldOrigins) {
                     GlobalCache::$resolvedThrows[$funcKey] = $newThrows;
+                    GlobalCache::$throwOrigins[$funcKey] = $newOrigins;
                     $changedInThisGlobalIteration = true;
                 }
             }
@@ -395,7 +430,7 @@ class Application
                 }
                 // --- End Use Statement Simplification ---
 
-                $docBlockUpdater   = new DocBlockUpdater($astUtils, $filePath);
+                $docBlockUpdater   = new DocBlockUpdater($astUtils, $filePath, $traceOrigins);
                 $traverserDocBlock = new NodeTraverser();
                 $traverserDocBlock->addVisitor($docBlockUpdater);
                 $traverserDocBlock->traverse($currentAST);
@@ -563,6 +598,7 @@ Options:
   -v, --verbose    Enable verbose output (show each file being processed)
   --read-dirs=DIRS   Comma-separated list of directories to read
   --write-dirs=DIRS  Comma-separated list of directories to update
+  --trace-throw-origins  Replace @throws descriptions with origin locations
 
 Arguments:
   <path>           Path to a file or directory to process.

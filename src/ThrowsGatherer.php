@@ -163,22 +163,27 @@ class ThrowsGatherer extends NodeVisitorAbstract
         if (!$key) {
             return null;
         }
-        \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$key] = $this->calculateDirectThrowsForNode($node);
+        \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$key] =
+            $this->calculateDirectThrowsForNode($node, $key);
         return null;
     }
 
     /**
      * @param Function_|ClassMethod $funcOrMethodNode
+     * @param string $funcKey Fully qualified method/function key
      *
      * @throws \LogicException
      */
-    private function calculateDirectThrowsForNode(Node $funcOrMethodNode): array
+    private function calculateDirectThrowsForNode(Node $funcOrMethodNode, string $funcKey): array
     {
         $fqcns = [];
         if ($funcOrMethodNode->stmts === null) {
             return [];
         }
         $throwNodes = $this->nodeFinder->findInstanceOf($funcOrMethodNode->stmts, Node\Expr\Throw_::class);
+        if (!isset(\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey])) {
+            \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey] = [];
+        }
         foreach ($throwNodes as $throwExpr) {
             // Skip throws that are unreachable due to a prior throw/return
             // statement in the current statement list.
@@ -202,6 +207,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
                         $this->useMap
                     )) {
                         $fqcns[] = $thrownFqcn;
+                        $loc = $this->filePath . ':' . $throwExpr->getStartLine();
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn][] = $loc;
                     }
                 } elseif ($newExpr->class instanceof Node\Expr\Variable) {
                     $varName = $newExpr->class->name;
@@ -219,6 +226,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
                             $this->useMap
                         )) {
                             $fqcns[] = $classFqcn;
+                            $loc = $this->filePath . ':' . $throwExpr->getStartLine();
+                            \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$classFqcn][] = $loc;
                         }
                     }
                 }
@@ -243,6 +252,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
                                 $thrownFqcn = $this->astUtils->resolveNameNodeToFqcn($typeNode, $this->currentNamespace, $this->useMap, false);
                                 if (!$this->astUtils->isExceptionCaught($throwExpr, $thrownFqcn, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
                                     $fqcns[] = $thrownFqcn;
+                                    $loc = $this->filePath . ':' . $throwExpr->getStartLine();
+                                    \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn][] = $loc;
                                 }
                             }
                         }
@@ -250,6 +261,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
                         foreach ($instanceofTypes as $fq) {
                             if (!$this->astUtils->isExceptionCaught($throwExpr, $fq, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
                                 $fqcns[] = $fq;
+                                $loc = $this->filePath . ':' . $throwExpr->getStartLine();
+                                \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq][] = $loc;
                             }
                         }
                     } else {
@@ -257,6 +270,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
                         foreach ($instanceofTypes as $fq) {
                             if (!$this->astUtils->isExceptionCaught($throwExpr, $fq, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
                                 $fqcns[] = $fq;
+                                $loc = $this->filePath . ':' . $throwExpr->getStartLine();
+                                \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq][] = $loc;
                             }
                         }
                     }
@@ -267,6 +282,11 @@ class ThrowsGatherer extends NodeVisitorAbstract
             $fqcns,
             static fn(string $fqcn): bool => AstUtils::classOrInterfaceExistsNoAutoload($fqcn)
         );
+
+        foreach (\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey] as $ex => $origins) {
+            \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$ex] = array_values(array_unique($origins));
+        }
+
         return array_values(array_unique($filtered));
     }
 

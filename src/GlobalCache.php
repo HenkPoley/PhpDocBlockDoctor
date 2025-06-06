@@ -36,6 +36,11 @@ class GlobalCache
      * @var mixed[]
      */
     public static $resolvedThrows = [];
+    /**
+     * @var array<string,array<string,list<string>>> Mapping of method key to
+     * exception FQCN to a list of origin locations (file:line)
+     */
+    public static $throwOrigins = [];
 
     public static function clear(): void
     {
@@ -47,5 +52,6 @@ class GlobalCache
         self::$astNodeMap = [];
         self::$nodeKeyToFilePath = [];
         self::$resolvedThrows = [];
+        self::$throwOrigins = [];
     }
 }
