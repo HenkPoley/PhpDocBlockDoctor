@@ -1,0 +1,14 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\ThrowClassString\\ThingThatCalls::first": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\ThrowClassString\\ThingThatCalls::second": [
+      "BadMethodCallException"
+    ],
+    ,
+    "Pitfalls\\ThrowClassString\\ThingThatCalls::third": [
+      "DivisionByZeroError"
+    ]
+  }
+}
