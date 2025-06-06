@@ -511,7 +511,38 @@ class AstUtils
                 $callerUseMap,
                 false
             );
-            return ltrim($classFqcn, '\\') . '::' . $callNode->name->toString();
+            $methodName = $callNode->name->toString();
+            $key        = ltrim($classFqcn, '\\') . '::' . $methodName;
+
+            $exists = isset(GlobalCache::$astNodeMap[$key]);
+            if (!$exists && class_exists($classFqcn, false)) {
+                try {
+                    $ref    = new \ReflectionClass($classFqcn);
+                    $exists = $ref->hasMethod($methodName);
+                } catch (\ReflectionException $e) {
+                    $exists = false;
+                }
+            }
+
+            if (!$exists) {
+                $magicKey = ltrim($classFqcn, '\\') . '::__callStatic';
+                $magicExists = isset(GlobalCache::$astNodeMap[$magicKey]);
+                if (!$magicExists && class_exists($classFqcn, false)) {
+                    try {
+                        $ref = new \ReflectionClass($classFqcn);
+                        if ($ref->hasMethod('__callStatic')) {
+                            return ltrim($ref->getMethod('__callStatic')->getDeclaringClass()->getName(), '\\') . '::__callStatic';
+                        }
+                    } catch (\ReflectionException $e) {
+                        // ignore
+                    }
+                }
+                if ($magicExists) {
+                    return $magicKey;
+                }
+            }
+
+            return $key;
         }
 
         // === 3) Free (global) function call: foo() ===> resolves to a namespaced or fully qualified function name ===
