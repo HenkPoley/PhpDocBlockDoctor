@@ -4,6 +4,8 @@ namespace HenkPoley\DocBlockDoctor;
 
 class GlobalCache
 {
+    /** Max number of origin call chains stored per exception */
+    public const MAX_ORIGIN_CHAINS = 5;
     /**
      * @var mixed[]
      */

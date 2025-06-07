@@ -295,13 +295,18 @@ class Application
                                     $originsFromCallees[$ex] = [];
                                 }
                                 foreach ($orig as $chain) {
+                                    if (strpos($chain, $funcKey . ' <- ') !== false) {
+                                        continue; // avoid infinite recursion
+                                    }
                                     $pos = strrpos($chain, ' <- ');
                                     if ($pos === false) {
                                         $newChain = $funcKey . ' <- ' . $chain;
                                     } else {
                                         $newChain = substr($chain, 0, $pos) . ' <- ' . $funcKey . substr($chain, $pos);
                                     }
-                                    $originsFromCallees[$ex][] = $newChain;
+                                    if (!in_array($newChain, $originsFromCallees[$ex], true) && count($originsFromCallees[$ex]) < GlobalCache::MAX_ORIGIN_CHAINS) {
+                                        $originsFromCallees[$ex][] = $newChain;
+                                    }
                                 }
                             }
                         }
@@ -316,10 +321,18 @@ class Application
                     if (!isset($newOrigins[$ex])) {
                         $newOrigins[$ex] = [];
                     }
-                    $newOrigins[$ex] = array_merge($newOrigins[$ex], $list);
+                    foreach ($list as $ch) {
+                        if (!in_array($ch, $newOrigins[$ex], true) && count($newOrigins[$ex]) < GlobalCache::MAX_ORIGIN_CHAINS) {
+                            $newOrigins[$ex][] = $ch;
+                        }
+                    }
                 }
                 foreach ($newOrigins as $ex => $list) {
-                    $newOrigins[$ex] = array_values(array_unique($list));
+                    $list = array_values(array_unique($list));
+                    if (count($list) > GlobalCache::MAX_ORIGIN_CHAINS) {
+                        $list = array_slice($list, 0, GlobalCache::MAX_ORIGIN_CHAINS);
+                    }
+                    $newOrigins[$ex] = $list;
                 }
 
                 $oldThrows = GlobalCache::$resolvedThrows[$funcKey] ?? [];
