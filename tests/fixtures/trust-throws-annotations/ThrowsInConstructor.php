@@ -22,6 +22,14 @@ class ThrowsInConstructor
         $obj->someMethod();
     }
 
+    public function createAndCallWithForeach()
+    {
+        $obj = new ThrowsInConstructor();
+        foreach (['a', 'b'] as $key => $value) {
+            $obj->someMethod($value);
+        }
+    }
+
     public function someMethod(): void
     {
         // no throw here

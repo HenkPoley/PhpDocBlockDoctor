@@ -7,6 +7,9 @@
       "LogicException",
       "RuntimeException"
     ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ConstructorThrows\\ThrowsInConstructor::createAndCallWithForeach": [
+      "LogicException"
+    ],
     "HenkPoley\\DocBlockDoctor\\TestFixtures\\ConstructorThrows\\ThrowsInConstructor::someMethod": []
   }
 }
