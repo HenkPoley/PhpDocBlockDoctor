@@ -1,0 +1,10 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\ParameterNullableType\\Worker::doWork": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\ParameterNullableType\\Processor::run": [
+      "RuntimeException"
+    ]
+  }
+}
