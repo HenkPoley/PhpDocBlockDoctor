@@ -295,9 +295,12 @@ class Application
                                     $originsFromCallees[$ex] = [];
                                 }
                                 foreach ($orig as $chain) {
-                                    $newChain = $chain;
-                                    $insertPos = count($newChain) - 1;
-                                    array_splice($newChain, $insertPos, 0, [$funcKey]);
+                                    $pos = strrpos($chain, ' <- ');
+                                    if ($pos === false) {
+                                        $newChain = $funcKey . ' <- ' . $chain;
+                                    } else {
+                                        $newChain = substr($chain, 0, $pos) . ' <- ' . $funcKey . substr($chain, $pos);
+                                    }
                                     $originsFromCallees[$ex][] = $newChain;
                                 }
                             }
@@ -316,7 +319,7 @@ class Application
                     $newOrigins[$ex] = array_merge($newOrigins[$ex], $list);
                 }
                 foreach ($newOrigins as $ex => $list) {
-                    $newOrigins[$ex] = array_values(array_map('unserialize', array_unique(array_map('serialize', $list))));
+                    $newOrigins[$ex] = array_values(array_unique($list));
                 }
 
                 $oldThrows = GlobalCache::$resolvedThrows[$funcKey] ?? [];

@@ -196,10 +196,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                 $fqcnWithBackslash = '\\' . ltrim((string)$fqcn, '\\');
                 if ($this->traceOrigins) {
                     $originChains = \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$nodeKey][$fqcn] ?? [];
-                    $originStrings = array_map(static function (array $chain): string {
-                        return implode(' <- ', $chain);
-                    }, $originChains);
-                    $description = implode(', ', $originStrings);
+                    $description = implode(', ', $originChains);
                 } else {
                     $description = $originalNodeDescriptions[$fqcn] ?? ($originalNodeDescriptions[ltrim((string)$fqcn, '\\')] ?? '');
                 }

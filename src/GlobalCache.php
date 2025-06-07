@@ -37,9 +37,9 @@ class GlobalCache
      */
     public static $resolvedThrows = [];
     /**
-     * @var array<string,array<string,list<list<string>>>> Mapping of method key to
-     * exception FQCN to a list of origin call chains. Each call chain is a list
-     * like ["Inner::method", "Outer::method", "file.php:line"].
+     * @var array<string,array<string,string[]>> Mapping of method key to
+     * exception FQCN to a list of origin call chain strings. Each chain looks
+     * like "Inner::method <- Outer::method <- file.php:line".
      */
     public static $throwOrigins = [];
 

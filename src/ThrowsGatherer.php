@@ -208,7 +208,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
                     )) {
                         $fqcns[] = $thrownFqcn;
                         $loc = $this->filePath . ':' . $throwExpr->getStartLine();
-                        \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn][] = [$funcKey, $loc];
+                        $chain = $funcKey . ' <- ' . $loc;
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn][] = $chain;
                     }
                 } elseif ($newExpr->class instanceof Node\Expr\Variable) {
                     $varName = $newExpr->class->name;
@@ -227,7 +228,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
                         )) {
                             $fqcns[] = $classFqcn;
                             $loc = $this->filePath . ':' . $throwExpr->getStartLine();
-                            \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$classFqcn][] = [$funcKey, $loc];
+                            $chain = $funcKey . ' <- ' . $loc;
+                            \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$classFqcn][] = $chain;
                         }
                     }
                 }
@@ -253,7 +255,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
                                 if (!$this->astUtils->isExceptionCaught($throwExpr, $thrownFqcn, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
                                     $fqcns[] = $thrownFqcn;
                                     $loc = $this->filePath . ':' . $throwExpr->getStartLine();
-                                    \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn][] = [$funcKey, $loc];
+                                    $chain = $funcKey . ' <- ' . $loc;
+                                    \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn][] = $chain;
                                 }
                             }
                         }
@@ -262,7 +265,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
                             if (!$this->astUtils->isExceptionCaught($throwExpr, $fq, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
                                 $fqcns[] = $fq;
                                 $loc = $this->filePath . ':' . $throwExpr->getStartLine();
-                                \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq][] = [$funcKey, $loc];
+                                $chain = $funcKey . ' <- ' . $loc;
+                                \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq][] = $chain;
                             }
                         }
                     } else {
@@ -271,7 +275,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
                             if (!$this->astUtils->isExceptionCaught($throwExpr, $fq, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
                                 $fqcns[] = $fq;
                                 $loc = $this->filePath . ':' . $throwExpr->getStartLine();
-                                \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq][] = [$funcKey, $loc];
+                                $chain = $funcKey . ' <- ' . $loc;
+                                \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq][] = $chain;
                             }
                         }
                     }
@@ -284,8 +289,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         );
 
         foreach (\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey] as $ex => $origins) {
-            $unique = array_values(array_map('unserialize', array_unique(array_map('serialize', $origins))));
-            \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$ex] = $unique;
+            \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$ex] = array_values(array_unique($origins));
         }
 
         return array_values(array_unique($filtered));
