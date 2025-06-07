@@ -200,6 +200,8 @@ class DocBlockUpdater extends NodeVisitorAbstract
                     foreach ($originChains as $ch) {
                         if (strpos($ch, $nodeKey . ' <- ') === 0) {
                             $ch = substr($ch, strlen($nodeKey . ' <- '));
+                        } elseif (preg_match('/^(.*?:\d+) <- ' . preg_quote($nodeKey, '/') . ' <- (.*)$/', $ch, $m)) {
+                            $ch = $m[1] . ' <- ' . $m[2];
                         }
                         $cleaned[] = $ch;
                     }

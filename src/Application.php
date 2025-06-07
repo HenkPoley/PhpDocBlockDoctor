@@ -307,7 +307,7 @@ class Application
                                         continue;
                                     }
                                     $callSite = $filePathOfFunc . ':' . $callNode->getStartLine();
-                                    $newChain = $callSite . ' <- ' . $chainWithoutSite;
+                                    $newChain = $callSite . ' <- ' . $funcKey . ' <- ' . $chainWithoutSite;
                                     if (!in_array($newChain, $originsFromCallees[$ex], true) && count($originsFromCallees[$ex]) < GlobalCache::MAX_ORIGIN_CHAINS) {
                                         $originsFromCallees[$ex][] = $newChain;
                                     }
