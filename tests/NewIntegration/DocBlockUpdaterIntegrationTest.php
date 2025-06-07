@@ -168,6 +168,7 @@ class DocBlockUpdaterIntegrationTest extends TestCase
         return [
             ['constructor-throws', 'ThrowsInConstructor.php'],
             ['single-line-method-docblock', 'InlineDocblock.php'],
+            ['empty-docblock', 'EmptyDocblock.php'],
         ];
     }
 }
