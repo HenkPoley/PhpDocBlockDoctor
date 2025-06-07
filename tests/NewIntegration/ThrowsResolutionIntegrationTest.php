@@ -69,6 +69,21 @@ class ThrowsResolutionIntegrationTest extends TestCase
             GlobalCache::$resolvedThrows[$key] = $combined;
         }
 
+        foreach (GlobalCache::$directThrows as $methodKey => $throws) {
+            GlobalCache::$directThrows[$methodKey] = array_values(array_filter(
+                $throws,
+                static fn(string $fqcn): bool => AstUtils::classOrInterfaceExistsNoAutoload($fqcn)
+                    || isset(GlobalCache::$classParents[$fqcn])
+            ));
+        }
+        foreach (GlobalCache::$resolvedThrows as $methodKey => $throws) {
+            GlobalCache::$resolvedThrows[$methodKey] = array_values(array_filter(
+                $throws,
+                static fn(string $fqcn): bool => AstUtils::classOrInterfaceExistsNoAutoload($fqcn)
+                    || isset(GlobalCache::$classParents[$fqcn])
+            ));
+        }
+
         $maxIter = count(GlobalCache::$astNodeMap) + 5;
         $iteration = 0;
         do {

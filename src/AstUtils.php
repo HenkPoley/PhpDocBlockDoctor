@@ -811,6 +811,9 @@ class AstUtils
         if (class_exists($fqcn, false) || interface_exists($fqcn, false)) {
             return true;
         }
+        if (isset(\HenkPoley\DocBlockDoctor\GlobalCache::$classParents[$fqcn])) {
+            return true;
+        }
         foreach (spl_autoload_functions() as $fn) {
             if (is_array($fn) && $fn[0] instanceof ClassLoader) {
                 /** @var ClassLoader $loader */
@@ -855,10 +858,18 @@ class AstUtils
         array $callerUseMap
     ): ?string {
         $current = $classFqcn;
-        while ($current !== null && $current !== '') {
+        $visited = [];
+        while ($current !== null && $current !== '' && !in_array($current, $visited, true)) {
+            $visited[] = $current;
             $candidateKey = ltrim($current, '\\') . '::' . $method;
             if (isset(GlobalCache::$astNodeMap[$candidateKey])) {
                 return ltrim($current, '\\');
+            }
+            foreach (GlobalCache::$classTraits[$current] ?? [] as $traitFqcn) {
+                $traitKey = ltrim($traitFqcn, '\\') . '::' . $method;
+                if (isset(GlobalCache::$astNodeMap[$traitKey])) {
+                    return ltrim($traitFqcn, '\\');
+                }
             }
             if (class_exists($current, false)) {
                 try {
