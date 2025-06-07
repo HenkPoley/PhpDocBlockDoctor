@@ -848,7 +848,6 @@ class AstUtils
                     $current = $parent ? $parent->getName() : null;
                     continue;
                 } catch (\ReflectionException $e) {
-                    $current = null;
                     break;
                 }
             }

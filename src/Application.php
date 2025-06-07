@@ -545,9 +545,6 @@ class Application
                                     )
                                 ) === '';
 
-                            $charAfter       = ($patch['patchEnd'] + 1 < strlen($newFileContent))
-                                ? $newFileContent[$patch['patchEnd'] + 1]
-                                : '';
                             $newlineLenAfter = 0;
                             if (substr($newFileContent, $patch['patchEnd'] + 1, strlen($lineEnding)) === $lineEnding) {
                                 $newlineLenAfter = strlen($lineEnding);
