@@ -231,6 +231,55 @@ class AstUtilsTest extends TestCase
     /**
      * @throws \LogicException
      */
+    public function testResolveNullablePromotedPropertyCall(): void
+    {
+        $code = <<<'PHP'
+        <?php
+        namespace PPN;
+
+        class Q {
+            public function __construct(private ?R $r) {}
+
+            public function foo(): void {
+                $this->r->bar();
+            }
+        }
+
+        class R { public function bar(): void {} }
+        PHP;
+
+        $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast = $parser->parse($code);
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
+        $traverser->addVisitor(new ParentConnectingVisitor());
+        $traverser->addVisitor(new class($this->astUtils) extends \PhpParser\NodeVisitorAbstract {
+            private AstUtils $u; private string $ns = '';
+            public function __construct(AstUtils $u) { $this->u = $u; }
+            public function beforeTraverse(array $nodes) {
+                $finder = new NodeFinder();
+                $nsNode = $finder->findFirstInstanceOf($nodes, Node\Stmt\Namespace_::class);
+                if ($nsNode && $nsNode->name) { $this->ns = $nsNode->name->toString(); }
+                return null;
+            }
+            public function enterNode(Node $n) {
+                if ($n instanceof Node\Stmt\ClassMethod) {
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::$nodeKeyToFilePath[$key] = 'dummy';
+                }
+            }
+        });
+        $traverser->traverse($ast);
+
+        $foo = $this->finder->findFirst($ast, fn(Node $n) => $n instanceof Node\Stmt\ClassMethod && $n->name->toString() === 'foo');
+        $this->assertNotNull($foo);
+        $call = $this->finder->findFirstInstanceOf($foo->stmts, Node\Expr\MethodCall::class);
+        $resolved = $this->astUtils->getCalleeKey($call, 'PPN', [], $foo);
+        $this->assertSame('PPN\\R::bar', $resolved);
+    }
+
+    /**
+     * @throws \LogicException
+     */
     public function testResolveNullableTypedPropertyCall(): void
     {
         $code = <<<'PHP'

@@ -1,0 +1,7 @@
+{
+  "fullyQualifiedMethodKeys" :{
+    "Pitfalls\\ConstructorPropertyPromotionNullable\\Template::getEntityPropertyTranslation": [
+      "ArithmeticError"
+    ]
+  }
+}
