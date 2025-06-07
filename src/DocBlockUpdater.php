@@ -10,6 +10,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
 {
     private \HenkPoley\DocBlockDoctor\AstUtils $astUtils;
     private string $currentFilePath;
+    private bool $traceOrigins;
     /**
      * @var mixed[]
      */
@@ -19,10 +20,11 @@ class DocBlockUpdater extends NodeVisitorAbstract
      */
     private $currentNamespace = '';
 
-    public function __construct(\HenkPoley\DocBlockDoctor\AstUtils $astUtils, string $currentFilePath)
+    public function __construct(\HenkPoley\DocBlockDoctor\AstUtils $astUtils, string $currentFilePath, bool $traceOrigins = false)
     {
         $this->astUtils = $astUtils;
         $this->currentFilePath = $currentFilePath;
+        $this->traceOrigins = $traceOrigins;
     }
 
     /**
@@ -192,7 +194,21 @@ class DocBlockUpdater extends NodeVisitorAbstract
                 // This foreach() is not dead code.
                 // tombstone("ERROR: NoValue - src/DocBlockUpdater.php:188:46 - All possible types for this assignment were invalidated - This may be dead code (see https://psalm.dev/179)");
                 $fqcnWithBackslash = '\\' . ltrim((string)$fqcn, '\\');
-                $description = $originalNodeDescriptions[$fqcn] ?? ($originalNodeDescriptions[ltrim((string)$fqcn, '\\')] ?? '');
+                if ($this->traceOrigins) {
+                    $originChains = \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$nodeKey][$fqcn] ?? [];
+                    $cleaned = [];
+                    foreach ($originChains as $ch) {
+                        if (strpos($ch, $nodeKey . ' <- ') === 0) {
+                            $ch = substr($ch, strlen($nodeKey . ' <- '));
+                        } elseif (preg_match('/^(.*?:\d+) <- ' . preg_quote($nodeKey, '/') . ' <- (.*)$/', $ch, $m)) {
+                            $ch = $m[1] . ' <- ' . $m[2];
+                        }
+                        $cleaned[] = $ch;
+                    }
+                    $description = implode(', ', $cleaned);
+                } else {
+                    $description = $originalNodeDescriptions[$fqcn] ?? ($originalNodeDescriptions[ltrim((string)$fqcn, '\\')] ?? '');
+                }
                 $throwsLine = '@throws ' . $fqcnWithBackslash;
                 if (!empty($description)) {
                     $descLines = explode("\n", (string)$description);
