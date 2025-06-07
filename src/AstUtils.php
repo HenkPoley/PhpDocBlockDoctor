@@ -776,10 +776,27 @@ class AstUtils
             $key        = ltrim($classFqcn, '\\') . '::' . $methodName;
 
             $exists = isset(GlobalCache::$astNodeMap[$key]);
+            if (!$exists) {
+                $lowerKey = strtolower($key);
+                foreach (array_keys(GlobalCache::$astNodeMap) as $k) {
+                    if (strtolower($k) === $lowerKey) {
+                        $key = $k;
+                        $methodName = substr($k, strrpos($k, '::') + 2);
+                        $exists = true;
+                        break;
+                    }
+                }
+            }
             if (!$exists && class_exists($classFqcn, false)) {
                 try {
-                    $ref    = new \ReflectionClass($classFqcn);
-                    $exists = $ref->hasMethod($methodName);
+                    $ref = new \ReflectionClass($classFqcn);
+                    if ($ref->hasMethod($methodName)) {
+                        $methodName = $ref->getMethod($methodName)->getName();
+                        $key = ltrim($classFqcn, '\\') . '::' . $methodName;
+                        $exists = true;
+                    } else {
+                        $exists = false;
+                    }
                 } catch (\ReflectionException $e) {
                     $exists = false;
                 }
@@ -790,6 +807,13 @@ class AstUtils
                     $methodName
                 );
                 if ($decl !== null) {
+                    if (class_exists($decl, false)) {
+                        try {
+                            $methodName = (new \ReflectionClass($decl))->getMethod($methodName)->getName();
+                        } catch (\ReflectionException $e) {
+                            // ignore
+                        }
+                    }
                     return $decl . '::' . $methodName;
                 }
             }

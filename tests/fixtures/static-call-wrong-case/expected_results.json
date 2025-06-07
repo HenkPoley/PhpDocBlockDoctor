@@ -1,0 +1,11 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\StaticCallWrongCase\\Configuration::setPreLoadedConfig": [
+      "Exception"
+    ],
+    "Pitfalls\\StaticCallWrongCase\\Configuration::loadFromArray": [],
+    "Pitfalls\\StaticCallWrongCase\\UnusedTranslatableStringsCommand::configure": [
+      "Exception"
+    ]
+  }
+}
