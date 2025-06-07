@@ -81,3 +81,4 @@ Had a crashing "single"-sign-on system that uses costomisations of [SimpleSAMLph
 * Maybe put the `use` statement cleaning behind some commandline option.
 * Propagate (full function-wide) `catch(\Specific\Exception $e)` through the call chain. We can be fairly sure that part of the code won't emit that exception. So you have at least some basic way to clean up the `@throws` annotations.
 * Follow proper ordering of PhpDoc tags. If there is one? @return comes before @throws. @see comes after @throws?
+* When you use the options --trace-throw-call-sites or --ignore-annotated-throws, doc-block-doctor will write the line numbers from before the extra lines were added. For now you'll just have to run it again (or run it first without --trace-throws-..).
