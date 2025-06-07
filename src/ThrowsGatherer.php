@@ -14,6 +14,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
     private \PhpParser\NodeFinder $nodeFinder;
     private \HenkPoley\DocBlockDoctor\AstUtils $astUtils;
     private string $filePath;
+    private bool $ignoreAnnotatedThrows;
     /**
      * @var string
      */
@@ -23,11 +24,12 @@ class ThrowsGatherer extends NodeVisitorAbstract
      */
     private array $useMap = [];
 
-    public function __construct(NodeFinder $nodeFinder, \HenkPoley\DocBlockDoctor\AstUtils $astUtils, string $filePath)
+    public function __construct(NodeFinder $nodeFinder, \HenkPoley\DocBlockDoctor\AstUtils $astUtils, string $filePath, bool $ignoreAnnotatedThrows = false)
     {
         $this->nodeFinder = $nodeFinder;
         $this->astUtils = $astUtils;
         $this->filePath = $filePath;
+        $this->ignoreAnnotatedThrows = $ignoreAnnotatedThrows;
     }
 
     /**
@@ -154,7 +156,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                     $resolvedFqcnForAnnotation = $this->astUtils->resolveStringToFqcn($exceptionNameInAnnotation, $this->currentNamespace, $this->useMap);
                     $currentThrowsFqcnForDesc = $resolvedFqcnForAnnotation;
                     $accumulatedDescription = trim($matches[2]);
-                    if ($resolvedFqcnForAnnotation !== '' && $resolvedFqcnForAnnotation !== '0') {
+                    if ($resolvedFqcnForAnnotation !== '' && $resolvedFqcnForAnnotation !== '0' && !$this->ignoreAnnotatedThrows) {
                         $currentAnnotatedThrowsFqcns[] = $resolvedFqcnForAnnotation;
                     }
 

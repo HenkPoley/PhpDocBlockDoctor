@@ -21,7 +21,7 @@ class ThrowsResolutionIntegrationTest extends TestCase
      * @throws \LogicException
      */
     #[DataProvider('fixtureProvider')]
-    public function testResolvedThrowsMatchFixture(string $scenario): void
+    public function testResolvedThrowsMatchFixture(string $scenario, bool $ignoreAnnotated): void
     {
         // Register an autoloader so class existence checks succeed for fixtures
         $loader = new \Composer\Autoload\ClassLoader();
@@ -57,14 +57,19 @@ class ThrowsResolutionIntegrationTest extends TestCase
             $traverser = new NodeTraverser();
             $traverser->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
             $traverser->addVisitor(new ParentConnectingVisitor());
-            $traverser->addVisitor(new ThrowsGatherer($finder, $utils, $path));
+            $traverser->addVisitor(new ThrowsGatherer($finder, $utils, $path, $ignoreAnnotated));
             $traverser->traverse($ast);
         }
 
         foreach (array_keys(GlobalCache::$astNodeMap) as $key) {
             $direct = GlobalCache::$directThrows[$key] ?? [];
             $annotated = GlobalCache::$annotatedThrows[$key] ?? [];
-            $combined = array_values(array_unique(array_merge($direct, $annotated)));
+            $combined = $direct;
+            if (!$ignoreAnnotated) {
+                $combined = array_values(array_unique(array_merge($combined, $annotated)));
+            } else {
+                $combined = array_values(array_unique($combined));
+            }
             sort($combined);
             GlobalCache::$resolvedThrows[$key] = $combined;
         }
@@ -94,10 +99,15 @@ class ThrowsResolutionIntegrationTest extends TestCase
                 $namespace = GlobalCache::$fileNamespaces[$filePath] ?? '';
                 $useMap    = GlobalCache::$fileUseMaps[$filePath] ?? [];
 
-                $baseThrows = array_values(array_unique(array_merge(
-                    GlobalCache::$directThrows[$methodKey]    ?? [],
-                    GlobalCache::$annotatedThrows[$methodKey] ?? []
-                )));
+                $baseThrows = GlobalCache::$directThrows[$methodKey] ?? [];
+                if (!$ignoreAnnotated) {
+                    $baseThrows = array_values(array_unique(array_merge(
+                        $baseThrows,
+                        GlobalCache::$annotatedThrows[$methodKey] ?? []
+                    )));
+                } else {
+                    $baseThrows = array_values(array_unique($baseThrows));
+                }
                 $throwsFromCallees = [];
                 if (isset($node->stmts) && is_array($node->stmts)) {
                     $calls = array_merge(
@@ -179,7 +189,8 @@ class ThrowsResolutionIntegrationTest extends TestCase
             if ($fi->isDot() || !$fi->isDir()) {
                 continue;
             }
-            $scenarios[] = [$fi->getFilename()];
+            $ignore = str_starts_with($fi->getFilename(), 'ignore-throws-annotations');
+            $scenarios[] = [$fi->getFilename(), $ignore];
         }
         return $scenarios;
     }

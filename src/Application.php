@@ -41,6 +41,7 @@ class Application
         $verbose       = false;
         $traceOrigins  = false;
         $traceCallSites = false;
+        $ignoreAnnotated = false;
         $rootDir       = null;
         $readDirs      = null;
         $writeDirs     = null;
@@ -61,6 +62,11 @@ class Application
 
             if ($arg === '--trace-throw-call-sites') {
                 $traceCallSites = true;
+                continue;
+            }
+
+            if ($arg === '--ignore-annotated-throws') {
+                $ignoreAnnotated = true;
                 continue;
             }
 
@@ -228,7 +234,12 @@ class Application
                 $traverserPass1 = new NodeTraverser();
                 $traverserPass1->addVisitor($nameResolverForPass1);
                 $traverserPass1->addVisitor($parentConnectorForPass1);
-                $traverserPass1->addVisitor(new ThrowsGatherer($nodeFinder, $astUtils, $filePath));
+                $traverserPass1->addVisitor(new ThrowsGatherer(
+                    $nodeFinder,
+                    $astUtils,
+                    $filePath,
+                    $ignoreAnnotated
+                ));
                 $traverserPass1->traverse($ast);
 
             } catch (Error $e) {
@@ -247,7 +258,12 @@ class Application
         foreach (array_keys(GlobalCache::$astNodeMap) as $funcKey) {
             $direct    = GlobalCache::$directThrows[$funcKey]    ?? [];
             $annotated = GlobalCache::$annotatedThrows[$funcKey] ?? [];
-            $initial   = array_values(array_unique(array_merge($direct, $annotated)));
+            $initial   = $direct;
+            if (!$ignoreAnnotated) {
+                $initial = array_values(array_unique(array_merge($initial, $annotated)));
+            } else {
+                $initial = array_values(array_unique($initial));
+            }
             sort($initial);
             GlobalCache::$resolvedThrows[$funcKey] = $initial;
             if (!isset(GlobalCache::$throwOrigins[$funcKey])) {
@@ -272,10 +288,15 @@ class Application
                 $callerNamespace = GlobalCache::$fileNamespaces[$filePathOfFunc] ?? '';
                 $callerUseMap    = GlobalCache::$fileUseMaps[$filePathOfFunc] ?? [];
 
-                $baseThrows = array_values(array_unique(array_merge(
-                    GlobalCache::$directThrows[$funcKey]    ?? [],
-                    GlobalCache::$annotatedThrows[$funcKey] ?? []
-                )));
+                $baseThrows = GlobalCache::$directThrows[$funcKey] ?? [];
+                if (!$ignoreAnnotated) {
+                    $baseThrows = array_values(array_unique(array_merge(
+                        $baseThrows,
+                        GlobalCache::$annotatedThrows[$funcKey] ?? []
+                    )));
+                } else {
+                    $baseThrows = array_values(array_unique($baseThrows));
+                }
 
                 $throwsFromCallees = [];
                 $originsFromCallees = [];
@@ -628,6 +649,7 @@ Options:
   --write-dirs=DIRS         Comma-separated list of directories to update
   --trace-throw-origins     Replace @throws descriptions with origin locations and call chain
   --trace-throw-call-sites  Replace @throws descriptions with call site line numbers
+  --ignore-annotated-throws Ignore existing @throws annotations when analyzing
 
 Arguments:
   <path>           Path to a file or directory to process.

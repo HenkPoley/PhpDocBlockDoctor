@@ -1,0 +1,14 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ConstructorThrows\\ThrowsInConstructor::__construct": [
+      "LogicException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ConstructorThrows\\ThrowsInConstructor::createAndCall": [
+      "LogicException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ConstructorThrows\\ThrowsInConstructor::createAndCallWithForeach": [
+      "LogicException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\ConstructorThrows\\ThrowsInConstructor::someMethod": []
+  }
+}

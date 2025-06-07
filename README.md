@@ -45,6 +45,7 @@ Options:
   --write-dirs=DIRS  Comma-separated list of directories that may be modified (default: src)
   --trace-throw-origins  Replace @throws descriptions with origin locations and call chain
   --trace-throw-call-sites  Replace @throws descriptions with call site line numbers
+  --ignore-annotated-throws Ignore existing @throws annotations when analyzing
 ```
 
 ## Result
@@ -60,7 +61,7 @@ Options:
 
 Thrown exceptions and `@throws` annotations bubble up along the call chain. It tracks direct function calls, function calls from object variables, and class instantiation. It sorts the exceptions, and de-duplicates them. Exception classes that do not exist, do not propagate along the call chain.
 
-It cannot track runtime dynamically attached class functions. To compensate it just believes any `@throws` that are already annotated. Sadly the `@method` annotation for "Laravel Facade"-like cannot specify thrown exceptions, it is not in the spec, so good luck. Maybe submit a patch if you know how to fix this for specific use cases. By blindly believing existing annotations, this also means we cannot automatically clean up old exceptions that are no longer thrown.
+It cannot track runtime dynamically attached class functions. To compensate it normally believes any `@throws` that are already annotated. Sadly the `@method` annotation for "Laravel Facade"-like cannot specify thrown exceptions, it is not in the spec, so good luck. With the `--ignore-annotated-throws` option you can disable this behaviour and clean out stale annotations.
 
 ## Dependencies
 
@@ -77,7 +78,6 @@ Had a crashing "single"-sign-on system that uses costomisations of [SimpleSAMLph
 ## TODO
 
 * Handle PHP 'magic' such as Laravel Facades.
-* Make an option to ignore existing `@throws` annotations (apart from the multi-line comments), so it can clean up the docblocks. Erasing 'Laravel Facade'-like `@throws` of course.
 * Maybe put the `use` statement cleaning behind some commandline option.
 * Propagate (full function-wide) `catch(\Specific\Exception $e)` through the call chain. We can be fairly sure that part of the code won't emit that exception. So you have at least some basic way to clean up the `@throws` annotations.
 * Follow proper ordering of PhpDoc tags. If there is one? @return comes before @throws. @see comes after @throws?
