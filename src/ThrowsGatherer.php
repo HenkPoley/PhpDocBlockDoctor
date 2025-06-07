@@ -340,7 +340,10 @@ class ThrowsGatherer extends NodeVisitorAbstract
                 }
             }
         }
-        $filtered = $fqcns;
+        $filtered = array_filter(
+            $fqcns,
+            static fn(string $fqcn): bool => AstUtils::classOrInterfaceExistsNoAutoload($fqcn)
+        );
 
         foreach (\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey] as $ex => $origins) {
             $origins = array_values(array_unique($origins));
