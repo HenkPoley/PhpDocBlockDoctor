@@ -305,7 +305,7 @@ class Application
                                         continue; // avoid infinite recursion
                                     }
                                     $segments = explode(' <- ', $chain);
-                                    if ($segments !== [] && preg_match('/:\d+$/', $segments[0])) {
+                                    if (preg_match('/:\d+$/', $segments[0])) {
                                         array_shift($segments);
                                     }
                                     $chainWithoutSite = implode(' <- ', $segments);

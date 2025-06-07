@@ -128,8 +128,9 @@ class DocBlockUpdater extends NodeVisitorAbstract
             $originalLines = preg_split('/\R/u', $docCommentNode->getText()) ?: [];
             $currentGenericTagLines = [];
             $isInsideGenericTag = false;
+            $counter = count($originalLines);
 
-            for ($lineIdx = 0; $lineIdx < count($originalLines); $lineIdx++) {
+            for ($lineIdx = 0; $lineIdx < $counter; $lineIdx++) {
                 $currentDocLine = $originalLines[$lineIdx];
                 $isFirst = ($lineIdx === 0 && preg_match('/^\s*\/\*\*/', $currentDocLine));
                 $isLast  = ($lineIdx === count($originalLines) - 1 && preg_match('/\*\/\s*$/', $currentDocLine));
