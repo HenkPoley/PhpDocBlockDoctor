@@ -87,6 +87,23 @@ class ThrowsGatherer extends NodeVisitorAbstract
      */
     public function enterNode($node)
     {
+        if ($node instanceof Node\Stmt\Class_) {
+            $className = '';
+            if ($node->hasAttribute('namespacedName') && $node->getAttribute('namespacedName') instanceof Node\Name) {
+                $className = $node->getAttribute('namespacedName')->toString();
+            } elseif ($node->name) {
+                $className = ($this->currentNamespace ? $this->currentNamespace . '\\' : '') . $node->name->toString();
+            }
+            if ($className !== '') {
+                $parentFqcn = null;
+                if ($node->extends instanceof Node\Name) {
+                    $parentFqcn = $this->astUtils->resolveNameNodeToFqcn($node->extends, $this->currentNamespace, $this->useMap, false);
+                }
+                \HenkPoley\DocBlockDoctor\GlobalCache::$classParents[$className] = $parentFqcn;
+            }
+            return null;
+        }
+
         if (!$node instanceof Node\Stmt\Function_ && !$node instanceof Node\Stmt\ClassMethod) {
             return null;
         }

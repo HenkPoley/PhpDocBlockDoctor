@@ -39,6 +39,10 @@ class GlobalCache
      */
     public static $resolvedThrows = [];
     /**
+     * @var array<string,string|null> Mapping of class FQCN to its parent class FQCN
+     */
+    public static $classParents = [];
+    /**
      * @var array<string,array<string,string[]>> Mapping of method key to
      * exception FQCN to a list of origin call chain strings. For each method,
      * each chain starts with the call site location within that method,
@@ -60,5 +64,6 @@ class GlobalCache
         self::$nodeKeyToFilePath = [];
         self::$resolvedThrows = [];
         self::$throwOrigins = [];
+        self::$classParents = [];
     }
 }

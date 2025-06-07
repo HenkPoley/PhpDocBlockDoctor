@@ -1,10 +1,10 @@
 {
   "fullyQualifiedMethodKeys": {
-    "Pitfalls\\MethodInParentClass\\Caller::callChildClassWithMethodInParent": [
+    "Pitfalls\\MethodInParentClass\\ParentClass::methodInParent": [
       "LogicException"
     ],
-    "Pitfalls\\MethodChaining\\Caller::callRuntimeException": [
-      "RuntimeException"
+    "Pitfalls\\MethodInParentClass\\Caller::callChildClassWithMethodInParent": [
+      "LogicException"
     ]
   }
 }
