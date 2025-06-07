@@ -298,12 +298,16 @@ class Application
                                     if (strpos($chain, $funcKey . ' <- ') !== false) {
                                         continue; // avoid infinite recursion
                                     }
-                                    $pos = strrpos($chain, ' <- ');
-                                    if ($pos === false) {
-                                        $newChain = $funcKey . ' <- ' . $chain;
-                                    } else {
-                                        $newChain = substr($chain, 0, $pos) . ' <- ' . $funcKey . substr($chain, $pos);
+                                    $segments = explode(' <- ', $chain);
+                                    if ($segments !== [] && preg_match('/:\d+$/', $segments[0])) {
+                                        array_shift($segments);
                                     }
+                                    $chainWithoutSite = implode(' <- ', $segments);
+                                    if ($chainWithoutSite === '') {
+                                        continue;
+                                    }
+                                    $callSite = $filePathOfFunc . ':' . $callNode->getStartLine();
+                                    $newChain = $callSite . ' <- ' . $chainWithoutSite;
                                     if (!in_array($newChain, $originsFromCallees[$ex], true) && count($originsFromCallees[$ex]) < GlobalCache::MAX_ORIGIN_CHAINS) {
                                         $originsFromCallees[$ex][] = $newChain;
                                     }
