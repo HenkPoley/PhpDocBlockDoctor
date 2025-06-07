@@ -11,6 +11,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
     private \HenkPoley\DocBlockDoctor\AstUtils $astUtils;
     private string $currentFilePath;
     private bool $traceOrigins;
+    private bool $traceCallSites;
     /**
      * @var mixed[]
      */
@@ -20,11 +21,12 @@ class DocBlockUpdater extends NodeVisitorAbstract
      */
     private $currentNamespace = '';
 
-    public function __construct(\HenkPoley\DocBlockDoctor\AstUtils $astUtils, string $currentFilePath, bool $traceOrigins = false)
+    public function __construct(\HenkPoley\DocBlockDoctor\AstUtils $astUtils, string $currentFilePath, bool $traceOrigins = false, bool $traceCallSites = false)
     {
         $this->astUtils = $astUtils;
         $this->currentFilePath = $currentFilePath;
         $this->traceOrigins = $traceOrigins;
+        $this->traceCallSites = $traceCallSites;
     }
 
     /**
@@ -206,6 +208,25 @@ class DocBlockUpdater extends NodeVisitorAbstract
                         $cleaned[] = $ch;
                     }
                     $description = implode(', ', $cleaned);
+                } elseif ($this->traceCallSites) {
+                    $originChains = \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$nodeKey][$fqcn] ?? [];
+                    $lines = [];
+                    foreach ($originChains as $ch) {
+                        if (strpos($ch, $nodeKey . ' <- ') === 0) {
+                            $ch = substr($ch, strlen($nodeKey . ' <- '));
+                        } elseif (preg_match('/^(.*?:\d+) <- ' . preg_quote($nodeKey, '/') . ' <- (.*)$/', $ch, $m)) {
+                            $ch = $m[1] . ' <- ' . $m[2];
+                        }
+                        $parts = explode(' <- ', $ch);
+                        $first = $parts[0] ?? '';
+                        if (preg_match('/:(\d+)$/', $first, $m2)) {
+                            $lines[] = (int)$m2[1];
+                        }
+                    }
+                    sort($lines);
+                    $lines = array_values(array_unique($lines));
+                    $lineStrs = array_map(static fn(int $n): string => ':' . $n, $lines);
+                    $description = implode(', ', $lineStrs);
                 } else {
                     $description = $originalNodeDescriptions[$fqcn] ?? ($originalNodeDescriptions[ltrim((string)$fqcn, '\\')] ?? '');
                 }

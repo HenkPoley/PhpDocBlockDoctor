@@ -13,12 +13,12 @@ use HenkPoley\DocBlockDoctor\ThrowsGatherer;
 use HenkPoley\DocBlockDoctor\GlobalCache;
 use HenkPoley\DocBlockDoctor\DocBlockUpdater;
 
-class TraceOriginsTest extends TestCase
+class TraceCallSitesTest extends TestCase
 {
     /**
      * @throws \LogicException
      */
-    public function testTraceOriginsAddsLocationToDocblock(): void
+    public function testTraceCallSitesAddsLineNumbers(): void
     {
         $code = "<?php\nfunction foo() {\n    throw new \RuntimeException();\n}\n";
         GlobalCache::clear();
@@ -45,13 +45,12 @@ class TraceOriginsTest extends TestCase
         $tr2 = new NodeTraverser();
         $tr2->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
         $tr2->addVisitor(new ParentConnectingVisitor());
-        $updater = new DocBlockUpdater($utils, 'dummy.php', true, false);
+        $updater = new DocBlockUpdater($utils, 'dummy.php', false, true);
         $tr2->addVisitor($updater);
         $tr2->traverse($ast);
 
         $this->assertNotEmpty($updater->pendingPatches);
         $patch = $updater->pendingPatches[0];
-        $this->assertStringContainsString('@throws \\RuntimeException dummy.php:3', $patch['newDocText']);
+        $this->assertStringContainsString('@throws \\RuntimeException :3', $patch['newDocText']);
     }
 }
-

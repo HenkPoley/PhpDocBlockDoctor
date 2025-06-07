@@ -104,7 +104,7 @@ class DocBlockUpdaterIntegrationTest extends TestCase
         $traverser2 = new NodeTraverser();
         $traverser2->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
         $traverser2->addVisitor(new ParentConnectingVisitor());
-        $docUpd      = new DocBlockUpdater($astUtils, $inputFile);
+        $docUpd      = new DocBlockUpdater($astUtils, $inputFile, false, false);
         $traverser2->addVisitor($docUpd);
         $traverser2->traverse($ast);
 
