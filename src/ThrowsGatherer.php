@@ -91,7 +91,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
             $className = '';
             if ($node->hasAttribute('namespacedName') && $node->getAttribute('namespacedName') instanceof Node\Name) {
                 $className = $node->getAttribute('namespacedName')->toString();
-            } elseif ($node->name) {
+            } elseif ($node->name instanceof \PhpParser\Node\Identifier) {
                 $className = ($this->currentNamespace ? $this->currentNamespace . '\\' : '') . $node->name->toString();
             }
             if ($className !== '') {

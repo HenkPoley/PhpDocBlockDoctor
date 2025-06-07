@@ -173,10 +173,7 @@ class AstUtils
                             $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
                             $decl = $this->findDeclaringClassForMethod(
                                 ltrim($returnedFqcn, '\\'),
-                                $methodName,
-                                $callerFuncOrMethodNode,
-                                $callerNamespace,
-                                $callerUseMap
+                                $methodName
                             );
                             $target = $decl ?? ltrim($returnedFqcn, '\\');
                             return $target . '::' . $methodName;
@@ -192,10 +189,7 @@ class AstUtils
                             $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
                             $decl = $this->findDeclaringClassForMethod(
                                 ltrim($returnedFqcn, '\\'),
-                                $methodName,
-                                $callerFuncOrMethodNode,
-                                $callerNamespace,
-                                $callerUseMap
+                                $methodName
                             );
                             $target = $decl ?? ltrim($returnedFqcn, '\\');
                             return $target . '::' . $methodName;
@@ -227,10 +221,7 @@ class AstUtils
                                 $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
                                 $decl = $this->findDeclaringClassForMethod(
                                     ltrim($returnedFqcn, '\\'),
-                                    $methodName,
-                                    $callerFuncOrMethodNode,
-                                    $callerNamespace,
-                                    $callerUseMap
+                                    $methodName
                                 );
                                 $target = $decl ?? ltrim($returnedFqcn, '\\');
                                 return $target . '::' . $methodName;
@@ -290,10 +281,7 @@ class AstUtils
                                     if ($fqcn !== '') {
                                         $decl = $this->findDeclaringClassForMethod(
                                             ltrim($fqcn, '\\'),
-                                            $methodName,
-                                            $callerFuncOrMethodNode,
-                                            $callerNamespace,
-                                            $callerUseMap
+                                            $methodName
                                         );
                                         $target = $decl ?? ltrim($fqcn, '\\');
                                         return $target . '::' . $methodName;
@@ -310,10 +298,7 @@ class AstUtils
                                 if ($fqcn !== '') {
                                     $decl = $this->findDeclaringClassForMethod(
                                         ltrim($fqcn, '\\'),
-                                        $methodName,
-                                        $callerFuncOrMethodNode,
-                                        $callerNamespace,
-                                        $callerUseMap
+                                        $methodName
                                     );
                                     $target = $decl ?? ltrim($fqcn, '\\');
                                     return $target . '::' . $methodName;
@@ -328,10 +313,7 @@ class AstUtils
                                 if ($fqcn !== '') {
                                     $decl = $this->findDeclaringClassForMethod(
                                         ltrim($fqcn, '\\'),
-                                        $methodName,
-                                        $callerFuncOrMethodNode,
-                                        $callerNamespace,
-                                        $callerUseMap
+                                        $methodName
                                     );
                                     $target = $decl ?? ltrim($fqcn, '\\');
                                     return $target . '::' . $methodName;
@@ -372,10 +354,7 @@ class AstUtils
                                 if ($fqcn !== '') {
                                     $decl = $this->findDeclaringClassForMethod(
                                         ltrim($fqcn, '\\'),
-                                        $methodName,
-                                        $callerFuncOrMethodNode,
-                                        $callerNamespace,
-                                        $callerUseMap
+                                        $methodName
                                     );
                                     $target = $decl ?? ltrim($fqcn, '\\');
                                     return $target . '::' . $methodName;
@@ -435,10 +414,7 @@ class AstUtils
                         // Successfully mapped $oneMoreClass → FQCN
                         $decl = $this->findDeclaringClassForMethod(
                             ltrim($paramFqcn, '\\'),
-                            $methodName,
-                            $callerFuncOrMethodNode,
-                            $callerNamespace,
-                            $callerUseMap
+                            $methodName
                         );
                         $target = $decl ?? ltrim($paramFqcn, '\\');
                         return $target . '::' . $methodName;
@@ -503,10 +479,7 @@ class AstUtils
                         if ($classFqcn !== '' && $classFqcn !== '0') {
                             $decl = $this->findDeclaringClassForMethod(
                                 ltrim($classFqcn, '\\'),
-                                $methodName,
-                                $callerFuncOrMethodNode,
-                                $callerNamespace,
-                                $callerUseMap
+                                $methodName
                             );
                             $target = $decl ?? ltrim($classFqcn, '\\');
                             return $target . '::' . $methodName;
@@ -527,7 +500,7 @@ class AstUtils
             $callerClass = $this->getContextClassName($callerFuncOrMethodNode, $callerNamespace);
             if ($callerClass) {
                 $methodName  = $callNode->name->toString();
-                $declaring   = $this->findDeclaringClassForMethod($callerClass, $methodName, $callerFuncOrMethodNode, $callerNamespace, $callerUseMap);
+                $declaring   = $this->findDeclaringClassForMethod($callerClass, $methodName);
                 $targetClass = $declaring ?? $callerClass;
                 return $targetClass . '::' . $methodName;
             }
@@ -598,10 +571,7 @@ class AstUtils
             if (!$exists) {
                 $decl = $this->findDeclaringClassForMethod(
                     ltrim($classFqcn, '\\'),
-                    $methodName,
-                    $callerFuncOrMethodNode,
-                    $callerNamespace,
-                    $callerUseMap
+                    $methodName
                 );
                 if ($decl !== null) {
                     return $decl . '::' . $methodName;
@@ -852,10 +822,7 @@ class AstUtils
      */
     private function findDeclaringClassForMethod(
         string $classFqcn,
-        string $method,
-        Node $callerFuncOrMethodNode,
-        ?string $callerNamespace,
-        array $callerUseMap
+        string $method
     ): ?string {
         $current = $classFqcn;
         $visited = [];
