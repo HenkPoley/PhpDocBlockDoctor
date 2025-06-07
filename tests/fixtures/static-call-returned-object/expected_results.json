@@ -1,0 +1,14 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\StaticCallReturnedObject\\Provider::getHandler": [],
+    "Pitfalls\\StaticCallReturnedObject\\Handler::handle": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\StaticCallReturnedObject\\Runner::run": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\StaticCallReturnedObject\\Runner::runDirect": [
+      "RuntimeException"
+    ]
+  }
+}
