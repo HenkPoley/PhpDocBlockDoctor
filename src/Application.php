@@ -40,6 +40,7 @@ class Application
         // ------------------------------------------------------------
         $verbose       = false;
         $traceOrigins  = false;
+        $traceCallSites = false;
         $rootDir       = null;
         $readDirs      = null;
         $writeDirs     = null;
@@ -55,6 +56,11 @@ class Application
 
             if ($arg === '--trace-throw-origins') {
                 $traceOrigins = true;
+                continue;
+            }
+
+            if ($arg === '--trace-throw-call-sites') {
+                $traceCallSites = true;
                 continue;
             }
 
@@ -455,7 +461,7 @@ class Application
                 }
                 // --- End Use Statement Simplification ---
 
-                $docBlockUpdater   = new DocBlockUpdater($astUtils, $filePath, $traceOrigins);
+                $docBlockUpdater   = new DocBlockUpdater($astUtils, $filePath, $traceOrigins, $traceCallSites);
                 $traverserDocBlock = new NodeTraverser();
                 $traverserDocBlock->addVisitor($docBlockUpdater);
                 $traverserDocBlock->traverse($currentAST);
@@ -624,6 +630,7 @@ Options:
   --read-dirs=DIRS   Comma-separated list of directories to read
   --write-dirs=DIRS  Comma-separated list of directories to update
   --trace-throw-origins  Replace @throws descriptions with origin locations and call chain
+  --trace-throw-call-sites  Replace @throws descriptions with call site line numbers
 
 Arguments:
   <path>           Path to a file or directory to process.
