@@ -1,0 +1,7 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\EmptyDocblock\\EmptyDocblock::emptyDocblock": [
+      "ParseError"
+    ]
+  }
+}

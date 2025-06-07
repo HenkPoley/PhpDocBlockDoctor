@@ -294,11 +294,17 @@ class DocBlockUpdater extends NodeVisitorAbstract
                 $patchEnd = $docCommentNode->getEndFilePos();
             } elseif ($finalNormalizedNewDocText !== null) {
                 if ($originalNormalizedDocText === null) {
-                    $patchType = 'add';
-                    // For adding, $patchStart will be the start of the node itself (e.g., 'p' in 'public function')
-                    // The actual insertion point will be adjusted before this based on the node's line indent.
-                    $patchStart = $node->getStartFilePos();
-                    $patchEnd = $node->getStartFilePos() - 1; // No original length
+                    if ($docCommentNode instanceof \PhpParser\Comment\Doc) {
+                        $patchType = 'update';
+                        $patchStart = $docCommentNode->getStartFilePos();
+                        $patchEnd = $docCommentNode->getEndFilePos();
+                    } else {
+                        $patchType = 'add';
+                        // For adding, $patchStart will be the start of the node itself (e.g., 'p' in 'public function')
+                        // The actual insertion point will be adjusted before this based on the node's line indent.
+                        $patchStart = $node->getStartFilePos();
+                        $patchEnd = $node->getStartFilePos() - 1; // No original length
+                    }
                 } else {
                     $patchType = 'update';
                     if ($docCommentNode instanceof \PhpParser\Comment\Doc) {
