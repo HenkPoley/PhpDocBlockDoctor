@@ -171,7 +171,15 @@ class AstUtils
                         );
                         if ($returnedFqcn !== '') {
                             $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
-                            return ltrim($returnedFqcn, '\\') . '::' . $methodName;
+                            $decl = $this->findDeclaringClassForMethod(
+                                ltrim($returnedFqcn, '\\'),
+                                $methodName,
+                                $callerFuncOrMethodNode,
+                                $callerNamespace,
+                                $callerUseMap
+                            );
+                            $target = $decl ?? ltrim($returnedFqcn, '\\');
+                            return $target . '::' . $methodName;
                         }
                     } elseif ($returnType instanceof Node\NullableType && $returnType->type instanceof Node\Name) {
                         $returnedFqcn = $this->resolveNameNodeToFqcn(
@@ -182,7 +190,15 @@ class AstUtils
                         );
                         if ($returnedFqcn !== '') {
                             $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
-                            return ltrim($returnedFqcn, '\\') . '::' . $methodName;
+                            $decl = $this->findDeclaringClassForMethod(
+                                ltrim($returnedFqcn, '\\'),
+                                $methodName,
+                                $callerFuncOrMethodNode,
+                                $callerNamespace,
+                                $callerUseMap
+                            );
+                            $target = $decl ?? ltrim($returnedFqcn, '\\');
+                            return $target . '::' . $methodName;
                         }
                     }
 
@@ -209,7 +225,15 @@ class AstUtils
                             if ($returnedFqcn !== '' && $returnedFqcn !== '0') {
                                 // 4) Synthesize “ReturnedClass::outerMethod”
                                 $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
-                                return ltrim($returnedFqcn, '\\') . '::' . $methodName;
+                                $decl = $this->findDeclaringClassForMethod(
+                                    ltrim($returnedFqcn, '\\'),
+                                    $methodName,
+                                    $callerFuncOrMethodNode,
+                                    $callerNamespace,
+                                    $callerUseMap
+                                );
+                                $target = $decl ?? ltrim($returnedFqcn, '\\');
+                                return $target . '::' . $methodName;
                             }
                         }
                     }
@@ -264,7 +288,15 @@ class AstUtils
                                         $callerUseMap
                                     );
                                     if ($fqcn !== '') {
-                                        return ltrim($fqcn, '\\') . '::' . $methodName;
+                                        $decl = $this->findDeclaringClassForMethod(
+                                            ltrim($fqcn, '\\'),
+                                            $methodName,
+                                            $callerFuncOrMethodNode,
+                                            $callerNamespace,
+                                            $callerUseMap
+                                        );
+                                        $target = $decl ?? ltrim($fqcn, '\\');
+                                        return $target . '::' . $methodName;
                                     }
                                 }
                             }
@@ -276,7 +308,15 @@ class AstUtils
                                     false
                                 );
                                 if ($fqcn !== '') {
-                                    return ltrim($fqcn, '\\') . '::' . $methodName;
+                                    $decl = $this->findDeclaringClassForMethod(
+                                        ltrim($fqcn, '\\'),
+                                        $methodName,
+                                        $callerFuncOrMethodNode,
+                                        $callerNamespace,
+                                        $callerUseMap
+                                    );
+                                    $target = $decl ?? ltrim($fqcn, '\\');
+                                    return $target . '::' . $methodName;
                                 }
                             } elseif ($stmt->type instanceof NullableType && $stmt->type->type instanceof Name) {
                                 $fqcn = $this->resolveNameNodeToFqcn(
@@ -286,7 +326,15 @@ class AstUtils
                                     false
                                 );
                                 if ($fqcn !== '') {
-                                    return ltrim($fqcn, '\\') . '::' . $methodName;
+                                    $decl = $this->findDeclaringClassForMethod(
+                                        ltrim($fqcn, '\\'),
+                                        $methodName,
+                                        $callerFuncOrMethodNode,
+                                        $callerNamespace,
+                                        $callerUseMap
+                                    );
+                                    $target = $decl ?? ltrim($fqcn, '\\');
+                                    return $target . '::' . $methodName;
                                 }
                             }
                         }
@@ -322,7 +370,15 @@ class AstUtils
                                     $fqcn = '';
                                 }
                                 if ($fqcn !== '') {
-                                    return ltrim($fqcn, '\\') . '::' . $methodName;
+                                    $decl = $this->findDeclaringClassForMethod(
+                                        ltrim($fqcn, '\\'),
+                                        $methodName,
+                                        $callerFuncOrMethodNode,
+                                        $callerNamespace,
+                                        $callerUseMap
+                                    );
+                                    $target = $decl ?? ltrim($fqcn, '\\');
+                                    return $target . '::' . $methodName;
                                 }
                             }
                         }
@@ -377,7 +433,15 @@ class AstUtils
 
                     if ($paramFqcn !== '' && $paramFqcn !== '0') {
                         // Successfully mapped $oneMoreClass → FQCN
-                        return ltrim($paramFqcn, '\\') . '::' . $methodName;
+                        $decl = $this->findDeclaringClassForMethod(
+                            ltrim($paramFqcn, '\\'),
+                            $methodName,
+                            $callerFuncOrMethodNode,
+                            $callerNamespace,
+                            $callerUseMap
+                        );
+                        $target = $decl ?? ltrim($paramFqcn, '\\');
+                        return $target . '::' . $methodName;
                     }
                 }
             }
@@ -437,7 +501,15 @@ class AstUtils
                             false
                         );
                         if ($classFqcn !== '' && $classFqcn !== '0') {
-                            return ltrim($classFqcn, '\\') . '::' . $methodName;
+                            $decl = $this->findDeclaringClassForMethod(
+                                ltrim($classFqcn, '\\'),
+                                $methodName,
+                                $callerFuncOrMethodNode,
+                                $callerNamespace,
+                                $callerUseMap
+                            );
+                            $target = $decl ?? ltrim($classFqcn, '\\');
+                            return $target . '::' . $methodName;
                         }
                     }
                 }
@@ -521,6 +593,18 @@ class AstUtils
                     $exists = $ref->hasMethod($methodName);
                 } catch (\ReflectionException $e) {
                     $exists = false;
+                }
+            }
+            if (!$exists) {
+                $decl = $this->findDeclaringClassForMethod(
+                    ltrim($classFqcn, '\\'),
+                    $methodName,
+                    $callerFuncOrMethodNode,
+                    $callerNamespace,
+                    $callerUseMap
+                );
+                if ($decl !== null) {
+                    return $decl . '::' . $methodName;
                 }
             }
 
@@ -770,52 +854,27 @@ class AstUtils
         ?string $callerNamespace,
         array $callerUseMap
     ): ?string {
-        if (class_exists($classFqcn, false)) {
-            try {
-                $ref = new \ReflectionClass($classFqcn);
-                while ($ref) {
-                    if ($ref->hasMethod($method)) {
-                        $decl = $ref->getMethod($method)->getDeclaringClass()->getName();
-                        return ltrim($decl, '\\');
-                    }
-                    $ref = $ref->getParentClass();
-                }
-            } catch (\ReflectionException $e) {
-                // ignore and fall back to AST
-            }
-        }
-
-        $classNode = $callerFuncOrMethodNode->getAttribute('parent');
-        while ($classNode && !$classNode instanceof Node\Stmt\Class_) {
-            $classNode = $classNode->getAttribute('parent');
-        }
-
-        while ($classNode instanceof Node\Stmt\Class_ && $classNode->extends instanceof Node\Name) {
-            $parentFqcn = $this->resolveNameNodeToFqcn($classNode->extends, $callerNamespace, $callerUseMap, false);
-            $candidateKey = ltrim($parentFqcn, '\\') . '::' . $method;
+        $current = $classFqcn;
+        while ($current !== null && $current !== '') {
+            $candidateKey = ltrim($current, '\\') . '::' . $method;
             if (isset(GlobalCache::$astNodeMap[$candidateKey])) {
-                return ltrim($parentFqcn, '\\');
+                return ltrim($current, '\\');
             }
-            if (class_exists($parentFqcn, false)) {
+            if (class_exists($current, false)) {
                 try {
-                    $ref = new \ReflectionClass($parentFqcn);
+                    $ref = new \ReflectionClass($current);
                     if ($ref->hasMethod($method)) {
                         return ltrim($ref->getMethod($method)->getDeclaringClass()->getName(), '\\');
                     }
-                    $classNode = null;
-                    if ($ref->getParentClass()) {
-                        $parentFqcn = $ref->getParentClass()->getName();
-                        $candidateKey = ltrim($parentFqcn, '\\') . '::' . $method;
-                        if (isset(GlobalCache::$astNodeMap[$candidateKey])) {
-                            return ltrim($parentFqcn, '\\');
-                        }
-                    }
+                    $parent = $ref->getParentClass();
+                    $current = $parent ? $parent->getName() : null;
+                    continue;
                 } catch (\ReflectionException $e) {
+                    $current = null;
                     break;
                 }
-            } else {
-                break;
             }
+            $current = GlobalCache::$classParents[$current] ?? null;
         }
 
         return null;
