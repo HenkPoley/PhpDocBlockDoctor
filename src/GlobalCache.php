@@ -43,6 +43,10 @@ class GlobalCache
      */
     public static $classParents = [];
     /**
+     * @var array<string,string[]> Mapping of class FQCN to the traits it uses
+     */
+    public static $classTraits = [];
+    /**
      * @var array<string,array<string,string[]>> Mapping of method key to
      * exception FQCN to a list of origin call chain strings. For each method,
      * each chain starts with the call site location within that method,
@@ -65,5 +69,6 @@ class GlobalCache
         self::$resolvedThrows = [];
         self::$throwOrigins = [];
         self::$classParents = [];
+        self::$classTraits = [];
     }
 }

@@ -6,7 +6,7 @@ use SomeTrait;
 
 class ParentsParentClass extends ParentClass
 {
-    // use ParentsParentTrait;
+    use ParentsParentTrait;
 
     public function methodInParentsParent(): void
     {
