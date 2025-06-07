@@ -12,7 +12,14 @@ Vibe coded this into existence with Google Gemini Pro 2.5, and OpenAI o4-mini-hi
 
 This package is currently not in the Composer repository.
 
-Add to your `composer.json`:
+Add the GitHub repository as a source:
+
+```shell
+php composer config repositories.phpdocdoctor vcs https://github.com/HenkPoley/PhpDocBlockDoctor
+php composer require henk-poley/doc-block-doctor:dev-main
+```
+
+Or add to your `composer.json`:
 
 ```json
 {
