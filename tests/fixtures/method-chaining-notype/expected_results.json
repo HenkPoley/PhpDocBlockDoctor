@@ -1,0 +1,11 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\MethodChainingNoType\\Factory::build": [],
+    "Pitfalls\\MethodChainingNoType\\Product::doWork": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\MethodChainingNoType\\Caller::runAll": [
+      "RuntimeException"
+    ]
+  }
+}
