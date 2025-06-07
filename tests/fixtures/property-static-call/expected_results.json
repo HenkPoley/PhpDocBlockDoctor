@@ -1,0 +1,10 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\PropertyStaticCall\\Logger::warning": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\PropertyStaticCall\\SubjectID::doCall": [
+      "RuntimeException"
+    ]
+  }
+}
