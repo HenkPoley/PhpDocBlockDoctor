@@ -110,6 +110,9 @@ class AstUtils
         if ($name === null || $name === '' || $name === '0') {
             return '';
         }
+        if (strpos($name, '|') !== false) {
+            $name = explode('|', $name, 2)[0];
+        }
         if (strncmp($name, '\\', strlen('\\')) === 0) {
             return ltrim($name, '\\');
         }
@@ -328,6 +331,130 @@ class AstUtils
                     if ($stmt instanceof Node\Stmt\ClassMethod && $stmt->name->toString() === '__construct') {
                         foreach ($stmt->params as $param) {
                             if (($param->flags & (Class_::MODIFIER_PUBLIC | Class_::MODIFIER_PROTECTED | Class_::MODIFIER_PRIVATE)) !== 0
+                                && $param->var instanceof Variable
+                                && is_string($param->var->name)
+                                && $param->var->name === $propertyName
+                                && $param->type !== null
+                            ) {
+                                $typeNode = $param->type;
+                                if ($typeNode instanceof Name) {
+                                    $fqcn = $this->resolveNameNodeToFqcn(
+                                        $typeNode,
+                                        $callerNamespace,
+                                        $callerUseMap,
+                                        false
+                                    );
+                                } elseif ($typeNode instanceof NullableType && $typeNode->type instanceof Name) {
+                                    $fqcn = $this->resolveNameNodeToFqcn(
+                                        $typeNode->type,
+                                        $callerNamespace,
+                                        $callerUseMap,
+                                        false
+                                    );
+                                } else {
+                                    $fqcn = '';
+                                }
+                                if ($fqcn !== '') {
+                                    $decl = $this->findDeclaringClassForMethod(
+                                        ltrim($fqcn, '\\'),
+                                        $methodName
+                                    );
+                                    $target = $decl ?? ltrim($fqcn, '\\');
+                                    return $target . '::' . $methodName;
+                                }
+                            }
+                        }
+                    }
+                }
+        }
+        // If we didn’t find a matching @var or couldn’t resolve it, fall through:
+        }
+
+        // StaticCall on $this->property → translate "$this->prop::foo()" → "ClassName::foo"
+        if (
+            $callNode instanceof Node\Expr\StaticCall
+            && $callNode->class instanceof PropertyFetch
+            && $callNode->class->var instanceof Variable
+            && $callNode->class->var->name === 'this'
+            && $callNode->class->name instanceof Node\Identifier
+            && $callNode->name instanceof Node\Identifier
+        ) {
+            $propertyName = $callNode->class->name->toString();
+            $methodName   = $callNode->name->toString();
+
+            $parent = $callerFuncOrMethodNode;
+            while ($parent !== null && (!$parent instanceof Class_ && !$parent instanceof Node\Stmt\Trait_)) {
+                $parent = $parent->getAttribute('parent');
+            }
+
+            if ($parent instanceof Class_ || $parent instanceof Node\Stmt\Trait_) {
+                $classNode = $parent;
+                foreach ($classNode->stmts as $stmt) {
+                    if (!($stmt instanceof Node\Stmt\Property)) {
+                        continue;
+                    }
+                    foreach ($stmt->props as $propElem) {
+                        if ($propElem->name->toString() === $propertyName) {
+                            $docComment = $stmt->getDocComment();
+                            if ($docComment instanceof \PhpParser\Comment\Doc) {
+                                $text = $docComment->getText();
+                                if (preg_match('/@var\s+([^\s]+)/', $text, $m)) {
+                                    $annotatedType = $m[1];
+                                    $fqcn = $this->resolveStringToFqcn(
+                                        $annotatedType,
+                                        $callerNamespace,
+                                        $callerUseMap
+                                    );
+                                    if ($fqcn !== '') {
+                                        $decl = $this->findDeclaringClassForMethod(
+                                            ltrim($fqcn, '\\'),
+                                            $methodName
+                                        );
+                                        $target = $decl ?? ltrim($fqcn, '\\');
+                                        return $target . '::' . $methodName;
+                                    }
+                                }
+                            }
+                            if ($stmt->type instanceof Name) {
+                                $fqcn = $this->resolveNameNodeToFqcn(
+                                    $stmt->type,
+                                    $callerNamespace,
+                                    $callerUseMap,
+                                    false
+                                );
+                                if ($fqcn !== '') {
+                                    $decl = $this->findDeclaringClassForMethod(
+                                        ltrim($fqcn, '\\'),
+                                        $methodName
+                                    );
+                                    $target = $decl ?? ltrim($fqcn, '\\');
+                                    return $target . '::' . $methodName;
+                                }
+                            } elseif ($stmt->type instanceof NullableType && $stmt->type->type instanceof Name) {
+                                $fqcn = $this->resolveNameNodeToFqcn(
+                                    $stmt->type->type,
+                                    $callerNamespace,
+                                    $callerUseMap,
+                                    false
+                                );
+                                if ($fqcn !== '') {
+                                    $decl = $this->findDeclaringClassForMethod(
+                                        ltrim($fqcn, '\\'),
+                                        $methodName
+                                    );
+                                    $target = $decl ?? ltrim($fqcn, '\\');
+                                    return $target . '::' . $methodName;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                foreach ($classNode->stmts as $stmt) {
+                    if ($stmt instanceof Node\Stmt\ClassMethod && $stmt->name->toString() === '__construct') {
+                        foreach ($stmt->params as $param) {
+                            if (
+                                ($param->flags & (Class_::MODIFIER_PUBLIC | Class_::MODIFIER_PROTECTED | Class_::MODIFIER_PRIVATE)) !== 0
                                 && $param->var instanceof Variable
                                 && is_string($param->var->name)
                                 && $param->var->name === $propertyName
