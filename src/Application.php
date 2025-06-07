@@ -622,11 +622,11 @@ Usage:
   php vendor/bin/doc-block-doctor [options] [<path>]
 
 Options:
-  -h, --help       Display this help message and exit
-  -v, --verbose    Enable verbose output (show each file being processed)
-  --read-dirs=DIRS   Comma-separated list of directories to read
-  --write-dirs=DIRS  Comma-separated list of directories to update
-  --trace-throw-origins  Replace @throws descriptions with origin locations and call chain
+  -h, --help                Display this help message and exit
+  -v, --verbose             Enable verbose output (show each file being processed)
+  --read-dirs=DIRS          Comma-separated list of directories to read
+  --write-dirs=DIRS         Comma-separated list of directories to update
+  --trace-throw-origins     Replace @throws descriptions with origin locations and call chain
   --trace-throw-call-sites  Replace @throws descriptions with call site line numbers
 
 Arguments:
