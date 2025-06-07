@@ -5,6 +5,15 @@
     ],
     "Pitfalls\\MethodInParentClass\\Caller::callChildClassWithMethodInParent": [
       "LogicException"
+    ],
+    "Pitfalls\\MethodInParentClass\\Caller::callChildClassWithParentMethodOverride": [
+      "BadMethodCallException"
+    ],
+    "Pitfalls\\MethodInParentClass\\Caller::callChildClassWithMethodInParentsParent": [
+      "ErrorException"
+    ],
+    "Pitfalls\\MethodInParentClass\\Caller::callChildClassWithMethodInParentsParentTrait": [
+      "UnderflowException"
     ]
   }
 }

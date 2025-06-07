@@ -1,7 +1,7 @@
 <?php
 namespace Pitfalls\MethodInParentClass;
 
-class ParentClass
+class ParentClass extends ParentsParentClass
 {
     /**
      * @throws \LogicException
@@ -9,6 +9,11 @@ class ParentClass
     public function methodInParent(): void
     {
         throw new \LogicException();
+    }
+
+    public function methodInChild(): void
+    {
+        throw new \RuntimeException();
     }
 }
 
