@@ -236,6 +236,95 @@ class AstUtils
             // If we can’t follow it, we just “fall through” to the existing logic below.
         }
 
+        // If this is a MethodCall whose “var” is a StaticCall, try to follow the returned object
+        if (
+            $callNode instanceof Node\Expr\MethodCall
+            && $callNode->var instanceof Node\Expr\StaticCall
+        ) {
+            $innerKey = $this->getCalleeKey(
+                $callNode->var,
+                $callerNamespace,
+                $callerUseMap,
+                $callerFuncOrMethodNode
+            );
+
+            if ($innerKey) {
+                $innerNode     = GlobalCache::$astNodeMap[$innerKey] ?? null;
+                $innerFilePath = GlobalCache::$nodeKeyToFilePath[$innerKey] ?? null;
+
+                if ($innerNode instanceof Node\Stmt\ClassMethod && $innerFilePath) {
+                    $innerNamespace = GlobalCache::$fileNamespaces[$innerFilePath] ?? '';
+                    $innerUseMap    = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
+
+                    $returnType = $innerNode->returnType;
+                    if ($returnType instanceof Node\Name) {
+                        $returnedFqcn = $this->resolveNameNodeToFqcn(
+                            $returnType,
+                            $innerNamespace,
+                            $innerUseMap,
+                            false
+                        );
+                        if ($returnedFqcn !== '') {
+                            $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
+                            $decl = $this->findDeclaringClassForMethod(
+                                ltrim($returnedFqcn, '\\'),
+                                $methodName
+                            );
+                            $target = $decl ?? ltrim($returnedFqcn, '\\');
+                            return $target . '::' . $methodName;
+                        }
+                    } elseif ($returnType instanceof Node\NullableType && $returnType->type instanceof Node\Name) {
+                        $returnedFqcn = $this->resolveNameNodeToFqcn(
+                            $returnType->type,
+                            $innerNamespace,
+                            $innerUseMap,
+                            false
+                        );
+                        if ($returnedFqcn !== '') {
+                            $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
+                            $decl = $this->findDeclaringClassForMethod(
+                                ltrim($returnedFqcn, '\\'),
+                                $methodName
+                            );
+                            $target = $decl ?? ltrim($returnedFqcn, '\\');
+                            return $target . '::' . $methodName;
+                        }
+                    }
+
+                    $finder  = new NodeFinder();
+                    $returns = $finder->findInstanceOf(
+                        $innerNode->stmts ?? [],
+                        Return_::class
+                    );
+
+                    foreach ($returns as $returnStmt) {
+                        if (
+                            $returnStmt->expr instanceof Node\Expr\New_
+                            && $returnStmt->expr->class instanceof Node\Name
+                        ) {
+                            $returnedFqcn = $this->resolveNameNodeToFqcn(
+                                $returnStmt->expr->class,
+                                $innerNamespace,
+                                $innerUseMap,
+                                false
+                            );
+
+                            if ($returnedFqcn !== '' && $returnedFqcn !== '0') {
+                                $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
+                                $decl = $this->findDeclaringClassForMethod(
+                                    ltrim($returnedFqcn, '\\'),
+                                    $methodName
+                                );
+                                $target = $decl ?? ltrim($returnedFqcn, '\\');
+                                return $target . '::' . $methodName;
+                            }
+                        }
+                    }
+                }
+            }
+            // If we can’t follow it, we just fall through
+        }
+
         // MethodCall on $this->property → translate “$this->prop->foo()” → “ClassName::foo”
         if (
             $callNode instanceof Node\Expr\MethodCall
