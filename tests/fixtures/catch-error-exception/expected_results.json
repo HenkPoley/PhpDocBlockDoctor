@@ -1,0 +1,9 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\CatchErrorException\\Thrower::doThrow": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\CatchErrorException\\Wrapper::handle": [],
+    "Pitfalls\\CatchErrorException\\Runner::run": []
+  }
+}

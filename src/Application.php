@@ -316,6 +316,9 @@ class Application
                         if ($calleeKey && $calleeKey !== $funcKey) {
                             $exceptionsFromCallee = GlobalCache::$resolvedThrows[$calleeKey] ?? [];
                             foreach ($exceptionsFromCallee as $ex) {
+                                if ($astUtils->isExceptionCaught($callNode, $ex, $funcNode, $callerNamespace, $callerUseMap)) {
+                                    continue;
+                                }
                                 $throwsFromCallees[] = $ex;
                                 $orig = GlobalCache::$throwOrigins[$calleeKey][$ex] ?? [];
                                 if (!isset($originsFromCallees[$ex])) {
