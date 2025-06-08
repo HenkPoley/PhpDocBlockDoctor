@@ -1,0 +1,13 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\GroupUseAnonymousClass\\SimpleSAML\\Utils\\Config::getSecretSalt": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\GroupUseAnonymousClass\\Store\\SQLStore::hashData": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\GroupUseAnonymousClass\\Store\\Runner::run": [
+      "RuntimeException"
+    ]
+  }
+}
