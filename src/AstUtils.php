@@ -139,8 +139,19 @@ class AstUtils
      *
      * @throws \LogicException
      */
-    public function getCalleeKey($callNode, $callerNamespace, $callerUseMap, $callerFuncOrMethodNode): ?string
+    public function getCalleeKey(
+        $callNode,
+        $callerNamespace,
+        $callerUseMap,
+        $callerFuncOrMethodNode,
+        array &$visited = []
+    ): ?string
     {
+        $hash = spl_object_hash($callNode);
+        if (isset($visited[$hash])) {
+            return null;
+        }
+        $visited[$hash] = true;
         // If this is a MethodCall whose “var” is itself another MethodCall, try to follow the returned object.
         if (
             $callNode instanceof Node\Expr\MethodCall
@@ -151,7 +162,8 @@ class AstUtils
                 $callNode->var,
                 $callerNamespace,
                 $callerUseMap,
-                $callerFuncOrMethodNode
+                $callerFuncOrMethodNode,
+                $visited
             );
 
             if ($innerKey) {
@@ -245,7 +257,8 @@ class AstUtils
                 $callNode->var,
                 $callerNamespace,
                 $callerUseMap,
-                $callerFuncOrMethodNode
+                $callerFuncOrMethodNode,
+                $visited
             );
 
             if ($innerKey) {
@@ -775,7 +788,13 @@ class AstUtils
                         $expr instanceof Node\Expr\MethodCall ||
                         $expr instanceof Node\Expr\StaticCall
                     ) {
-                        $innerKey = $this->getCalleeKey($expr, $callerNamespace, $callerUseMap, $callerFuncOrMethodNode);
+                        $innerKey = $this->getCalleeKey(
+                            $expr,
+                            $callerNamespace,
+                            $callerUseMap,
+                            $callerFuncOrMethodNode,
+                            $visited
+                        );
                         if ($innerKey) {
                             $innerNode     = GlobalCache::$astNodeMap[$innerKey] ?? null;
                             $innerFilePath = GlobalCache::$nodeKeyToFilePath[$innerKey] ?? null;
