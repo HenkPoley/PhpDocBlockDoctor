@@ -733,6 +733,112 @@ class AstUtils
             // If nothing matched, fall through to "$this->", "static::", etc.
         }
 
+        // === LOCAL CALL ASSIGNMENT: $foo = SomeClass::factory(); then $foo->bar() ===
+        if (
+            $callNode instanceof Node\Expr\MethodCall
+            && $callNode->var instanceof Variable
+            && is_string($callNode->var->name)
+            && $callNode->name instanceof Identifier
+        ) {
+            $varName    = $callNode->var->name;
+            $methodName = $callNode->name->toString();
+
+            /** @psalm-suppress NoInterfaceProperties */
+            if (property_exists($callerFuncOrMethodNode, 'stmts') && is_array($callerFuncOrMethodNode->stmts)) {
+                $finder     = new NodeFinder();
+                $allAssigns = $finder->findInstanceOf(
+                    $callerFuncOrMethodNode->stmts,
+                    Assign::class
+                );
+
+                $bestAssign   = null;
+                $bestPosition = -1;
+                foreach ($allAssigns as $assignNode) {
+                    if (
+                        $assignNode->var instanceof Variable
+                        && is_string($assignNode->var->name)
+                        && $assignNode->var->name === $varName
+                    ) {
+                        $pos     = $assignNode->getStartFilePos();
+                        $callPos = $callNode->getStartFilePos();
+                        if ($pos < $callPos && $pos > $bestPosition) {
+                            $bestPosition = $pos;
+                            $bestAssign   = $assignNode;
+                        }
+                    }
+                }
+
+                if ($bestAssign instanceof Assign) {
+                    $expr = $bestAssign->expr;
+                    if (
+                        $expr instanceof Node\Expr\FuncCall ||
+                        $expr instanceof Node\Expr\MethodCall ||
+                        $expr instanceof Node\Expr\StaticCall
+                    ) {
+                        $innerKey = $this->getCalleeKey($expr, $callerNamespace, $callerUseMap, $callerFuncOrMethodNode);
+                        if ($innerKey) {
+                            $innerNode     = GlobalCache::$astNodeMap[$innerKey] ?? null;
+                            $innerFilePath = GlobalCache::$nodeKeyToFilePath[$innerKey] ?? null;
+
+                            if ($innerNode instanceof Node\FunctionLike && $innerFilePath) {
+                                $innerNamespace = GlobalCache::$fileNamespaces[$innerFilePath] ?? '';
+                                $innerUseMap    = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
+
+                                $returnType = $innerNode->returnType;
+                                if ($returnType instanceof Name) {
+                                    $returnedFqcn = $this->resolveNameNodeToFqcn(
+                                        $returnType,
+                                        $innerNamespace,
+                                        $innerUseMap,
+                                        false
+                                    );
+                                    if ($returnedFqcn !== '') {
+                                        $decl  = $this->findDeclaringClassForMethod(ltrim($returnedFqcn, '\\'), $methodName);
+                                        $target = $decl ?? ltrim($returnedFqcn, '\\');
+                                        return $target . '::' . $methodName;
+                                    }
+                                } elseif ($returnType instanceof NullableType && $returnType->type instanceof Name) {
+                                    $returnedFqcn = $this->resolveNameNodeToFqcn(
+                                        $returnType->type,
+                                        $innerNamespace,
+                                        $innerUseMap,
+                                        false
+                                    );
+                                    if ($returnedFqcn !== '') {
+                                        $decl  = $this->findDeclaringClassForMethod(ltrim($returnedFqcn, '\\'), $methodName);
+                                        $target = $decl ?? ltrim($returnedFqcn, '\\');
+                                        return $target . '::' . $methodName;
+                                    }
+                                }
+
+                                $finder2 = new NodeFinder();
+                                $returns = $finder2->findInstanceOf($innerNode->stmts ?? [], Return_::class);
+                                foreach ($returns as $returnStmt) {
+                                    if (
+                                        $returnStmt->expr instanceof Node\Expr\New_
+                                        && $returnStmt->expr->class instanceof Name
+                                    ) {
+                                        $returnedFqcn = $this->resolveNameNodeToFqcn(
+                                            $returnStmt->expr->class,
+                                            $innerNamespace,
+                                            $innerUseMap,
+                                            false
+                                        );
+                                        if ($returnedFqcn !== '' && $returnedFqcn !== '0') {
+                                            $decl  = $this->findDeclaringClassForMethod(ltrim($returnedFqcn, '\\'), $methodName);
+                                            $target = $decl ?? ltrim($returnedFqcn, '\\');
+                                            return $target . '::' . $methodName;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // If nothing matched, fall through to "$this->", "static::", etc.
+        }
+
         // === 1) Instance method on $this: $this->foo() ===> ClassName::foo ===
         if (
             $callNode instanceof Node\Expr\MethodCall
