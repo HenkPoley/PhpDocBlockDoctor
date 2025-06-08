@@ -77,7 +77,10 @@ Had a crashing "single"-sign-on system that uses costomisations of [SimpleSAMLph
 
 ## TODO
 
-* Handle PHP 'magic' such as Laravel Facades.
+* Handle PHP 'magic' such as Laravel Facades. We already handle a bit of __callStatic(), just not all the runtime injection that Laravel must be doing.
 * Maybe put the `use` statement cleaning behind some commandline option.
 * Propagate (full function-wide) `catch(\Specific\Exception $e)` through the call chain. We can be fairly sure that part of the code won't emit that exception. So you have at least some basic way to clean up the `@throws` annotations.
 * Follow proper ordering of PhpDoc tags. If there is one? @return comes before @throws. @see comes after @throws?
+* Somehow handle PHP's built-in functionality? Possibly stash `jetbrains/phpstorm-stubs` somewhere outside of vendor? (Should `composer` have a stubs section?) Make a derived version that only keeps the @throws tags? Even though to warn not to trust it, since they don't test exceptions are actually thrown, SOML.
+* Symbolic execution. So we can prove that even though there is `throw new X()` in there, that code path will never execute (for now there's psalm and rector for that).
+* Find some new repos to test on. SimpleSAMLphp seems to be handled reasonably complete. (Famous last words.)
