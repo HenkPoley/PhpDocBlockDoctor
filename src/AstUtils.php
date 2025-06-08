@@ -19,6 +19,66 @@ use Composer\Autoload\ClassLoader;
 class AstUtils
 {
     /**
+     * Cache of variable assignments for each function/method node.
+     *
+     * @var array<string,array<string,array<int,array{pos:int,expr:Node\Expr}>>>
+     */
+    private array $assignmentCache = [];
+
+    /**
+     * Build or retrieve cached assignments for the given function/method.
+     *
+     * @param Node\FunctionLike $func
+     * @return array<string,array<int,array{pos:int,expr:Node\Expr}>>
+     */
+    private function getAssignmentsForFunction(Node\FunctionLike $func): array
+    {
+        $key = spl_object_hash($func);
+        if (!isset($this->assignmentCache[$key])) {
+            $map = [];
+            /** @psalm-suppress NoInterfaceProperties */
+            if (property_exists($func, 'stmts') && is_array($func->stmts)) {
+                $finder = new NodeFinder();
+                $assigns = $finder->findInstanceOf($func->stmts, Assign::class);
+                foreach ($assigns as $assign) {
+                    if ($assign->var instanceof Variable && is_string($assign->var->name)) {
+                        $map[$assign->var->name][] = [
+                            'pos'  => $assign->getStartFilePos(),
+                            'expr' => $assign->expr,
+                        ];
+                    }
+                }
+            }
+            $this->assignmentCache[$key] = $map;
+        }
+        return $this->assignmentCache[$key];
+    }
+
+    /**
+     * Find the expression assigned to $varName before the given call position.
+     *
+     * @param string $varName
+     * @param Node $callNode
+     * @param Node\FunctionLike $func
+     */
+    private function findPriorAssignment(string $varName, Node $callNode, Node\FunctionLike $func): ?Node\Expr
+    {
+        $assignments = $this->getAssignmentsForFunction($func)[$varName] ?? [];
+        $callPos = $callNode->getStartFilePos();
+        $bestPos = -1;
+        $bestExpr = null;
+        foreach ($assignments as $info) {
+            if ($info['expr'] === $callNode) {
+                continue;
+            }
+            if ($info['pos'] < $callPos && $info['pos'] > $bestPos) {
+                $bestPos = $info['pos'];
+                $bestExpr = $info['expr'];
+            }
+        }
+        return $bestExpr;
+    }
+    /**
      * @param \PhpParser\Node $node
      * @param string $currentNamespace
      */
@@ -139,8 +199,19 @@ class AstUtils
      *
      * @throws \LogicException
      */
-    public function getCalleeKey($callNode, $callerNamespace, $callerUseMap, $callerFuncOrMethodNode): ?string
+    public function getCalleeKey(
+        $callNode,
+        $callerNamespace,
+        $callerUseMap,
+        $callerFuncOrMethodNode,
+        array &$visited = []
+    ): ?string
     {
+        $hash = spl_object_hash($callNode);
+        if (isset($visited[$hash])) {
+            return null;
+        }
+        $visited[$hash] = true;
         // If this is a MethodCall whose “var” is itself another MethodCall, try to follow the returned object.
         if (
             $callNode instanceof Node\Expr\MethodCall
@@ -151,7 +222,8 @@ class AstUtils
                 $callNode->var,
                 $callerNamespace,
                 $callerUseMap,
-                $callerFuncOrMethodNode
+                $callerFuncOrMethodNode,
+                $visited
             );
 
             if ($innerKey) {
@@ -245,7 +317,8 @@ class AstUtils
                 $callNode->var,
                 $callerNamespace,
                 $callerUseMap,
-                $callerFuncOrMethodNode
+                $callerFuncOrMethodNode,
+                $visited
             );
 
             if ($innerKey) {
@@ -667,65 +740,92 @@ class AstUtils
             }
         }
 
-        // === LOCAL NEW ASSIGNMENT:  $foo = new SomeClass();  then  $foo->bar()  ===
+        // === LOCAL ASSIGNMENT: variable initialized from "new" or another call ===
         if (
             $callNode instanceof Node\Expr\MethodCall
             && $callNode->var instanceof Variable
             && is_string($callNode->var->name)
             && $callNode->name instanceof Identifier
         ) {
-            $varName    = $callNode->var->name;     // e.g. "foo"
+            $varName    = $callNode->var->name;
             $methodName = $callNode->name->toString();
 
-            // Ensure we have statements to scan:
-            /** @psalm-suppress NoInterfaceProperties */
-            if (property_exists($callerFuncOrMethodNode, 'stmts') && is_array($callerFuncOrMethodNode->stmts)) {
-                $finder     = new NodeFinder();
-                $allAssigns = $finder->findInstanceOf(
-                    $callerFuncOrMethodNode->stmts,
-                    Assign::class
+            $assignedExpr = $this->findPriorAssignment($varName, $callNode, $callerFuncOrMethodNode);
+
+            if ($assignedExpr instanceof Node\Expr\New_ && $assignedExpr->class instanceof Node\Name) {
+                $classFqcn = $this->resolveNameNodeToFqcn(
+                    $assignedExpr->class,
+                    $callerNamespace,
+                    $callerUseMap,
+                    false
                 );
-
-                $bestAssign   = null;
-                $bestPosition = -1;
-                foreach ($allAssigns as $assignNode) {
-                    // match "$foo = new Something();"
-                    if (
-                        $assignNode->var instanceof Variable
-                        && is_string($assignNode->var->name)
-                        && $assignNode->var->name === $varName
-                        && $assignNode->expr instanceof Node\Expr\New_
-                        && $assignNode->expr->class instanceof Node\Name
-                    ) {
-                        $pos = $assignNode->getStartFilePos();
-                        $callPos = $callNode->getStartFilePos();
-                        // Only consider assignments that happen earlier in the file than the call:
-                        if ($pos < $callPos && $pos > $bestPosition) {
-                            $bestPosition = $pos;
-                            $bestAssign   = $assignNode;
-                        }
-                    }
+                if ($classFqcn !== '' && $classFqcn !== '0') {
+                    $decl  = $this->findDeclaringClassForMethod(ltrim($classFqcn, '\\'), $methodName);
+                    $target = $decl ?? ltrim($classFqcn, '\\');
+                    return $target . '::' . $methodName;
                 }
+            } elseif ($assignedExpr instanceof Node\Expr\FuncCall || $assignedExpr instanceof Node\Expr\MethodCall || $assignedExpr instanceof Node\Expr\StaticCall) {
+                $innerKey = $this->getCalleeKey(
+                    $assignedExpr,
+                    $callerNamespace,
+                    $callerUseMap,
+                    $callerFuncOrMethodNode,
+                    $visited
+                );
+                if ($innerKey) {
+                    $innerNode     = GlobalCache::$astNodeMap[$innerKey] ?? null;
+                    $innerFilePath = GlobalCache::$nodeKeyToFilePath[$innerKey] ?? null;
 
-                if ($bestAssign instanceof Assign) {
-                    // Resolve "new Something()" → FQCN
-                    /** @var Node\Expr\New_ $newExpr */
-                    $newExpr = $bestAssign->expr;
-                    if ($newExpr->class instanceof Node\Name) {
-                        $newClassNode = $newExpr->class;
-                        $classFqcn    = $this->resolveNameNodeToFqcn(
-                            $newClassNode,
-                            $callerNamespace,
-                            $callerUseMap,
-                            false
-                        );
-                        if ($classFqcn !== '' && $classFqcn !== '0') {
-                            $decl = $this->findDeclaringClassForMethod(
-                                ltrim($classFqcn, '\\'),
-                                $methodName
+                    if ($innerNode instanceof Node\FunctionLike && $innerFilePath) {
+                        $innerNamespace = GlobalCache::$fileNamespaces[$innerFilePath] ?? '';
+                        $innerUseMap    = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
+
+                        $returnType = $innerNode->returnType;
+                        if ($returnType instanceof Name) {
+                            $returnedFqcn = $this->resolveNameNodeToFqcn(
+                                $returnType,
+                                $innerNamespace,
+                                $innerUseMap,
+                                false
                             );
-                            $target = $decl ?? ltrim($classFqcn, '\\');
-                            return $target . '::' . $methodName;
+                            if ($returnedFqcn !== '') {
+                                $decl  = $this->findDeclaringClassForMethod(ltrim($returnedFqcn, '\\'), $methodName);
+                                $target = $decl ?? ltrim($returnedFqcn, '\\');
+                                return $target . '::' . $methodName;
+                            }
+                        } elseif ($returnType instanceof NullableType && $returnType->type instanceof Name) {
+                            $returnedFqcn = $this->resolveNameNodeToFqcn(
+                                $returnType->type,
+                                $innerNamespace,
+                                $innerUseMap,
+                                false
+                            );
+                            if ($returnedFqcn !== '') {
+                                $decl  = $this->findDeclaringClassForMethod(ltrim($returnedFqcn, '\\'), $methodName);
+                                $target = $decl ?? ltrim($returnedFqcn, '\\');
+                                return $target . '::' . $methodName;
+                            }
+                        }
+
+                        $finder2 = new NodeFinder();
+                        $returns = $finder2->findInstanceOf($innerNode->stmts ?? [], Return_::class);
+                        foreach ($returns as $returnStmt) {
+                            if (
+                                $returnStmt->expr instanceof Node\Expr\New_
+                                && $returnStmt->expr->class instanceof Name
+                            ) {
+                                $returnedFqcn = $this->resolveNameNodeToFqcn(
+                                    $returnStmt->expr->class,
+                                    $innerNamespace,
+                                    $innerUseMap,
+                                    false
+                                );
+                                if ($returnedFqcn !== '' && $returnedFqcn !== '0') {
+                                    $decl  = $this->findDeclaringClassForMethod(ltrim($returnedFqcn, '\\'), $methodName);
+                                    $target = $decl ?? ltrim($returnedFqcn, '\\');
+                                    return $target . '::' . $methodName;
+                                }
+                            }
                         }
                     }
                 }
