@@ -4,11 +4,9 @@
       "ErrorException"
     ],
     "Pitfalls\\InstanceofRethrow\\Wrapper::handle": [
-      "ErrorException",
       "Exception"
     ],
     "Pitfalls\\InstanceofRethrow\\Runner::run": [
-      "ErrorException",
       "Exception"
     ]
   }

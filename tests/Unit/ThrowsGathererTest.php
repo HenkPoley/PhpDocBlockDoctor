@@ -101,7 +101,7 @@ class ThrowsGathererTest extends TestCase
         class C {
             public function foo(): void {
                 try {
-                    throw new \ErrorException('fail');
+                    throw new \ErrorException('fail', 0, 1, '', 0, new \Exception('cause'));
                 } catch (\Exception $e) {
                     if ($e instanceof \ErrorException) {
                         $prev = $e->getPrevious();
@@ -127,7 +127,7 @@ class ThrowsGathererTest extends TestCase
         $key = 'T\\C::foo';
         $this->assertArrayHasKey($key, GlobalCache::$directThrows);
         $this->assertEqualsCanonicalizing(
-            ['ErrorException', 'Exception'],
+            ['Exception'],
             GlobalCache::$directThrows[$key]
         );
     }
