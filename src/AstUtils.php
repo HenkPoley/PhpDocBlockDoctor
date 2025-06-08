@@ -740,6 +740,72 @@ class AstUtils
             }
         }
 
+        // === NEW OBJECT METHOD CALL: (new Foo())->bar() ===
+        if (
+            $callNode instanceof Node\Expr\MethodCall
+            && $callNode->var instanceof Node\Expr\New_
+            && $callNode->var->class instanceof Name
+            && $callNode->name instanceof Identifier
+        ) {
+            $classFqcn = $this->resolveNameNodeToFqcn(
+                $callNode->var->class,
+                $callerNamespace,
+                $callerUseMap,
+                false
+            );
+            if ($classFqcn !== '') {
+                $methodName = $callNode->name->toString();
+                $decl       = $this->findDeclaringClassForMethod(ltrim($classFqcn, '\\'), $methodName);
+                $target     = $decl ?? ltrim($classFqcn, '\\');
+                return $target . '::' . $methodName;
+            }
+        }
+
+        // === FOREACH VARIABLE: $arr as $item ===
+        if (
+            $callNode instanceof Node\Expr\MethodCall
+            && $callNode->var instanceof Variable
+            && is_string($callNode->var->name)
+            && $callNode->name instanceof Identifier
+        ) {
+            $varName    = $callNode->var->name;
+            $methodName = $callNode->name->toString();
+            $parent     = $callNode->getAttribute('parent');
+            while ($parent && $parent !== $callerFuncOrMethodNode) {
+                if (
+                    $parent instanceof Node\Stmt\Foreach_
+                    && $parent->valueVar instanceof Variable
+                    && is_string($parent->valueVar->name)
+                    && $parent->valueVar->name === $varName
+                ) {
+                    $iterExpr = $parent->expr;
+                    $innerKey = $this->getCalleeKey(
+                        $iterExpr,
+                        $callerNamespace,
+                        $callerUseMap,
+                        $callerFuncOrMethodNode,
+                        $visited
+                    );
+                    if ($innerKey && isset(GlobalCache::$astNodeMap[$innerKey])) {
+                        $innerNode     = GlobalCache::$astNodeMap[$innerKey];
+                        $innerFilePath = GlobalCache::$nodeKeyToFilePath[$innerKey] ?? null;
+                        if ($innerNode instanceof Node\FunctionLike && $innerFilePath) {
+                            $innerNs   = GlobalCache::$fileNamespaces[$innerFilePath] ?? '';
+                            $innerUses = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
+                            $itemFqcn  = $this->getArrayReturnItemType($innerNode, $innerNs, $innerUses);
+                            if ($itemFqcn !== null) {
+                                $decl  = $this->findDeclaringClassForMethod(ltrim($itemFqcn, '\\'), $methodName);
+                                $target = $decl ?? ltrim($itemFqcn, '\\');
+                                return $target . '::' . $methodName;
+                            }
+                        }
+                    }
+                    break;
+                }
+                $parent = $parent->getAttribute('parent');
+            }
+        }
+
         // === LOCAL ASSIGNMENT: variable initialized from "new" or another call ===
         if (
             $callNode instanceof Node\Expr\MethodCall
@@ -1141,6 +1207,23 @@ class AstUtils
         }
 
         return false;
+    }
+
+    /**
+     * Extract the item FQCN from a function/method that returns an array with
+     * a DocBlock like "@return ClassName[]".
+     */
+    private function getArrayReturnItemType(Node\FunctionLike $func, string $ns, array $useMap): ?string
+    {
+        $doc = $func->getDocComment();
+        if ($doc === null) {
+            return null;
+        }
+        if (preg_match('/@return\s+([^\s]+)\[\]/i', $doc->getText(), $m)) {
+            $type = $this->resolveStringToFqcn($m[1], $ns, $useMap);
+            return $type !== '' && $type !== '0' ? $type : null;
+        }
+        return null;
     }
 
     /**
