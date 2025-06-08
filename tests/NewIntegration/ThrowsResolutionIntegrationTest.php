@@ -26,6 +26,8 @@ class ThrowsResolutionIntegrationTest extends TestCase
         // Register an autoloader so class existence checks succeed for fixtures
         $loader = new \Composer\Autoload\ClassLoader();
         $loader->addPsr4('Pitfalls\\', __DIR__ . '/../fixtures');
+        $scenarioNs = 'Pitfalls\\' . str_replace(' ', '', ucwords(str_replace('-', ' ', $scenario))) . '\\';
+        $loader->addPsr4($scenarioNs, __DIR__ . '/../fixtures/' . $scenario);
         $loader->register(false);
 
         $fixtureRoot = __DIR__ . '/../fixtures/' . $scenario;

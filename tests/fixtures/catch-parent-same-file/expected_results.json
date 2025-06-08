@@ -1,0 +1,11 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\CatchParentSameFile\\Worker::doThing": [
+      "Pitfalls\\CatchParentSameFile\\ChildException"
+    ],
+    "Pitfalls\\CatchParentSameFile\\Wrapper::handle": [
+    ],
+    "Pitfalls\\CatchParentSameFile\\Runner::run": [
+    ]
+  }
+}

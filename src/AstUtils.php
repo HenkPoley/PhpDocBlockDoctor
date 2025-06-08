@@ -1064,13 +1064,15 @@ class AstUtils
                         );
                         $thrownLoaded = class_exists($thrownFqcn, false);
                         $caughtLoaded = class_exists($caughtTypeFqcn, false);
+                        if ($thrownFqcn === $caughtTypeFqcn) {
+                            return true;
+                        }
                         if ($thrownLoaded && $caughtLoaded) {
-                            if (
-                                $thrownFqcn === $caughtTypeFqcn ||
-                                is_subclass_of($thrownFqcn, $caughtTypeFqcn)
-                            ) {
+                            if (is_subclass_of($thrownFqcn, $caughtTypeFqcn)) {
                                 return true;
                             }
+                        } elseif (self::isSubclassUsingCache($thrownFqcn, $caughtTypeFqcn)) {
+                            return true;
                         } elseif (
                             self::classOrInterfaceExistsNoAutoload($thrownFqcn) &&
                             self::classOrInterfaceExistsNoAutoload($caughtTypeFqcn) &&
@@ -1079,9 +1081,6 @@ class AstUtils
                             is_a($thrownFqcn, $caughtTypeFqcn, true)
                         ) {
                             // Use autoload to inspect class hierarchy for non-vendor classes
-                            return true;
-                        } elseif ($thrownFqcn === $caughtTypeFqcn) {
-                            // Fallback when we cannot determine inheritance
                             return true;
                         }
                     }
@@ -1222,5 +1221,23 @@ class AstUtils
         }
 
         return null;
+    }
+
+    /**
+     * Determine class inheritance using the cached parent map when classes are
+     * not loaded.
+     */
+    private static function isSubclassUsingCache(string $child, string $parent): bool
+    {
+        $current = $child;
+        $visited = [];
+        while ($current !== null && $current !== '' && !in_array($current, $visited, true)) {
+            if ($current === $parent) {
+                return true;
+            }
+            $visited[] = $current;
+            $current = GlobalCache::$classParents[$current] ?? null;
+        }
+        return false;
     }
 }

@@ -212,6 +212,41 @@ class ThrowsGathererTest extends TestCase
     /**
      * @throws \LogicException
      */
+    public function testCalculateDirectThrowsCaughtByParentExceptionSameFile(): void
+    {
+        $code = <<<'PHP'
+        <?php
+        namespace Pitfalls\CatchParentSameFile;
+        class ParentException extends \Exception {}
+        class ChildException extends ParentException {}
+        class C {
+            public function foo(): void {
+                try {
+                    throw new ChildException('fail');
+                } catch (ParentException $e) {
+                    // handled
+                }
+            }
+        }
+        PHP;
+
+        $parser   = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast      = $parser->parse($code) ?: [];
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
+        $traverser->addVisitor(new ParentConnectingVisitor());
+        $tg = new ThrowsGatherer($this->finder, $this->utils, 'dummyPath');
+        $traverser->addVisitor($tg);
+        $traverser->traverse($ast);
+
+        $key = 'Pitfalls\\CatchParentSameFile\\C::foo';
+        $this->assertArrayHasKey($key, GlobalCache::$directThrows);
+        $this->assertSame([], GlobalCache::$directThrows[$key]);
+    }
+
+    /**
+     * @throws \LogicException
+     */
     public function testCalculateDirectThrowsFromClassStringVariable(): void
     {
         $code = <<<'PHP'
