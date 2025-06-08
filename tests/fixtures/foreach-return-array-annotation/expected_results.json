@@ -1,0 +1,11 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\ForeachReturnArrayAnnotation\\Provider::getItems": [],
+    "Pitfalls\\ForeachReturnArrayAnnotation\\Item::act": [
+      "LogicException"
+    ],
+    "Pitfalls\\ForeachReturnArrayAnnotation\\Consumer::run": [
+      "LogicException"
+    ]
+  }
+}

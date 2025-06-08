@@ -1,0 +1,13 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\TraitMethodCalls\\WorkerTrait::run": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\TraitMethodCalls\\WorkerTrait::helper": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\TraitMethodCalls\\Caller::execute": [
+      "RuntimeException"
+    ]
+  }
+}

@@ -78,6 +78,85 @@ class AstUtils
         }
         return $bestExpr;
     }
+
+    /**
+     * If the given variable is the value variable of a surrounding foreach loop,
+     * return the expression being iterated over for that foreach.
+     */
+    private function findForeachExprForValueVar(string $varName, Node $node, Node\FunctionLike $func): ?Node\Expr
+    {
+        $current = $node->getAttribute('parent');
+        while ($current && $current !== $func->getAttribute('parent')) {
+            if ($current instanceof \PhpParser\Node\Stmt\Foreach_) {
+                if ($current->valueVar instanceof Variable && $current->valueVar->name === $varName) {
+                    return $current->expr;
+                }
+            }
+            if ($current instanceof Node\FunctionLike && $current !== $func) {
+                break;
+            }
+            $current = $current->getAttribute('parent');
+        }
+        return null;
+    }
+
+    /**
+     * Attempt to resolve the class name returned by the given expression.
+     * Only handles simple "new" expressions and calls to known functions/methods.
+     */
+    private function resolveExprToClassFqcn(
+        Node\Expr $expr,
+        string $namespace,
+        array $useMap,
+        Node\FunctionLike $scope,
+        array &$visited = []
+    ): ?string {
+        if ($expr instanceof Node\Expr\New_ && $expr->class instanceof Name) {
+            return ltrim($this->resolveNameNodeToFqcn($expr->class, $namespace, $useMap, false), '\\');
+        }
+
+        if ($expr instanceof Node\Expr\FuncCall || $expr instanceof Node\Expr\MethodCall || $expr instanceof Node\Expr\StaticCall) {
+            $calleeKey = $this->getCalleeKey($expr, $namespace, $useMap, $scope, $visited);
+            if ($calleeKey && isset(GlobalCache::$astNodeMap[$calleeKey])) {
+                $calleeNode = GlobalCache::$astNodeMap[$calleeKey];
+                $file       = GlobalCache::$nodeKeyToFilePath[$calleeKey];
+                $ns         = GlobalCache::$fileNamespaces[$file] ?? '';
+                $umap       = GlobalCache::$fileUseMaps[$file] ?? [];
+
+                $returnType = $calleeNode->returnType;
+                if ($returnType instanceof Name) {
+                    return ltrim($this->resolveNameNodeToFqcn($returnType, $ns, $umap, false), '\\');
+                }
+                if ($returnType instanceof NullableType && $returnType->type instanceof Name) {
+                    return ltrim($this->resolveNameNodeToFqcn($returnType->type, $ns, $umap, false), '\\');
+                }
+
+                $doc = $calleeNode->getDocComment();
+                if ($doc instanceof \PhpParser\Comment\Doc) {
+                    if (preg_match('/@return\s+([^\s]+)/', $doc->getText(), $m)) {
+                        $type = $m[1];
+                        if (str_ends_with($type, '[]')) {
+                            $type = substr($type, 0, -2);
+                        }
+                        $fq = $this->resolveStringToFqcn($type, $ns, $umap);
+                        if ($fq !== '') {
+                            return ltrim($fq, '\\');
+                        }
+                    }
+                }
+
+                $finder = new NodeFinder();
+                $returns = $finder->findInstanceOf($calleeNode->stmts ?? [], Return_::class);
+                foreach ($returns as $ret) {
+                    if ($ret->expr instanceof Node\Expr\New_ && $ret->expr->class instanceof Name) {
+                        return ltrim($this->resolveNameNodeToFqcn($ret->expr->class, $ns, $umap, false), '\\');
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
     /**
      * @param \PhpParser\Node $node
      * @param string $currentNamespace
@@ -713,6 +792,27 @@ class AstUtils
             // If no matching typed parameter, fall through to other logic:
         }
 
+        // === DIRECT NEW CALL: (new Foo())->bar() ===
+        if (
+            $callNode instanceof Node\Expr\MethodCall
+            && $callNode->var instanceof Node\Expr\New_
+            && $callNode->var->class instanceof Name
+            && $callNode->name instanceof Identifier
+        ) {
+            $objFqcn = $this->resolveNameNodeToFqcn(
+                $callNode->var->class,
+                $callerNamespace,
+                $callerUseMap,
+                false
+            );
+            if ($objFqcn !== '') {
+                $methodName = $callNode->name->toString();
+                $decl = $this->findDeclaringClassForMethod(ltrim($objFqcn, '\\'), $methodName);
+                $target = $decl ?? ltrim($objFqcn, '\\');
+                return $target . '::' . $methodName;
+            }
+        }
+
         // === ANONYMOUS CLASS METHOD CALL: (new class(...) extends Foo {})->bar() ===
         if (
             $callNode instanceof Node\Expr\MethodCall
@@ -751,6 +851,24 @@ class AstUtils
             $methodName = $callNode->name->toString();
 
             $assignedExpr = $this->findPriorAssignment($varName, $callNode, $callerFuncOrMethodNode);
+
+            if ($assignedExpr === null) {
+                $foreachExpr = $this->findForeachExprForValueVar($varName, $callNode, $callerFuncOrMethodNode);
+                if ($foreachExpr instanceof Node\Expr) {
+                    $classFqcn = $this->resolveExprToClassFqcn(
+                        $foreachExpr,
+                        $callerNamespace,
+                        $callerUseMap,
+                        $callerFuncOrMethodNode,
+                        $visited
+                    );
+                    if ($classFqcn !== null && $classFqcn !== '') {
+                        $decl  = $this->findDeclaringClassForMethod(ltrim($classFqcn, '\\'), $methodName);
+                        $target = $decl ?? ltrim($classFqcn, '\\');
+                        return $target . '::' . $methodName;
+                    }
+                }
+            }
 
             if ($assignedExpr instanceof Node\Expr\New_ && $assignedExpr->class instanceof Node\Name) {
                 $classFqcn = $this->resolveNameNodeToFqcn(

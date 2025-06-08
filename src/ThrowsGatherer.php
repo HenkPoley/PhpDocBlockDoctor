@@ -108,9 +108,38 @@ class ThrowsGatherer extends NodeVisitorAbstract
                             $traitFqcn = $this->astUtils->resolveNameNodeToFqcn($traitName, $this->currentNamespace, $this->useMap, false);
                             if ($traitFqcn !== '') {
                                 \HenkPoley\DocBlockDoctor\GlobalCache::$classTraits[$className][] = $traitFqcn;
+                                // Alias existing trait methods under the class key
+                                foreach (\HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap as $k => $methodNode) {
+                                    if (str_starts_with($k, ltrim($traitFqcn, '\\') . '::')) {
+                                        $method = substr($k, strlen(ltrim($traitFqcn, '\\')) + 2);
+                                        $aliasKey = ltrim($className, '\\') . '::' . $method;
+                                        if (!isset(\HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap[$aliasKey])) {
+                                            \HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap[$aliasKey] = $methodNode;
+                                            \HenkPoley\DocBlockDoctor\GlobalCache::$nodeKeyToFilePath[$aliasKey] = \HenkPoley\DocBlockDoctor\GlobalCache::$nodeKeyToFilePath[$k] ?? $this->filePath;
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
+                }
+
+                // Also alias trait methods from parent classes
+                $parent = $parentFqcn;
+                while ($parent) {
+                    foreach (\HenkPoley\DocBlockDoctor\GlobalCache::$classTraits[$parent] ?? [] as $t) {
+                        foreach (\HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap as $k => $methodNode) {
+                            if (str_starts_with($k, ltrim($t, '\\') . '::')) {
+                                $method = substr($k, strlen(ltrim($t, '\\')) + 2);
+                                $aliasKey = ltrim($className, '\\') . '::' . $method;
+                                if (!isset(\HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap[$aliasKey])) {
+                                    \HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap[$aliasKey] = $methodNode;
+                                    \HenkPoley\DocBlockDoctor\GlobalCache::$nodeKeyToFilePath[$aliasKey] = \HenkPoley\DocBlockDoctor\GlobalCache::$nodeKeyToFilePath[$k] ?? $this->filePath;
+                                }
+                            }
+                        }
+                    }
+                    $parent = \HenkPoley\DocBlockDoctor\GlobalCache::$classParents[$parent] ?? null;
                 }
             }
             return null;
@@ -128,6 +157,31 @@ class ThrowsGatherer extends NodeVisitorAbstract
         \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$key] = [];
         \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key] = [];
         $currentAnnotatedThrowsFqcns = [];
+
+        // If this method belongs to a trait, also register it under each class that uses the trait
+        $traitName = null;
+        $parent = $node->getAttribute('parent');
+        while ($parent) {
+            if ($parent instanceof Node\Stmt\Trait_) {
+                $traitName = $this->astUtils->getContextClassName($parent, $this->currentNamespace);
+                break;
+            }
+            if ($parent instanceof Node\Stmt\Class_ || $parent instanceof Node\Stmt\Interface_) {
+                break;
+            }
+            $parent = $parent->getAttribute('parent');
+        }
+        if ($traitName) {
+            foreach (\HenkPoley\DocBlockDoctor\GlobalCache::$classTraits as $cls => $traits) {
+                if (in_array($traitName, $traits, true)) {
+                    $aliasKey = ltrim($cls, '\\') . '::' . $node->name->toString();
+                    if (!isset(\HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap[$aliasKey])) {
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap[$aliasKey] = $node;
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$nodeKeyToFilePath[$aliasKey] = $this->filePath;
+                    }
+                }
+            }
+        }
 
         $docComment = $node->getDocComment();
         if ($docComment instanceof \PhpParser\Comment\Doc) {
