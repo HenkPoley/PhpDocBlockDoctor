@@ -640,6 +640,33 @@ class AstUtils
             // If no matching typed parameter, fall through to other logic:
         }
 
+        // === ANONYMOUS CLASS METHOD CALL: (new class(...) extends Foo {})->bar() ===
+        if (
+            $callNode instanceof Node\Expr\MethodCall
+            && $callNode->var instanceof Node\Expr\New_
+            && $callNode->var->class instanceof Class_
+            && $callNode->name instanceof Identifier
+        ) {
+            /** @var Class_ $anonClass */
+            $anonClass = $callNode->var->class;
+            if ($anonClass->extends instanceof Name) {
+                $parentFqcn = $this->resolveNameNodeToFqcn(
+                    $anonClass->extends,
+                    $callerNamespace,
+                    $callerUseMap,
+                    false
+                );
+                if ($parentFqcn !== '' && $parentFqcn !== '0') {
+                    $decl = $this->findDeclaringClassForMethod(
+                        ltrim($parentFqcn, '\\'),
+                        $callNode->name->toString()
+                    );
+                    $target = $decl ?? ltrim($parentFqcn, '\\');
+                    return $target . '::' . $callNode->name->toString();
+                }
+            }
+        }
+
         // === LOCAL NEW ASSIGNMENT:  $foo = new SomeClass();  then  $foo->bar()  ===
         if (
             $callNode instanceof Node\Expr\MethodCall

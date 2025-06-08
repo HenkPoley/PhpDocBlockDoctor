@@ -49,7 +49,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
 
         foreach ($this->nodeFinder->find($nodes, fn(Node $n): bool => $n instanceof Node\Stmt\Use_ || $n instanceof Node\Stmt\GroupUse) as $useNode) {
             if ($useNode instanceof Node\Stmt\Use_) {
-                if ($useNode->type !== Node\Stmt\Use_::TYPE_NORMAL) {
+                if (in_array($useNode->type, [Node\Stmt\Use_::TYPE_FUNCTION, Node\Stmt\Use_::TYPE_CONSTANT], true)) {
                     continue;
                 }
                 foreach ($useNode->uses as $useUse) {
@@ -61,7 +61,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                     }
                 }
             } elseif ($useNode instanceof Node\Stmt\GroupUse) {
-                if ($useNode->type !== Node\Stmt\Use_::TYPE_NORMAL) {
+                if (in_array($useNode->type, [Node\Stmt\Use_::TYPE_FUNCTION, Node\Stmt\Use_::TYPE_CONSTANT], true)) {
                     continue;
                 }
                 foreach ($useNode->uses as $useUse) {
