@@ -1031,20 +1031,24 @@ class AstUtils
     }
 
     /**
-     * @param \PhpParser\Node\Expr\Throw_ $throwNode
-     * @param string $thrownFqcn
-     * @param \PhpParser\Node $boundaryNode
-     * @param string $currentNamespace
-     * @param mixed[] $useMap
+     * Determine if an exception of the given type would be caught before
+     * propagating outside the provided boundary when thrown from the
+     * given AST node.
+     *
+     * @param Node   $node             Starting point for upward traversal
+     * @param string $thrownFqcn       Fully-qualified class name of the thrown exception
+     * @param Node   $boundaryNode     Typically the enclosing function or method node
+     * @param string|null $currentNamespace Namespace of the starting node
+     * @param mixed[] $useMap          Use statements in effect for the file
      */
     public function isExceptionCaught(
-        $throwNode,
+        Node $node,
         $thrownFqcn,
         $boundaryNode,
         ?string $currentNamespace,
         $useMap
     ): bool {
-        $parent = $throwNode->getAttribute('parent');
+        $parent = $node->getAttribute('parent');
         $currentCatch = null;
         while ($parent && $parent !== $boundaryNode->getAttribute('parent')) {
             if ($parent instanceof Node\Stmt\Catch_) {
