@@ -388,10 +388,33 @@ class ThrowsGatherer extends NodeVisitorAbstract
         foreach ($matches as $ins) {
             /** @var Node\Expr\Instanceof_ $ins */
             if ($ins->class instanceof Node\Name) {
+                if ($this->instanceofHasInterveningThrow($ins, $varName)) {
+                    continue;
+                }
                 $types[] = $this->astUtils->resolveNameNodeToFqcn($ins->class, $this->currentNamespace, $this->useMap, false);
             }
         }
         return $types;
+    }
+
+    private function instanceofHasInterveningThrow(Node\Expr\Instanceof_ $ins, string $varName): bool
+    {
+        $parent = $ins->getAttribute('parent');
+        while ($parent && !$parent instanceof Node\Stmt\If_) {
+            $parent = $parent->getAttribute('parent');
+        }
+        if ($parent instanceof Node\Stmt\If_) {
+            $throws = $this->nodeFinder->findInstanceOf($parent->stmts, Node\Expr\Throw_::class);
+            if ($throws !== []) {
+                foreach ($throws as $t) {
+                    if ($t->expr instanceof Node\Expr\Variable && $t->expr->name === $varName) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

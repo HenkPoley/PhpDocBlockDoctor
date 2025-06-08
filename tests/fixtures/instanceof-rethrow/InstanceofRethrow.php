@@ -4,7 +4,7 @@ namespace Pitfalls\InstanceofRethrow;
 
 class Worker {
     public function doWork(): void {
-        throw new \ErrorException('fail');
+        throw new \ErrorException('fail', 0, 1, '', 0, new \Exception('cause'));
     }
 }
 
