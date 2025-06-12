@@ -387,7 +387,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
             && $n->class instanceof Node\Name);
         $types = [];
         foreach ($matches as $ins) {
-            /** @var Node\Expr\Instanceof_ $ins */
+            assert($ins instanceof Node\Expr\Instanceof_);
             if ($ins->class instanceof Node\Name) {
                 if ($this->instanceofHasInterveningThrow($ins, $varName)) {
                     continue;
