@@ -32,7 +32,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
     /**
      * @param mixed[] $nodes
      */
-    public function beforeTraverse($nodes)
+    public function beforeTraverse($nodes): null
     {
         $this->pendingPatches = [];
         $this->currentNamespace = \HenkPoley\DocBlockDoctor\GlobalCache::$fileNamespaces[$this->currentFilePath] ?? '';
@@ -99,7 +99,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
     /**
      * @param \PhpParser\Node $node
      */
-    public function leaveNode($node)
+    public function leaveNode(Node $node): null
     {
         if (!$node instanceof Node\Stmt\Function_ && !$node instanceof Node\Stmt\ClassMethod) {
             return null;

@@ -18,7 +18,7 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
         $this->printer = new PrettyPrinter\Standard();
     }
 
-    public function beforeTraverse(array $nodes)
+    public function beforeTraverse(array $nodes): null
     {
         $this->pendingPatches = [];
         return null;
@@ -29,7 +29,7 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
      *
      * @throws \InvalidArgumentException
      */
-    public function leaveNode($node): ?int // Return type indicates no AST modification by traverser
+    public function leaveNode(Node $node): ?int // Return type indicates no AST modification by traverser
     {
         if ($node instanceof Node\Stmt\GroupUse && count($node->uses) === 1) {
             $originalUse = $node->uses[0];

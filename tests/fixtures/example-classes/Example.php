@@ -44,7 +44,7 @@ class Example
      * @throws \Exception Violets are blue.
      * I throw an exception, when true equals true.
      */
-    public function three($input)
+    public function three(string $input)
     {
         throw new Exception();
     }

@@ -37,7 +37,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
      *
      * @throws \LogicException
      */
-    public function beforeTraverse($nodes)
+    public function beforeTraverse($nodes): null
     {
         $this->currentNamespace = '';
         $this->useMap = [];
@@ -87,7 +87,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
      *
      * @throws \LogicException
      */
-    public function enterNode($node)
+    public function enterNode(Node $node): null
     {
         if ($node instanceof Node\Stmt\Class_) {
             $className = '';
@@ -183,7 +183,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
      *
      * @throws \LogicException
      */
-    public function leaveNode($node)
+    public function leaveNode(Node $node): null
     {
         if (!$node instanceof Node\Stmt\Function_ && !$node instanceof Node\Stmt\ClassMethod) {
             return null;
@@ -198,10 +198,11 @@ class ThrowsGatherer extends NodeVisitorAbstract
     }
 
     /**
-     * @param Function_|ClassMethod $funcOrMethodNode
+     * @param \PhpParser\Node $funcOrMethodNode
+     * @psalm-param Function_|ClassMethod $funcOrMethodNode
      * @param string $funcKey Fully qualified method/function key
      *
-     * @throws \LogicException
+     * @return array
      */
     private function calculateDirectThrowsForNode(Node $funcOrMethodNode, string $funcKey): array
     {

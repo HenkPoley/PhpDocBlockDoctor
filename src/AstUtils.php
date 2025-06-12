@@ -78,11 +78,13 @@ class AstUtils
         }
         return $bestExpr;
     }
+
     /**
      * @param \PhpParser\Node $node
-     * @param string $currentNamespace
+     * @param string|null $currentNamespace
+     * @return string|null
      */
-    public function getNodeKey($node, ?string $currentNamespace): ?string
+    public function getNodeKey(Node $node, ?string $currentNamespace): ?string
     {
         if ($node instanceof Node\Stmt\ClassMethod) {
             $className = $this->getContextClassName($node, $currentNamespace);
@@ -104,9 +106,10 @@ class AstUtils
 
     /**
      * @param \PhpParser\Node $nodeContext
-     * @param string $currentNamespace
+     * @param string|null $currentNamespace
+     * @return string|null
      */
-    public function getContextClassName($nodeContext, ?string $currentNamespace): ?string
+    public function getContextClassName(Node $nodeContext, ?string $currentNamespace): ?string
     {
         $current = $nodeContext;
         while ($current = $current->getAttribute('parent')) {
@@ -130,11 +133,12 @@ class AstUtils
 
     /**
      * @param \PhpParser\Node\Name $nameNode
-     * @param string $currentNamespace
+     * @param string|null $currentNamespace
      * @param mixed[] $useMap
      * @param bool $isFunctionContext
+     * @return string
      */
-    public function resolveNameNodeToFqcn($nameNode, ?string $currentNamespace, $useMap, $isFunctionContext): string
+    public function resolveNameNodeToFqcn(Name $nameNode, ?string $currentNamespace, array $useMap, bool $isFunctionContext): string
     {
         if ($nameNode->hasAttribute('resolvedName') && $nameNode->getAttribute('resolvedName') instanceof Node\Name\FullyQualified) {
             return $nameNode->getAttribute('resolvedName')->toString();
@@ -162,10 +166,11 @@ class AstUtils
 
     /**
      * @param string $name
-     * @param string $currentNamespace
+     * @param string|null $currentNamespace
      * @param mixed[] $useMap
+     * @return string
      */
-    public function resolveStringToFqcn($name, ?string $currentNamespace, $useMap): string
+    public function resolveStringToFqcn(string $name, ?string $currentNamespace, array $useMap): string
     {
         if ($name === null || $name === '' || $name === '0') {
             return '';
@@ -200,11 +205,11 @@ class AstUtils
      * @throws \LogicException
      */
     public function getCalleeKey(
-        $callNode,
-        $callerNamespace,
-        $callerUseMap,
-        $callerFuncOrMethodNode,
-        array &$visited = []
+        Node\Expr $callNode,
+        string    $callerNamespace,
+        array     $callerUseMap,
+        Node      $callerFuncOrMethodNode,
+        array     &$visited = []
     ): ?string
     {
         $hash = spl_object_hash($callNode);
@@ -1061,16 +1066,16 @@ class AstUtils
      *
      * @param Node   $node             Starting point for upward traversal
      * @param string $thrownFqcn       Fully-qualified class name of the thrown exception
-     * @param Node   $boundaryNode     Typically the enclosing function or method node
+     * @param Node $boundaryNode     Typically the enclosing function or method node
      * @param string|null $currentNamespace Namespace of the starting node
      * @param mixed[] $useMap          Use statements in effect for the file
      */
     public function isExceptionCaught(
-        Node $node,
-        $thrownFqcn,
-        $boundaryNode,
+        Node    $node,
+        string  $thrownFqcn,
+        Node    $boundaryNode,
         ?string $currentNamespace,
-        $useMap
+        array   $useMap
     ): bool {
         $parent = $node->getAttribute('parent');
         $currentCatch = null;
@@ -1140,7 +1145,7 @@ class AstUtils
      * @param \PhpParser\Node $node        The node to check reachability for
      * @param \PhpParser\Node $boundary    Typically a function or method node
      */
-    public function isNodeAfterExecutionEndingStmt($node, $boundary): bool
+    public function isNodeAfterExecutionEndingStmt(Node $node, Node $boundary): bool
     {
         $current = $node;
         while ($current && $current !== $boundary) {
