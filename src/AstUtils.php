@@ -713,6 +713,30 @@ class AstUtils
             // If no matching typed parameter, fall through to other logic:
         }
 
+        // === METHOD CALL ON NEW OBJECT: (new Foo())->bar() ===
+        if (
+            $callNode instanceof Node\Expr\MethodCall
+            && $callNode->var instanceof Node\Expr\New_
+            && $callNode->var->class instanceof Name
+            && $callNode->name instanceof Identifier
+            && !($callNode->var->class instanceof Class_)
+        ) {
+            $classFqcn = $this->resolveNameNodeToFqcn(
+                $callNode->var->class,
+                $callerNamespace,
+                $callerUseMap,
+                false
+            );
+            if ($classFqcn !== '' && $classFqcn !== '0') {
+                $decl = $this->findDeclaringClassForMethod(
+                    ltrim($classFqcn, '\\'),
+                    $callNode->name->toString()
+                );
+                $target = $decl ?? ltrim($classFqcn, '\\');
+                return $target . '::' . $callNode->name->toString();
+            }
+        }
+
         // === ANONYMOUS CLASS METHOD CALL: (new class(...) extends Foo {})->bar() ===
         if (
             $callNode instanceof Node\Expr\MethodCall

@@ -1,0 +1,13 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\TraitInnerMethod\\HelperTrait::bar": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\TraitInnerMethod\\HelperTrait::foo": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\TraitInnerMethod\\Runner::run": [
+      "RuntimeException"
+    ]
+  }
+}
