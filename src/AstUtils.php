@@ -1176,11 +1176,11 @@ class AstUtils
                 /** @var ClassLoader $loader */
                 $loader = $fn[0];
                 $file   = $loader->findFile($fqcn);
-                if (
-                    $file &&
-                    strpos($file, DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR) !== false
-                ) {
-                    return true;
+                if ($file) {
+                    $normalized = str_replace(['\\', '/'], '/', $file);
+                    if (strpos($normalized, '/vendor/') !== false) {
+                        return true;
+                    }
                 }
             }
         }
