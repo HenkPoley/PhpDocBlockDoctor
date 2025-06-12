@@ -109,8 +109,14 @@ class DocBlockUpdater extends NodeVisitorAbstract
             return null;
         }
 
-        /** @var list<class-string> $analyzedThrowsFqcns */
         $analyzedThrowsFqcns = \HenkPoley\DocBlockDoctor\GlobalCache::$resolvedThrows[$nodeKey] ?? [];
+        assert(is_array($analyzedThrowsFqcns));
+        foreach ($analyzedThrowsFqcns as $fqcn) {
+            assert(
+                is_string($fqcn)
+                && AstUtils::classOrInterfaceExistsNoAutoload($fqcn)
+            );
+        }
         // Filter out any classes or interfaces that don’t actually exist
         $analyzedThrowsFqcns = array_filter(
             $analyzedThrowsFqcns,

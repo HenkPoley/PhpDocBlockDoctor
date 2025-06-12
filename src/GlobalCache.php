@@ -35,7 +35,8 @@ class GlobalCache
      */
     public static $nodeKeyToFilePath = [];
     /**
-     * @var mixed[]
+     * @psalm-var array<string, list<class-string>> Mapping of method key to
+     * a list of exception FQCNs that are resolved to be thrown by that method.
      */
     public static $resolvedThrows = [];
     /**
