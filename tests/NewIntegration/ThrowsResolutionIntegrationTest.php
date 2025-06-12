@@ -129,21 +129,6 @@ class ThrowsResolutionIntegrationTest extends TestCase
                         $calleeKey = null;
                         if (
                             $call instanceof \PhpParser\Node\Expr\MethodCall &&
-                            $call->var instanceof \PhpParser\Node\Expr\New_ &&
-                            $call->var->class instanceof \PhpParser\Node\Name &&
-                            $call->name instanceof \PhpParser\Node\Identifier
-                        ) {
-                            $objClass = $utils->resolveNameNodeToFqcn(
-                                $call->var->class,
-                                $namespace,
-                                $useMap,
-                                false
-                            );
-                            if ($objClass !== '') {
-                                $calleeKey = ltrim($objClass, '\\') . '::' . $call->name->toString();
-                            }
-                        } elseif (
-                            $call instanceof \PhpParser\Node\Expr\MethodCall &&
                             $call->var instanceof \PhpParser\Node\Expr\Variable &&
                             $call->name instanceof \PhpParser\Node\Identifier
                         ) {

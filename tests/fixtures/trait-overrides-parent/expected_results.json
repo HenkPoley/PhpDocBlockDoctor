@@ -1,0 +1,19 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\TraitOverridesParent\\BaseClass::foo": [
+      "LogicException"
+    ],
+    "Pitfalls\\TraitOverridesParent\\SomeTrait::foo": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\TraitOverridesParent\\ChildOverride::foo": [
+      "OverflowException"
+    ],
+    "Pitfalls\\TraitOverridesParent\\Runner::run": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\TraitOverridesParent\\RunnerOverride::run": [
+      "OverflowException"
+    ]
+  }
+}
