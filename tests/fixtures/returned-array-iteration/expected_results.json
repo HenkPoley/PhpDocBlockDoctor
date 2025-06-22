@@ -1,0 +1,11 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\ReturnedArrayIteration\\Provider::getItems": [],
+    "Pitfalls\\ReturnedArrayIteration\\Item::work": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\ReturnedArrayIteration\\Runner::run": [
+      "RuntimeException"
+    ]
+  }
+}

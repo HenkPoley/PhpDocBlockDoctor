@@ -105,6 +105,20 @@ class ThrowsGatherer extends NodeVisitorAbstract
                             $traitFqcn = $this->astUtils->resolveNameNodeToFqcn($traitName, $this->currentNamespace, $this->useMap, false);
                             if ($traitFqcn !== '') {
                                 \HenkPoley\DocBlockDoctor\GlobalCache::$classTraits[$className][] = $traitFqcn;
+                                // Alias already-known trait methods under this class
+                                foreach (\HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap as $mKey => $mNode) {
+                                    if (str_starts_with($mKey, ltrim($traitFqcn, '\\') . '::')) {
+                                        $suffix = substr($mKey, strlen(ltrim($traitFqcn, '\\')) + 2);
+                                        $alias = ltrim($className, '\\') . '::' . $suffix;
+                                        if (!isset(\HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap[$alias])) {
+                                            \HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap[$alias] = $mNode;
+                                            \HenkPoley\DocBlockDoctor\GlobalCache::$nodeKeyToFilePath[$alias] = \HenkPoley\DocBlockDoctor\GlobalCache::$nodeKeyToFilePath[$mKey];
+                                            \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$alias] = \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$mKey] ?? [];
+                                            \HenkPoley\DocBlockDoctor\GlobalCache::$annotatedThrows[$alias] = \HenkPoley\DocBlockDoctor\GlobalCache::$annotatedThrows[$mKey] ?? [];
+                                            \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$alias] = \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$mKey] ?? [];
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -143,6 +157,21 @@ class ThrowsGatherer extends NodeVisitorAbstract
         \HenkPoley\DocBlockDoctor\GlobalCache::$nodeKeyToFilePath[$key] = $this->filePath;
         \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$key] = [];
         \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key] = [];
+        // If this method belongs to a trait, also register it under any classes using that trait
+        $contextClass = $this->astUtils->getContextClassName($node, $this->currentNamespace);
+        if ($contextClass) {
+            foreach (\HenkPoley\DocBlockDoctor\GlobalCache::$classTraits as $classFqcn => $traits) {
+                if (in_array($contextClass, $traits, true)) {
+                    $aliasKey = ltrim($classFqcn, '\\') . '::' . $node->name->toString();
+                    if (!isset(\HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap[$aliasKey])) {
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap[$aliasKey] = $node;
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$nodeKeyToFilePath[$aliasKey] = $this->filePath;
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$aliasKey] = [];
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$aliasKey] = [];
+                    }
+                }
+            }
+        }
         $currentAnnotatedThrowsFqcns = [];
 
         $docComment = $node->getDocComment();
@@ -211,6 +240,27 @@ class ThrowsGatherer extends NodeVisitorAbstract
         }
         \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$key] =
             $this->calculateDirectThrowsForNode($node, $key);
+
+        // After direct throws are known, update any alias entries for classes using this trait
+        $traitNode = $node->getAttribute('parent');
+        while ($traitNode && !$traitNode instanceof Node\Stmt\Trait_) {
+            $traitNode = $traitNode->getAttribute('parent');
+        }
+        if ($traitNode instanceof Node\Stmt\Trait_) {
+            $traitFqcn = $this->astUtils->getContextClassName($node, $this->currentNamespace);
+            if ($traitFqcn) {
+                foreach (\HenkPoley\DocBlockDoctor\GlobalCache::$classTraits as $classFqcn => $traits) {
+                    if (in_array($traitFqcn, $traits, true)) {
+                        $aliasKey = ltrim($classFqcn, '\\') . '::' . $node->name->toString();
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap[$aliasKey] = $node;
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$nodeKeyToFilePath[$aliasKey] = $this->filePath;
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$aliasKey] = \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$key];
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$annotatedThrows[$aliasKey] = \HenkPoley\DocBlockDoctor\GlobalCache::$annotatedThrows[$key];
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$aliasKey] = \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key];
+                    }
+                }
+            }
+        }
         return null;
     }
 
