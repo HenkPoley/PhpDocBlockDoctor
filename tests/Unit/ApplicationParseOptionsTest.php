@@ -33,10 +33,12 @@ class ApplicationParseOptionsTest extends TestCase
         $opt = $this->parse(['doc-block-doctor']);
         chdir($orig);
 
-        $this->assertSame($tmp, $opt->rootDir);
+        $this->assertSame(realpath($tmp), $opt->rootDir);
         $this->assertFalse($opt->verbose);
         $this->assertNull($opt->readDirs);
         $this->assertNull($opt->writeDirs);
+
+        rmdir($tmp);
     }
 
     public function testFlagsAndDirectoriesParsed(): void
