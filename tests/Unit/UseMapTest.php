@@ -29,12 +29,14 @@ class UseMapTest extends TestCase
      */
     public function testUseStatementsSkipFunctionAndConstant(): void
     {
-        $code = "<?php\n" .
-            "namespace NS;\n" .
-            "use Some\\Thing as AliasClass;\n" .
-            "use function Other\\funcA;\n" .
-            "use const Other\\CONST_B;\n" .
-            "class Dummy {}";
+        $code = <<<'PHP'
+        <?php
+        namespace NS;
+        use Some\Thing as AliasClass;
+        use function Other\funcA;
+        use const Other\CONST_B;
+        class Dummy {}
+        PHP;
         $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
         $ast = $parser->parse($code) ?: [];
         foreach ($this->finder->findInstanceOf($ast, PhpParser\Node\Stmt\Use_::class) as $useNode) {
@@ -57,12 +59,14 @@ class UseMapTest extends TestCase
      */
     public function testGroupUseResolvesNames(): void
     {
-        $code = "<?php\n" .
-            "namespace NS;\n" .
-            "use Foo\\Bar\\{Baz, Qux as Quux};\n" .
-            "use function Foo\\Funcs\\{f1, f2};\n" .
-            "use const Foo\\Consts\\{C1, C2};\n" .
-            "class Dummy {}";
+        $code = <<<'PHP'
+        <?php
+        namespace NS;
+        use Foo\Bar\{Baz, Qux as Quux};
+        use function Foo\Funcs\{f1, f2};
+        use const Foo\Consts\{C1, C2};
+        class Dummy {}
+        PHP;
         $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
         $ast = $parser->parse($code) ?: [];
         foreach ($this->finder->findInstanceOf($ast, PhpParser\Node\Stmt\GroupUse::class) as $group) {
@@ -90,10 +94,12 @@ class UseMapTest extends TestCase
      */
     public function testGroupUseWithoutResolvedNamesUsesPrefix(): void
     {
-        $code = "<?php\n" .
-            "namespace NS;\n" .
-            "use Foo\\Bar\\{Baz, Qux};\n" .
-            "class Dummy {}";
+        $code = <<<'PHP'
+        <?php
+        namespace NS;
+        use Foo\Bar\{Baz, Qux};
+        class Dummy {}
+        PHP;
         $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
         $ast = $parser->parse($code) ?: [];
         $group = $this->finder->findFirstInstanceOf($ast, PhpParser\Node\Stmt\GroupUse::class);
