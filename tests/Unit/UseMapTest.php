@@ -8,8 +8,7 @@ use HenkPoley\DocBlockDoctor\GlobalCache;
 use PhpParser\ParserFactory;
 use PhpParser\PhpVersion;
 use PhpParser\NodeTraverser;
-use PhpParser\NodeVisitor\NameResolver;
-use PhpParser\NodeVisitor\ParentConnectingVisitor;
+use PhpParser\Node\Name\FullyQualified;
 use PhpParser\NodeFinder;
 use PHPUnit\Framework\TestCase;
 
@@ -38,9 +37,14 @@ class UseMapTest extends TestCase
             "class Dummy {}";
         $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
         $ast = $parser->parse($code) ?: [];
+        foreach ($this->finder->findInstanceOf($ast, PhpParser\Node\Stmt\Use_::class) as $useNode) {
+            foreach ($useNode->uses as $useUse) {
+                if ($useUse->type === PhpParser\Node\Stmt\Use_::TYPE_NORMAL) {
+                    $useUse->name->setAttribute('resolvedName', new FullyQualified('Some\\Thing'));
+                }
+            }
+        }
         $traverser = new NodeTraverser();
-        $traverser->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
-        $traverser->addVisitor(new ParentConnectingVisitor());
         $traverser->addVisitor(new ThrowsGatherer($this->finder, $this->utils, 'file.php'));
         $traverser->traverse($ast);
 
@@ -61,9 +65,14 @@ class UseMapTest extends TestCase
             "class Dummy {}";
         $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
         $ast = $parser->parse($code) ?: [];
+        foreach ($this->finder->findInstanceOf($ast, PhpParser\Node\Stmt\GroupUse::class) as $group) {
+            foreach ($group->uses as $use) {
+                $nameStr = $use->name->toString();
+                $groupPrefix = $group->prefix->toString();
+                $use->name->setAttribute('resolvedName', new FullyQualified($groupPrefix . '\\' . $nameStr));
+            }
+        }
         $traverser = new NodeTraverser();
-        $traverser->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
-        $traverser->addVisitor(new ParentConnectingVisitor());
         $traverser->addVisitor(new ThrowsGatherer($this->finder, $this->utils, 'file2.php'));
         $traverser->traverse($ast);
 
@@ -87,19 +96,13 @@ class UseMapTest extends TestCase
             "class Dummy {}";
         $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
         $ast = $parser->parse($code) ?: [];
-        $tr1 = new NodeTraverser();
-        $tr1->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
-        $tr1->addVisitor(new ParentConnectingVisitor());
-        $tr1->traverse($ast);
-        foreach ($this->finder->findInstanceOf($ast, PhpParser\Node\Stmt\GroupUse::class) as $group) {
-            foreach ($group->uses as $use) {
-                $use->name->setAttribute('resolvedName', null);
-            }
+        $group = $this->finder->findFirstInstanceOf($ast, PhpParser\Node\Stmt\GroupUse::class);
+        if ($group instanceof PhpParser\Node\Stmt\GroupUse) {
+            $group->prefix->setAttribute('resolvedName', new FullyQualified('Foo\\Bar'));
         }
-        GlobalCache::clear();
-        $tr2 = new NodeTraverser();
-        $tr2->addVisitor(new ThrowsGatherer($this->finder, $this->utils, 'file3.php'));
-        $tr2->traverse($ast);
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new ThrowsGatherer($this->finder, $this->utils, 'file3.php'));
+        $traverser->traverse($ast);
 
         $expected = [
             'Baz' => 'Foo\\Bar\\Baz',
