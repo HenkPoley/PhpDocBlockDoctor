@@ -145,4 +145,35 @@ class NameResolverReplaceNodesTrueTest extends TestCase
 
         $this->assertSame($expected, GlobalCache::$fileUseMaps['dummy-file'] ?? []);
     }
+
+    public function testGetContextClassNameUsesNamespacedName(): void
+    {
+        $code = <<<'PHP'
+<?php
+namespace My\Ctx;
+
+class Z {
+    public function bar(): void {}
+}
+PHP;
+
+        $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast    = $parser->parse($code) ?: [];
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new NameResolver(null, ['replaceNodes' => true, 'preserveOriginalNames' => true]));
+        $traverser->addVisitor(new ParentConnectingVisitor());
+        $traverser->traverse($ast);
+
+        $class  = $this->finder->findFirstInstanceOf($ast, \PhpParser\Node\Stmt\Class_::class);
+        $this->assertNotNull($class);
+        if (isset($class->namespacedName)) {
+            $class->setAttribute('namespacedName', $class->namespacedName);
+        }
+
+        $method = $this->finder->findFirstInstanceOf($ast, \PhpParser\Node\Stmt\ClassMethod::class);
+        $this->assertNotNull($method);
+
+        $className = $this->utils->getContextClassName($method, 'Wrong\\Ns');
+        $this->assertSame('My\\Ctx\\Z', $className);
+    }
 }
