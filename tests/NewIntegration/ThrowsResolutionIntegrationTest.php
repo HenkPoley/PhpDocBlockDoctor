@@ -177,6 +177,10 @@ class ThrowsResolutionIntegrationTest extends TestCase
             if ($fi->isDot() || !$fi->isDir()) {
                 continue;
             }
+            if (str_starts_with($fi->getFilename(), 'app-run-malformed')) {
+                // Integration tests for malformed PHP are handled elsewhere
+                continue;
+            }
             $ignore = str_starts_with($fi->getFilename(), 'ignore-throws-annotations');
             $scenarios[] = [$fi->getFilename(), $ignore];
         }
