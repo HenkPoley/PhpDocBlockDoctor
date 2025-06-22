@@ -363,7 +363,22 @@ class Application
 
                 $throwsFromCallees = [];
                 $originsFromCallees = [];
-                if (isset($funcNode->stmts) && is_array($funcNode->stmts)) {
+                if ($funcNode->stmts === null) {
+                    // Interface or abstract method - preserve previously resolved throws
+                    $existing    = GlobalCache::$resolvedThrows[$funcKey] ?? [];
+                    $newThrows   = array_values(array_unique(array_merge($baseThrows, $existing)));
+                    sort($newThrows);
+                    $newOrigins  = GlobalCache::$throwOrigins[$funcKey] ?? [];
+                    $oldThrows   = GlobalCache::$resolvedThrows[$funcKey] ?? [];
+                    $oldOrigins  = GlobalCache::$throwOrigins[$funcKey] ?? [];
+                    if ($newThrows !== $oldThrows || $newOrigins !== $oldOrigins) {
+                        GlobalCache::$resolvedThrows[$funcKey] = $newThrows;
+                        GlobalCache::$throwOrigins[$funcKey]   = $newOrigins;
+                        $changedInThisGlobalIteration = true;
+                    }
+                    continue;
+                }
+                if (is_array($funcNode->stmts)) {
                     $callNodes = array_merge(
                         $nodeFinder->findInstanceOf($funcNode->stmts, Node\Expr\MethodCall::class),
                         $nodeFinder->findInstanceOf($funcNode->stmts, Node\Expr\StaticCall::class),

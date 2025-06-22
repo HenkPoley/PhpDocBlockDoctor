@@ -111,7 +111,17 @@ class ThrowsResolutionIntegrationTest extends TestCase
                     $baseThrows = array_values(array_unique($baseThrows));
                 }
                 $throwsFromCallees = [];
-                if (isset($node->stmts) && is_array($node->stmts)) {
+                if ($node->stmts === null) {
+                    $existing = GlobalCache::$resolvedThrows[$methodKey] ?? [];
+                    $newThrows = array_values(array_unique(array_merge($baseThrows, $existing)));
+                    sort($newThrows);
+                    if ($newThrows !== (GlobalCache::$resolvedThrows[$methodKey] ?? [])) {
+                        GlobalCache::$resolvedThrows[$methodKey] = $newThrows;
+                        $changed = true;
+                    }
+                    continue;
+                }
+                if (is_array($node->stmts)) {
                     $calls = array_merge(
                         $finder->findInstanceOf($node->stmts, \PhpParser\Node\Expr\MethodCall::class),
                         $finder->findInstanceOf($node->stmts, \PhpParser\Node\Expr\StaticCall::class),
