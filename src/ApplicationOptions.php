@@ -8,6 +8,7 @@ namespace HenkPoley\DocBlockDoctor;
 class ApplicationOptions
 {
     public bool $verbose = false;
+    public bool $quiet = false;
     public bool $traceOrigins = false;
     public bool $traceCallSites = false;
     public bool $ignoreAnnotatedThrows = false;

@@ -117,6 +117,7 @@ class ApplicationFileMethodsTest extends TestCase
         $this->prepareGlobalCache($file, $code);
         $opt = new ApplicationOptions();
         $opt->writeDirs = [dirname($file)];
+        $opt->quiet = true;
         $utils = new AstUtils();
         $filesFixed = self::invokeUpdate($app, [$file], $utils, $opt);
         $this->assertSame([$file], $filesFixed);
