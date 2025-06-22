@@ -113,4 +113,36 @@ class NameResolverReplaceNodesTrueTest extends TestCase
         $this->assertArrayHasKey($key, GlobalCache::$directThrows);
         $this->assertEqualsCanonicalizing(['RuntimeException'], GlobalCache::$directThrows[$key]);
     }
+
+    public function testUseMapWithReplaceNodesTrue(): void
+    {
+        $code = <<<'PHP'
+        <?php
+        namespace My\Uses;
+
+        use Foo\Bar;
+        use Foo\Baz as BazAlias;
+        use Foo\Qux\{Quux as U, Quuz};
+
+        function dummy(): void {}
+        PHP;
+
+        $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast    = $parser->parse($code) ?: [];
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new NameResolver(null, ['replaceNodes' => true, 'preserveOriginalNames' => true]));
+        $traverser->addVisitor(new ParentConnectingVisitor());
+        $tg = new ThrowsGatherer($this->finder, $this->utils, 'dummy-file');
+        $traverser->addVisitor($tg);
+        $traverser->traverse($ast);
+
+        $expected = [
+            'Bar'      => 'Foo\\Bar',
+            'BazAlias' => 'Foo\\Baz',
+            'U'        => 'Foo\\Qux\\Quux',
+            'Quuz'     => 'Foo\\Qux\\Quuz',
+        ];
+
+        $this->assertSame($expected, GlobalCache::$fileUseMaps['dummy-file'] ?? []);
+    }
 }
