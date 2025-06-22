@@ -75,8 +75,6 @@ class ThrowsGatherer extends NodeVisitorAbstract
     /**
      * @param \PhpParser\Node $node
      * @return null
-     *
-     * @throws \LogicException
      */
     public function enterNode(Node $node)
     {
@@ -220,6 +218,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
      * @param string $funcKey Fully qualified method/function key
      *
      * @return array
+     *
+     * @throws \LogicException
      */
     private function calculateDirectThrowsForNode(Node $funcOrMethodNode, string $funcKey): array
     {
@@ -401,6 +401,9 @@ class ThrowsGatherer extends NodeVisitorAbstract
         return $types;
     }
 
+    /**
+     * @throws \LogicException
+     */
     private function instanceofHasInterveningThrow(Node\Expr\Instanceof_ $ins, string $varName): bool
     {
         $parent = $ins->getAttribute('parent');
@@ -425,6 +428,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
      * Find the class-string assignment for a variable prior to the given node.
      *
      * @param Node[] $stmts
+     *
+     * @throws \LogicException
      */
     private function findClassStringAssignment(array $stmts, Node $reference, string $varName): ?string
     {

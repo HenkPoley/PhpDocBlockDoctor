@@ -32,6 +32,8 @@ class AstUtils
      *
      * @param Node\FunctionLike $func
      * @return array<string,array<int,array{pos:int,expr:Node\Expr}>>
+     *
+     * @throws \LogicException
      */
     private function getAssignmentsForFunction(Node\FunctionLike $func): array
     {
@@ -62,6 +64,8 @@ class AstUtils
      * @param string $varName
      * @param Node $callNode
      * @param Node\FunctionLike $func
+     *
+     * @throws \LogicException
      */
     private function findPriorAssignment(string $varName, Node $callNode, Node\FunctionLike $func): ?Node\Expr
     {

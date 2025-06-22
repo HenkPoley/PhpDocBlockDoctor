@@ -26,6 +26,7 @@ class Application
      * @param string[] $argv
      *
      * @throws \LogicException
+     * @throws \RangeException
      * @throws \RuntimeException
      */
     public function run(array $argv): int
@@ -74,6 +75,8 @@ class Application
 
     /**
      * @param string[] $argv
+     *
+     * @throws \RuntimeException
      */
     private function parseOptions(array $argv): ApplicationOptions
     {
@@ -246,6 +249,9 @@ class Application
     /**
      * @param string[] $phpFilePaths
      * @return string[]
+     *
+     * @throws \LogicException
+     * @throws \RangeException
      */
     private function processFilesPass1(array $phpFilePaths, NodeFinder $nodeFinder, AstUtils $astUtils, ApplicationOptions $opt): array
     {
@@ -311,6 +317,9 @@ class Application
         return $filesRead;
     }
 
+    /**
+     * @throws \LogicException
+     */
     private function resolveThrowsGlobally(NodeFinder $nodeFinder, AstUtils $astUtils, ApplicationOptions $opt): void
     {
         if (!$opt->quiet) {
@@ -524,6 +533,9 @@ class Application
     /**
      * @param string[] $phpFilePaths
      * @return string[]
+     *
+     * @throws \LogicException
+     * @throws \RangeException
      */
     private function updateFiles(array $phpFilePaths, AstUtils $astUtils, ApplicationOptions $opt): array
     {

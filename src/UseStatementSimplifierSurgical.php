@@ -30,6 +30,7 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
 
     /**
      * @param \PhpParser\Node $node
+     * @return null|int
      *
      * @throws \InvalidArgumentException
      */

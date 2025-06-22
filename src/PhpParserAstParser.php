@@ -21,7 +21,9 @@ class PhpParserAstParser implements AstParser
 
     /**
      * @return Node[]|null
-     * @throws Error
+     *
+     * @throws \LogicException
+     * @throws \RangeException
      */
     public function parse(string $code): ?array
     {
@@ -31,6 +33,8 @@ class PhpParserAstParser implements AstParser
     /**
      * @param Node[] $ast
      * @param NodeVisitor[] $visitors
+     *
+     * @throws \LogicException
      */
     public function traverse(array $ast, array $visitors): void
     {
