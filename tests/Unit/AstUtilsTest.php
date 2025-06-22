@@ -1387,4 +1387,50 @@ class AstUtilsTest extends TestCase
         $resolved = $this->astUtils->getCalleeKey($call, 'MRVar', [], $run);
         $this->assertSame('MRVar\\A::act', $resolved);
     }
+
+    /**
+     * @throws \LogicException
+     */
+    public function testResolveExistingClassStaticMethodViaReflection(): void
+    {
+        $code = <<<'PHP'
+        <?php
+        namespace TR;
+
+        class Example {
+            public function run(): void {
+                \DateTime::createfromformat('Y-m-d', '2021-01-01');
+            }
+        }
+        PHP;
+
+        $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast = $parser->parse($code);
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
+        $traverser->addVisitor(new ParentConnectingVisitor());
+        $traverser->addVisitor(new class($this->astUtils) extends \PhpParser\NodeVisitorAbstract {
+            private AstUtils $u; private string $ns = '';
+            public function __construct(AstUtils $u) { $this->u = $u; }
+            public function beforeTraverse(array $nodes) {
+                $finder = new NodeFinder();
+                $nsNode = $finder->findFirstInstanceOf($nodes, Node\Stmt\Namespace_::class);
+                if ($nsNode && $nsNode->name) { $this->ns = $nsNode->name->toString(); }
+                return null;
+            }
+            public function enterNode(Node $n) {
+                if ($n instanceof Node\Stmt\ClassMethod) {
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::$nodeKeyToFilePath[$key] = 'dummy';
+                }
+            }
+        });
+        $traverser->traverse($ast);
+
+        $run = $this->finder->findFirst($ast, fn(Node $n) => $n instanceof Node\Stmt\ClassMethod && $n->name->toString() === 'run');
+        $this->assertNotNull($run);
+        $call = $this->finder->findFirstInstanceOf($run->stmts, Node\Expr\StaticCall::class);
+        $this->assertNotNull($call);
+        $resolved = $this->astUtils->getCalleeKey($call, 'TR', [], $run);
+        $this->assertSame('DateTime::createFromFormat', $resolved);
+    }
 }
