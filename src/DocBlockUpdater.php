@@ -12,6 +12,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
     private string $currentFilePath;
     private bool $traceOrigins;
     private bool $traceCallSites;
+    private bool $quiet;
     /**
      * @var mixed[]
      */
@@ -21,12 +22,13 @@ class DocBlockUpdater extends NodeVisitorAbstract
      */
     private $currentNamespace = '';
 
-    public function __construct(\HenkPoley\DocBlockDoctor\AstUtils $astUtils, string $currentFilePath, bool $traceOrigins = false, bool $traceCallSites = false)
+    public function __construct(\HenkPoley\DocBlockDoctor\AstUtils $astUtils, string $currentFilePath, bool $traceOrigins = false, bool $traceCallSites = false, bool $quiet = false)
     {
         $this->astUtils = $astUtils;
         $this->currentFilePath = $currentFilePath;
         $this->traceOrigins = $traceOrigins;
         $this->traceCallSites = $traceCallSites;
+        $this->quiet = $quiet;
     }
 
     /**
@@ -319,7 +321,9 @@ class DocBlockUpdater extends NodeVisitorAbstract
                 }
             }
             if ($patchType !== '') {
-                echo "Scheduling DocBlock " . strtoupper($patchType) . " for " . $this->getNodeSignatureForMessage($node) . "\n";
+                if (!$this->quiet) {
+                    echo "Scheduling DocBlock " . strtoupper($patchType) . " for " . $this->getNodeSignatureForMessage($node) . "\n";
+                }
                 $this->pendingPatches[] = [
                     'type' => $patchType, 'node' => $node,
                     'newDocText' => $finalNormalizedNewDocText,

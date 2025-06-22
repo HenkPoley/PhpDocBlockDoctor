@@ -45,7 +45,7 @@ class TraceOriginsTest extends TestCase
         $tr2 = new NodeTraverser();
         $tr2->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
         $tr2->addVisitor(new ParentConnectingVisitor());
-        $updater = new DocBlockUpdater($utils, 'dummy.php', true, false);
+        $updater = new DocBlockUpdater($utils, 'dummy.php', true, false, true);
         $tr2->addVisitor($updater);
         $tr2->traverse($ast);
 

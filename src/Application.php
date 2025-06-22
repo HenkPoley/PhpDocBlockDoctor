@@ -60,7 +60,7 @@ class Application
 
         $filesFixed = $this->updateFiles($phpFiles, $astUtils, $opt);
 
-        if ($opt->verbose) {
+        if ($opt->verbose && !$opt->quiet) {
             echo "\n=== Summary ===\n";
             echo "Files read (" . count($filesRead) . "):\n";
             foreach ($filesRead as $f) {
@@ -89,6 +89,11 @@ class Application
 
             if ($arg === '--verbose' || $arg === '-v') {
                 $opt->verbose = true;
+                continue;
+            }
+
+            if ($arg === '--quiet' || $arg === '-q') {
+                $opt->quiet = true;
                 continue;
             }
 
@@ -186,7 +191,7 @@ class Application
         $opt->readDirs  = $readDirs;
         $opt->writeDirs = $writeDirs;
 
-        if ($opt->verbose) {
+        if ($opt->verbose && !$opt->quiet) {
             echo "[Verbose] Running DocBlockDoctor on: {$rootDir}\n";
             echo "[Verbose] Reading from: " . implode(', ', $readDirs) . "\n";
             echo "[Verbose] Writing to:  " . implode(', ', $writeDirs) . "\n";
@@ -248,10 +253,12 @@ class Application
      */
     private function processFilesPass1(array $phpFilePaths, NodeFinder $nodeFinder, AstUtils $astUtils, ApplicationOptions $opt): array
     {
-        if ($opt->verbose) {
-            echo 'Pass 1: Gathering info on ' . count($phpFilePaths) . " files...\n";
-        } else {
-            echo "Pass 1: Gathering info...\n";
+        if (!$opt->quiet) {
+            if ($opt->verbose) {
+                echo 'Pass 1: Gathering info on ' . count($phpFilePaths) . " files...\n";
+            } else {
+                echo "Pass 1: Gathering info...\n";
+            }
         }
 
         GlobalCache::clear();
@@ -262,20 +269,22 @@ class Application
 
         foreach ($phpFilePaths as $filePath) {
             $filesRead[] = $filePath;
-            if ($opt->verbose) {
+            if ($opt->verbose && !$opt->quiet) {
                 echo "  • Processing: {$filePath}\n";
             }
 
             $code = $this->fileSystem->getContents($filePath);
             if ($code === false) {
-                echo "  ! Cannot read file: {$filePath}\n";
+                if (!$opt->quiet) {
+                    echo "  ! Cannot read file: {$filePath}\n";
+                }
                 continue;
             }
 
             try {
                 $ast = $this->astParser->parse($code);
                 if (!$ast) {
-                    if ($opt->verbose) {
+                    if ($opt->verbose && !$opt->quiet) {
                         echo "    → No AST for {$filePath}\n";
                     }
                     continue;
@@ -293,18 +302,24 @@ class Application
                 ]);
 
             } catch (Error $e) {
-                echo "Parse error (Pass 1) in {$filePath}: {$e->getMessage()}\n";
+                if (!$opt->quiet) {
+                    echo "Parse error (Pass 1) in {$filePath}: {$e->getMessage()}\n";
+                }
             }
         }
 
-        echo "Pass 1 Complete.\n";
+        if (!$opt->quiet) {
+            echo "Pass 1 Complete.\n";
+        }
 
         return $filesRead;
     }
 
     private function resolveThrowsGlobally(NodeFinder $nodeFinder, AstUtils $astUtils, ApplicationOptions $opt): void
     {
-        echo "\nIntermediate Phase: Globally resolving throws...\n";
+        if (!$opt->quiet) {
+            echo "\nIntermediate Phase: Globally resolving throws...\n";
+        }
 
         GlobalCache::$resolvedThrows = [];
         foreach (array_keys(GlobalCache::$astNodeMap) as $funcKey) {
@@ -431,12 +446,16 @@ class Application
             }
 
             if ($currentGlobalIteration >= $maxGlobalIterations) {
-                echo "Warning: Global Throws Resolution max iterations ({$currentGlobalIteration}).\n";
+                if (!$opt->quiet) {
+                    echo "Warning: Global Throws Resolution max iterations ({$currentGlobalIteration}).\n";
+                }
                 break;
             }
         } while ($changedInThisGlobalIteration);
 
-        echo "Global Throws Resolution Complete.\n";
+        if (!$opt->quiet) {
+            echo "Global Throws Resolution Complete.\n";
+        }
     }
 
     /**
@@ -464,15 +483,17 @@ class Application
             return false;
         });
 
-        echo "\nPass 2: Updating files ...\n";
-        if ($verbose) {
-            echo 'Processing ' . count($phpFilesForWriting) . " files...\n";
+        if (!$opt->quiet) {
+            echo "\nPass 2: Updating files ...\n";
+            if ($verbose) {
+                echo 'Processing ' . count($phpFilesForWriting) . " files...\n";
+            }
         }
 
         $filesFixed = [];
 
         foreach ($phpFilesForWriting as $filePath) {
-            if ($verbose) {
+            if ($verbose && !$opt->quiet) {
                 echo "  • Processing (Pass 2): {$filePath}\n";
             }
 
@@ -483,14 +504,18 @@ class Application
             do {
                 $currentFilePassIteration++;
                 if ($currentFilePassIteration > $maxFilePassIterations) {
-                    echo "Warning: Max iterations for file {$filePath}. Skipping further passes on this file.\n";
+                    if (!$opt->quiet) {
+                        echo "Warning: Max iterations for file {$filePath}. Skipping further passes on this file.\n";
+                    }
                     break;
                 }
 
                 $modifiedInThisPass = false;
                 $codeAtStart       = $this->fileSystem->getContents($filePath);
                 if ($codeAtStart === false) {
-                    echo "  ! Cannot read file: {$filePath}\n";
+                    if (!$opt->quiet) {
+                        echo "  ! Cannot read file: {$filePath}\n";
+                    }
                     break;
                 }
 
@@ -500,7 +525,9 @@ class Application
                     $currentAST = $this->astParser->parse($codeAtStart);
 
                     if (!$currentAST) {
-                        echo "Error parsing {$filePath} (Pass 2).\n";
+                        if (!$opt->quiet) {
+                            echo "Error parsing {$filePath} (Pass 2).\n";
+                        }
                         break;
                     }
 
@@ -509,7 +536,9 @@ class Application
                         $currentParentConnector,
                     ]);
                 } catch (Error $e) {
-                    echo "Parse error (Pass 2) in {$filePath}: {$e->getMessage()}\n";
+                    if (!$opt->quiet) {
+                        echo "Parse error (Pass 2) in {$filePath}: {$e->getMessage()}\n";
+                    }
                     break;
                 }
 
@@ -534,7 +563,7 @@ class Application
 
                     if ($newCode !== $codeAtStart) {
                         $this->fileSystem->putContents($filePath, $newCode);
-                        if ($verbose) {
+                        if ($verbose && !$opt->quiet) {
                             echo "    → Surgically simplified use statements in {$filePath}\n";
                         }
                         $fileOverallModified = true;
@@ -542,13 +571,15 @@ class Application
                     }
                 }
 
-                $docBlockUpdater   = new DocBlockUpdater($astUtils, $filePath, $traceOrigins, $traceCallSites);
+                $docBlockUpdater   = new DocBlockUpdater($astUtils, $filePath, $traceOrigins, $traceCallSites, $opt->quiet);
                 $this->astParser->traverse($currentAST, [$docBlockUpdater]);
 
                 if ($docBlockUpdater->pendingPatches !== []) {
                     $currentFileContent = $this->fileSystem->getContents($filePath);
                     if ($currentFileContent === false) {
-                        echo "  ! Cannot read file: {$filePath}\n";
+                        if (!$opt->quiet) {
+                            echo "  ! Cannot read file: {$filePath}\n";
+                        }
                         break;
                     }
 
@@ -648,7 +679,7 @@ class Application
 
                     if ($newFileContent !== $currentFileContent) {
                         $this->fileSystem->putContents($filePath, $newFileContent);
-                        if ($verbose) {
+                        if ($verbose && !$opt->quiet) {
                             echo "    → Applied DocBlock changes to {$filePath}\n";
                         }
                         $modifiedInThisPass = true;
@@ -662,14 +693,16 @@ class Application
             } while (true);
 
             if ($fileOverallModified) {
-                if ($verbose) {
+                if ($verbose && !$opt->quiet) {
                     echo "  ✓ Finished {$filePath} after modifications.\n";
                 }
                 $filesFixed[] = $filePath;
             }
         }
 
-        echo "All done.\n";
+        if (!$opt->quiet) {
+            echo "All done.\n";
+        }
 
         return $filesFixed;
     }
@@ -686,6 +719,7 @@ Usage:
 Options:
   -h, --help                Display this help message and exit
   -v, --verbose             Enable verbose output (show each file being processed)
+  -q, --quiet               Suppress all non-error output
   --read-dirs=DIRS          Comma-separated list of directories to read
   --write-dirs=DIRS         Comma-separated list of directories to update
   --trace-throw-origins     Replace @throws descriptions with origin locations and call chain
@@ -703,7 +737,7 @@ Description:
 
 Examples:
   # Process the current directory (quiet mode)
-  php vendor/bin/doc-block-doctor
+  php vendor/bin/doc-block-doctor --quiet
 
   # Process a specific directory, with verbose logging
   php vendor/bin/doc-block-doctor --verbose /path/to/project

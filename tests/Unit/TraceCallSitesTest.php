@@ -45,7 +45,7 @@ class TraceCallSitesTest extends TestCase
         $tr2 = new NodeTraverser();
         $tr2->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
         $tr2->addVisitor(new ParentConnectingVisitor());
-        $updater = new DocBlockUpdater($utils, 'dummy.php', false, true);
+        $updater = new DocBlockUpdater($utils, 'dummy.php', false, true, true);
         $tr2->addVisitor($updater);
         $tr2->traverse($ast);
 

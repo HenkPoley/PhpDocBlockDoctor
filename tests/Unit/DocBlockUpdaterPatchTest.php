@@ -57,7 +57,7 @@ class DocBlockUpdaterPatchTest extends TestCase
         $tr2 = new NodeTraverser();
         $tr2->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
         $tr2->addVisitor(new ParentConnectingVisitor());
-        $updater = new DocBlockUpdater($utils, $file, $traceOrigins, $traceCallSites);
+        $updater = new DocBlockUpdater($utils, $file, $traceOrigins, $traceCallSites, true);
         $tr2->addVisitor($updater);
         $tr2->traverse($ast);
         return $updater->pendingPatches;
@@ -129,7 +129,7 @@ class DocBlockUpdaterPatchTest extends TestCase
         $tr = new NodeTraverser();
         $tr->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
         $tr->addVisitor(new ParentConnectingVisitor());
-        $up = new DocBlockUpdater($this->utils, 'dummy.php', false, false);
+        $up = new DocBlockUpdater($this->utils, 'dummy.php', false, false, true);
         $tr->addVisitor($up);
         $tr->traverse($ast);
         $this->assertCount(1, $up->pendingPatches);
@@ -145,7 +145,7 @@ class DocBlockUpdaterPatchTest extends TestCase
         $tr = new NodeTraverser();
         $tr->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
         $tr->addVisitor(new ParentConnectingVisitor());
-        $up = new DocBlockUpdater($this->utils, 'dummy.php', false, false);
+        $up = new DocBlockUpdater($this->utils, 'dummy.php', false, false, true);
         $tr->addVisitor($up);
         $tr->traverse($ast);
         $this->assertCount(1, $up->pendingPatches);
@@ -160,7 +160,7 @@ class DocBlockUpdaterPatchTest extends TestCase
         $tr = new NodeTraverser();
         $tr->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
         $tr->addVisitor(new ParentConnectingVisitor());
-        $up = new DocBlockUpdater($this->utils, 'dummy.php', false, false);
+        $up = new DocBlockUpdater($this->utils, 'dummy.php', false, false, true);
         $tr->addVisitor($up);
         $tr->traverse($ast);
         $this->assertCount(1, $up->pendingPatches);
@@ -171,7 +171,7 @@ class DocBlockUpdaterPatchTest extends TestCase
 
     public function testNormalizeDocBlockStringUtility(): void
     {
-        $up = new DocBlockUpdater($this->utils, 'dummy.php', false, false);
+        $up = new DocBlockUpdater($this->utils, 'dummy.php', false, false, true);
         $ref = new \ReflectionMethod(DocBlockUpdater::class, 'normalizeDocBlockString');
         $ref->setAccessible(true);
         $res = $ref->invoke($up, "\n Foo \n\n");
