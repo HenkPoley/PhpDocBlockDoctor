@@ -1,0 +1,14 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\ReturnAssignMultiple\\Factory::create": [],
+    "Pitfalls\\ReturnAssignMultiple\\ProductA::work": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\ReturnAssignMultiple\\ProductB::work": [
+      "InvalidArgumentException"
+    ],
+    "Pitfalls\\ReturnAssignMultiple\\Runner::run": [
+      "RuntimeException"
+    ]
+  }
+}

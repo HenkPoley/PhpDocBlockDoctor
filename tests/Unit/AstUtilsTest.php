@@ -1323,4 +1323,68 @@ class AstUtilsTest extends TestCase
         $resolved = $this->astUtils->getCalleeKey($targetCall, 'MR', [], $run);
         $this->assertSame('MR\\A::act', $resolved);
     }
+
+    /**
+     * @throws \LogicException
+     */
+    public function testResolveAssignedFromCallMultipleReturns(): void
+    {
+        $code = <<<'PHP'
+        <?php
+        namespace MRVar;
+
+        class Factory {
+            public function create(bool $flag) {
+                if ($flag) {
+                    return new A();
+                }
+                return new B();
+            }
+        }
+
+        class A { public function act(): void {} }
+        class B { public function act(): void {} }
+
+        class User {
+            private Factory $f;
+            public function __construct(Factory $f) { $this->f = $f; }
+            public function run(bool $flag): void {
+                $p = $this->f->create($flag);
+                $p->act();
+            }
+        }
+        PHP;
+
+        $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast = $parser->parse($code);
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
+        $traverser->addVisitor(new ParentConnectingVisitor());
+        $traverser->addVisitor(new class($this->astUtils) extends \PhpParser\NodeVisitorAbstract {
+            private AstUtils $u; private string $ns = '';
+            public function __construct(AstUtils $u) { $this->u = $u; }
+            public function beforeTraverse(array $nodes) {
+                $finder = new NodeFinder();
+                $nsNode = $finder->findFirstInstanceOf($nodes, Node\Stmt\Namespace_::class);
+                if ($nsNode && $nsNode->name) { $this->ns = $nsNode->name->toString(); }
+                return null;
+            }
+            public function enterNode(Node $n) {
+                if ($n instanceof Node\Stmt\ClassMethod) {
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::$nodeKeyToFilePath[$key] = 'dummy';
+                }
+            }
+        });
+        $traverser->traverse($ast);
+
+        $run = $this->finder->findFirst($ast, fn(Node $n) => $n instanceof Node\Stmt\ClassMethod && $n->name->toString() === 'run');
+        $this->assertNotNull($run);
+        $call = $this->finder->findFirst(
+            $run->stmts,
+            fn(Node $n) => $n instanceof Node\Expr\MethodCall && $n->name instanceof Node\Identifier && $n->name->toString() === 'act'
+        );
+        $this->assertNotNull($call);
+        $resolved = $this->astUtils->getCalleeKey($call, 'MRVar', [], $run);
+        $this->assertSame('MRVar\\A::act', $resolved);
+    }
 }
