@@ -70,7 +70,9 @@ class ThrowsResolutionIntegrationTest extends TestCase
                 // Integration tests for malformed PHP are handled elsewhere
                 continue;
             }
-            $ignore = str_starts_with($fi->getFilename(), 'ignore-throws-annotations');
+
+            // TODO: Should only ignore the RuntimeException on \HenkPoley\DocBlockDoctor\TestFixtures\ConstructorThrows\ThrowsInConstructor::createAndCall
+            $ignore = $fi->getFilename() === 'ThrowsInConstructor.php';
             $scenarios[] = [$fi->getFilename(), $ignore];
         }
         return $scenarios;
