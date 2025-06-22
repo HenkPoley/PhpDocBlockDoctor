@@ -45,6 +45,8 @@ class Application
             }
         }
 
+        GlobalCache::clear();
+
         $opt = $this->parseOptions($argv);
         $this->resolveDirectories($opt);
 

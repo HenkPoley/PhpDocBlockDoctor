@@ -71,4 +71,36 @@ class GlobalCache
         self::$classParents = [];
         self::$classTraits = [];
     }
+
+    /**
+     * @return mixed[]
+     */
+    public static function getResolvedThrowsForKey(string $key): array
+    {
+        return self::$resolvedThrows[$key] ?? [];
+    }
+
+    /**
+     * @return mixed[]
+     */
+    public static function getThrowOriginsForKey(string $key): array
+    {
+        return self::$throwOrigins[$key] ?? [];
+    }
+
+    /**
+     * @return array<string, mixed[]>
+     */
+    public static function getAllResolvedThrows(): array
+    {
+        return self::$resolvedThrows;
+    }
+
+    /**
+     * @return array<string, array<string, string[]>>
+     */
+    public static function getAllThrowOrigins(): array
+    {
+        return self::$throwOrigins;
+    }
 }
