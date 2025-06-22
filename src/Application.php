@@ -35,70 +35,103 @@ class Application
             }
         }
 
-        // ------------------------------------------------------------
-        // 2) Next, parse --verbose and directory options.
-        // ------------------------------------------------------------
-        $verbose       = false;
-        $traceOrigins  = false;
-        $traceCallSites = false;
-        $ignoreAnnotated = false;
-        $rootDir       = null;
-        $readDirs      = null;
-        $writeDirs     = null;
-        $counter    = count($argv);
+        $opt = $this->parseOptions($argv);
+        $this->resolveDirectories($opt);
 
+        $parser    = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 1));
+        $nodeFinder = new NodeFinder();
+        $astUtils   = new AstUtils();
+
+        $phpFiles  = $this->collectPhpFiles($opt);
+        $filesRead = $this->processFilesPass1($phpFiles, $parser, $nodeFinder, $astUtils, $opt);
+
+        $this->resolveThrowsGlobally($nodeFinder, $astUtils, $opt);
+
+        $filesFixed = $this->updateFiles($phpFiles, $parser, $astUtils, $opt);
+
+        if ($opt->verbose) {
+            echo "\n=== Summary ===\n";
+            echo "Files read (" . count($filesRead) . "):\n";
+            foreach ($filesRead as $f) {
+                echo "  - $f\n";
+            }
+            echo "\nFiles fixed (" . count($filesFixed) . "):\n";
+            foreach ($filesFixed as $f) {
+                echo "  - $f\n";
+            }
+            echo "\n";
+        }
+
+        return 0;
+    }
+
+    /**
+     * @param string[] $argv
+     */
+    private function parseOptions(array $argv): ApplicationOptions
+    {
+        $opt = new ApplicationOptions();
+
+        $counter = count($argv);
         for ($i = 1; $i < $counter; $i++) {
             $arg = $argv[$i];
 
             if ($arg === '--verbose' || $arg === '-v') {
-                $verbose = true;
+                $opt->verbose = true;
                 continue;
             }
 
             if ($arg === '--trace-throw-origins') {
-                $traceOrigins = true;
+                $opt->traceOrigins = true;
                 continue;
             }
 
             if ($arg === '--trace-throw-call-sites') {
-                $traceCallSites = true;
+                $opt->traceCallSites = true;
                 continue;
             }
 
             if ($arg === '--ignore-annotated-throws') {
-                $ignoreAnnotated = true;
+                $opt->ignoreAnnotatedThrows = true;
                 continue;
             }
 
             if (strncmp($arg, '--read-dirs=', strlen('--read-dirs=')) === 0) {
-                $dirs     = substr($arg, 12);
-                $readDirs = array_filter(array_map('trim', explode(',', $dirs)));
+                $dirs       = substr($arg, 12);
+                $opt->readDirs = array_filter(array_map('trim', explode(',', $dirs)));
                 continue;
             }
 
             if (strncmp($arg, '--write-dirs=', strlen('--write-dirs=')) === 0) {
-                $dirs      = substr($arg, 13);
-                $writeDirs = array_filter(array_map('trim', explode(',', $dirs)));
+                $dirs        = substr($arg, 13);
+                $opt->writeDirs = array_filter(array_map('trim', explode(',', $dirs)));
                 continue;
             }
 
-            if ($rootDir === null) {
-                $rootDir = $arg;
+            if ($opt->rootDir === '') {
+                $opt->rootDir = $arg;
             }
         }
 
-        // Default to current working directory if no path provided
-        if ($rootDir === null) {
+        if ($opt->rootDir === '') {
             $cwd = getcwd();
             if ($cwd === false) {
                 throw new \RuntimeException('Cannot determine current working directory');
             }
-            $rootDir = $cwd;
+            $opt->rootDir = $cwd;
         }
 
-        $rootDir = rtrim($rootDir, DIRECTORY_SEPARATOR);
+        $opt->rootDir = rtrim($opt->rootDir, DIRECTORY_SEPARATOR);
 
-        // Determine directories to read from
+        return $opt;
+    }
+
+    private function resolveDirectories(ApplicationOptions $opt): void
+    {
+        $rootDir   = $opt->rootDir;
+        $readDirs  = $opt->readDirs;
+        $writeDirs = $opt->writeDirs;
+
         if ($readDirs === null) {
             $readDirs = [];
             if (is_dir($rootDir . DIRECTORY_SEPARATOR . 'src')) {
@@ -122,7 +155,6 @@ class Application
             }, $readDirs);
         }
 
-        // Determine directories eligible for writing
         if ($writeDirs === null) {
             $writeDirs = [];
             if (is_dir($rootDir . DIRECTORY_SEPARATOR . 'src')) {
@@ -140,23 +172,23 @@ class Application
             }, $writeDirs);
         }
 
-        if ($verbose) {
+        $opt->readDirs  = $readDirs;
+        $opt->writeDirs = $writeDirs;
+
+        if ($opt->verbose) {
             echo "[Verbose] Running DocBlockDoctor on: {$rootDir}\n";
             echo "[Verbose] Reading from: " . implode(', ', $readDirs) . "\n";
             echo "[Verbose] Writing to:  " . implode(', ', $writeDirs) . "\n";
         }
+    }
 
-        // ------------------------------------------------------------
-        // 3) Main logic: gather files, resolve throws, update docblocks.
-        // ------------------------------------------------------------
-
-        $parser    = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 1));
-        $nodeFinder = new NodeFinder();
-        $astUtils   = new AstUtils();
-
-        // Collect all .php files from the configured read directories
+    /**
+     * @return string[]
+     */
+    private function collectPhpFiles(ApplicationOptions $opt): array
+    {
         $phpFilePaths = [];
-        foreach ($readDirs as $dir) {
+        foreach ($opt->readDirs as $dir) {
             if (is_file($dir)) {
                 if (pathinfo($dir, PATHINFO_EXTENSION) === 'php') {
                     $phpFilePaths[] = realpath($dir);
@@ -193,26 +225,30 @@ class Application
             }
         }
 
-        $phpFilePaths = array_values(array_unique($phpFilePaths));
+        return array_values(array_unique($phpFilePaths));
+    }
 
-        if ($verbose) {
-            echo "Pass 1: Gathering info on " . count($phpFilePaths) . " files...\n";
+    /**
+     * @param string[] $phpFilePaths
+     * @return string[]
+     */
+    private function processFilesPass1(array $phpFilePaths, \PhpParser\Parser $parser, NodeFinder $nodeFinder, AstUtils $astUtils, ApplicationOptions $opt): array
+    {
+        if ($opt->verbose) {
+            echo 'Pass 1: Gathering info on ' . count($phpFilePaths) . " files...\n";
         } else {
             echo "Pass 1: Gathering info...\n";
         }
 
         GlobalCache::clear();
 
-        // Keep track of every file we try to read
         $filesRead = [];
-
-        // Pass 1 visitors
         $nameResolverForPass1    = new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]);
         $parentConnectorForPass1 = new ParentConnectingVisitor();
 
         foreach ($phpFilePaths as $filePath) {
-            $filesRead[] = $filePath; // record that we read this file
-            if ($verbose) {
+            $filesRead[] = $filePath;
+            if ($opt->verbose) {
                 echo "  • Processing: {$filePath}\n";
             }
 
@@ -225,7 +261,7 @@ class Application
             try {
                 $ast = $parser->parse($code);
                 if (!$ast) {
-                    if ($verbose) {
+                    if ($opt->verbose) {
                         echo "    → No AST for {$filePath}\n";
                     }
                     continue;
@@ -238,7 +274,7 @@ class Application
                     $nodeFinder,
                     $astUtils,
                     $filePath,
-                    $ignoreAnnotated
+                    $opt->ignoreAnnotatedThrows
                 ));
                 $traverserPass1->traverse($ast);
 
@@ -249,9 +285,11 @@ class Application
 
         echo "Pass 1 Complete.\n";
 
-        // ------------------------------------------------------------
-        // 4) Intermediate: Resolve all throws globally
-        // ------------------------------------------------------------
+        return $filesRead;
+    }
+
+    private function resolveThrowsGlobally(NodeFinder $nodeFinder, AstUtils $astUtils, ApplicationOptions $opt): void
+    {
         echo "\nIntermediate Phase: Globally resolving throws...\n";
 
         GlobalCache::$resolvedThrows = [];
@@ -259,7 +297,7 @@ class Application
             $direct    = GlobalCache::$directThrows[$funcKey]    ?? [];
             $annotated = GlobalCache::$annotatedThrows[$funcKey] ?? [];
             $initial   = $direct;
-            if (!$ignoreAnnotated) {
+            if (!$opt->ignoreAnnotatedThrows) {
                 $initial = array_values(array_unique(array_merge($initial, $annotated)));
             } else {
                 $initial = array_values(array_unique($initial));
@@ -289,7 +327,7 @@ class Application
                 $callerUseMap    = GlobalCache::$fileUseMaps[$filePathOfFunc] ?? [];
 
                 $baseThrows = GlobalCache::$directThrows[$funcKey] ?? [];
-                if (!$ignoreAnnotated) {
+                if (!$opt->ignoreAnnotatedThrows) {
                     $baseThrows = array_values(array_unique(array_merge(
                         $baseThrows,
                         GlobalCache::$annotatedThrows[$funcKey] ?? []
@@ -385,11 +423,19 @@ class Application
         } while ($changedInThisGlobalIteration);
 
         echo "Global Throws Resolution Complete.\n";
+    }
 
-        // ------------------------------------------------------------
-        // 5) Pass 2: Update files
-        // ------------------------------------------------------------
-        // Build list of files eligible for writing
+    /**
+     * @param string[] $phpFilePaths
+     * @return string[]
+     */
+    private function updateFiles(array $phpFilePaths, \PhpParser\Parser $parser, AstUtils $astUtils, ApplicationOptions $opt): array
+    {
+        $writeDirs     = $opt->writeDirs;
+        $verbose       = $opt->verbose;
+        $traceOrigins  = $opt->traceOrigins;
+        $traceCallSites = $opt->traceCallSites;
+
         $phpFilesForWriting = array_filter($phpFilePaths, static function (string $path) use ($writeDirs): bool {
             $realPath = realpath($path);
             if ($realPath === false) {
@@ -409,7 +455,6 @@ class Application
             echo 'Processing ' . count($phpFilesForWriting) . " files...\n";
         }
 
-        // Keep track of which files were actually modified (fixed)
         $filesFixed = [];
 
         foreach ($phpFilesForWriting as $filePath) {
@@ -454,7 +499,6 @@ class Application
                     break;
                 }
 
-                // --- Use Statement Simplification (Surgical) ---
                 $useSimplifierSurgical = new UseStatementSimplifierSurgical();
                 $traverserUseSurgical  = new NodeTraverser();
                 $traverserUseSurgical->addVisitor($useSimplifierSurgical);
@@ -483,7 +527,6 @@ class Application
                         continue; // Re‐parse from scratch after a surgical change
                     }
                 }
-                // --- End Use Statement Simplification ---
 
                 $docBlockUpdater   = new DocBlockUpdater($astUtils, $filePath, $traceOrigins, $traceCallSites);
                 $traverserDocBlock = new NodeTraverser();
@@ -580,7 +623,6 @@ class Application
                                     - $currentAppliedPatchStartPos;
                             }
                         } else {
-                            // Should not happen
                             continue;
                         }
 
@@ -617,23 +659,7 @@ class Application
 
         echo "All done.\n";
 
-        // ------------------------------------------------------------
-        // 6) Print separate lists of files read vs. files fixed
-        // ------------------------------------------------------------
-        if ($verbose) {
-            echo "\n=== Summary ===\n";
-            echo "Files read (" . count($filesRead) . "):\n";
-            foreach ($filesRead as $f) {
-                echo "  - $f\n";
-            }
-            echo "\nFiles fixed (" . count($filesFixed) . "):\n";
-            foreach ($filesFixed as $f) {
-                echo "  - $f\n";
-            }
-            echo "\n";
-        }
-
-        return 0;
+        return $filesFixed;
     }
 
     /**
