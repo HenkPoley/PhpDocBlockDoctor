@@ -102,7 +102,8 @@ class CallCatchPropagationTest extends TestCase
         }
 
         $wrapperKey = 'TestNS\\Wrapper::handle';
-        $this->assertArrayHasKey($wrapperKey, GlobalCache::$resolvedThrows);
-        $this->assertSame([], GlobalCache::$resolvedThrows[$wrapperKey]);
+        $all = GlobalCache::getAllResolvedThrows();
+        $this->assertArrayHasKey($wrapperKey, $all);
+        $this->assertSame([], GlobalCache::getResolvedThrowsForKey($wrapperKey));
     }
 }
