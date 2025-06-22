@@ -169,9 +169,10 @@ class ThrowsGathererTest extends TestCase
             ['RuntimeException', 'Throwable'],
             GlobalCache::$directThrows[$key]
         );
+        $origins = GlobalCache::getThrowOriginsForKey($key);
         $this->assertSame(
             ['T\\C::foo <- dummyPath:11'],
-            GlobalCache::$throwOrigins[$key]['RuntimeException'] ?? null
+            $origins['RuntimeException'] ?? null
         );
     }
 
