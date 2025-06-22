@@ -4,7 +4,10 @@ namespace HenkPoley\DocBlockDoctor;
 
 class NativeFileSystem implements FileSystem
 {
-    public function getContents(string $path): string|false
+    /**
+     * @return string|false
+     */
+    public function getContents(string $path)
     {
         return @file_get_contents($path);
     }
@@ -24,12 +27,18 @@ class NativeFileSystem implements FileSystem
         return is_dir($path);
     }
 
-    public function realPath(string $path): string|false
+    /**
+     * @return string|false
+     */
+    public function realPath(string $path)
     {
         return realpath($path);
     }
 
-    public function getCurrentWorkingDirectory(): string|false
+    /**
+     * @return string|false
+     */
+    public function getCurrentWorkingDirectory()
     {
         return getcwd();
     }
