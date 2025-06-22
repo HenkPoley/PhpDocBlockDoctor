@@ -1,0 +1,11 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\StaticMethodChainingNullable\\Factory::maybe": [],
+    "Pitfalls\\StaticMethodChainingNullable\\Product::doWork": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\StaticMethodChainingNullable\\Caller::runAll": [
+      "RuntimeException"
+    ]
+  }
+}
