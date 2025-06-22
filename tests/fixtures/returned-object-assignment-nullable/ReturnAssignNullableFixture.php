@@ -9,9 +9,6 @@ class Provider {
 }
 
 class Handler {
-    /**
-     * @throws \DomainException
-     */
     public function handle(): void {
         throw new \DomainException('oops');
     }

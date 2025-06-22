@@ -14,7 +14,7 @@ class ThrowsInConstructor
 
     /**
      * We annotate an exception that's not actually thrown here to make sure we 'believe' that.
-     * @throws \RuntimeException
+     * @throws \RuntimeException Please believe me
      */
     public function createAndCall()
     {

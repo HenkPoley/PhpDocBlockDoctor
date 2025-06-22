@@ -5,9 +5,6 @@ namespace Pitfalls\StaticCallWrongCase;
 
 class Configuration
 {
-    /**
-     * @throws \Exception
-     */
     public static function setPreLoadedConfig(Configuration $config, string $file = 'config.php', string $set = 'simplesaml'): void
     {
         throw new \Exception('fail');

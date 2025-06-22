@@ -45,7 +45,6 @@ class Language
      * Just some Error gets thrown, could be any Throwable.
      *
      * @return array
-     * @throws \ArithmeticError
      */
     public function getPreferredLanguages(): array
     {

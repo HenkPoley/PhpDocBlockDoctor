@@ -8,8 +8,6 @@ abstract class MetaDataStorageSource
     /**
      * @param string[] $ids
      * @param string $set
-     *
-     * @throws \RuntimeException
      */
     public function getMetaDataForEntities(array $ids, string $set): array
     {
@@ -19,8 +17,6 @@ abstract class MetaDataStorageSource
     /**
      * @param string[] $ids
      * @param string $set
-     *
-     * @throws \RuntimeException
      */
     protected function getMetaDataForEntitiesIndividually(array $ids, string $set): array
     {

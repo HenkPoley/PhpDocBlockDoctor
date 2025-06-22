@@ -5,17 +5,11 @@ namespace HenkPoley\DocBlockDoctor\TestFixtures\ExampleClasses\SubPath;
 
 class OneMoreClass
 {
-    /**
-     * @throws \LogicException
-     */
     public static function aFunction(): void
     {
         self::bFunction();
     }
 
-    /**
-     * @throws \LogicException
-     */
     public static function bFunction(): void
     {
         throw new \LogicException();
@@ -26,9 +20,6 @@ class OneMoreClass
         return new ThirdExampleClass();
     }
 
-    /**
-     * @throws \UnderflowException
-     */
     public function nonStaticFunctionThatThrows() {
         throw new \UnderflowException();
     }

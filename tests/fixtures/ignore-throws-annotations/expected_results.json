@@ -4,7 +4,8 @@
       "LogicException"
     ],
     "HenkPoley\\DocBlockDoctor\\TestFixtures\\ConstructorThrows\\ThrowsInConstructor::createAndCall": [
-      "LogicException"
+      "LogicException",
+      "RuntimeException"
     ],
     "HenkPoley\\DocBlockDoctor\\TestFixtures\\ConstructorThrows\\ThrowsInConstructor::createAndCallWithForeach": [
       "LogicException"

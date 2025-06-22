@@ -2,9 +2,6 @@
 namespace Pitfalls\ParameterNullableType;
 
 class Worker {
-    /**
-     * @throws \RuntimeException
-     */
     public function doWork(): void {
         throw new \RuntimeException("fail");
     }

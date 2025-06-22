@@ -3,9 +3,6 @@ namespace Pitfalls\ParentMethodCall;
 
 class ParentClass
 {
-    /**
-     * @throws \RuntimeException
-     */
     public function foo(): void
     {
         throw new \RuntimeException();

@@ -34,7 +34,6 @@ class Translate
 class Language
 {
     /**
-     * @throws \ArithmeticError
      * @return array
      */
     public function getPreferredLanguages(): array

@@ -24,9 +24,6 @@ class Example
         OneMoreClass::aFunction();
     }
 
-    /**
-     * @throws \LogicException
-     */
     public function two(): void
     {
         if (random_int(0, 1) !== 0) {
