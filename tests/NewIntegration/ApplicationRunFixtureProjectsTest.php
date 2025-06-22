@@ -5,14 +5,12 @@ namespace HenkPoley\DocBlockDoctor\Tests\NewIntegration;
 
 use HenkPoley\DocBlockDoctor\Application;
 use HenkPoley\DocBlockDoctor\FileSystem;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class ApplicationRunFixtureProjectsTest extends TestCase
 {
-    /**
-     * @dataProvider projectProvider
-     * @throws \LogicException
-     */
+    #[DataProvider('projectProvider')]
     public function testRunRewritesFixtures(string $scenario, array $files): void
     {
         $srcDir = __DIR__ . '/../fixtures/' . $scenario;
@@ -52,7 +50,8 @@ class ApplicationRunFixtureProjectsTest extends TestCase
         mkdir($tmpRoot);
         copy($srcDir . '/Foo.php', $tmpRoot . '/Foo.php');
 
-        $fs = new class($tmpRoot . '/Foo.php') implements FileSystem {
+        $failPath = realpath($tmpRoot . '/Foo.php') ?: ($tmpRoot . '/Foo.php');
+        $fs = new class($failPath) implements FileSystem {
             private string $failPath;
             public function __construct(string $failPath) { $this->failPath = $failPath; }
             public function getContents(string $path): string|false { return $path === $this->failPath ? false : @file_get_contents($path); }
@@ -84,11 +83,17 @@ class ApplicationRunFixtureProjectsTest extends TestCase
         mkdir($tmpRoot);
         copy($srcDir . '/Foo.php', $tmpRoot . '/Foo.php');
 
-        $fs = new class($tmpRoot . '/Foo.php') implements FileSystem {
+        $failPath = realpath($tmpRoot . '/Foo.php') ?: ($tmpRoot . '/Foo.php');
+        $fs = new class($failPath) implements FileSystem {
             private string $failPath;
             public function __construct(string $failPath) { $this->failPath = $failPath; }
             public function getContents(string $path): string|false { return @file_get_contents($path); }
-            public function putContents(string $path, string $contents): bool { return $path === $this->failPath ? false : file_put_contents($path, $contents) !== false; }
+            public function putContents(string $path, string $contents): bool {
+                if ($path === $this->failPath) {
+                    return false;
+                }
+                return file_put_contents($path, $contents) !== false;
+            }
             public function isFile(string $path): bool { return is_file($path); }
             public function isDir(string $path): bool { return is_dir($path); }
             public function realPath(string $path): string|false { return realpath($path); }
