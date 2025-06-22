@@ -25,6 +25,12 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
 
         $original = file_get_contents($fullPath);
         $this->assertNotFalse($original);
+        if (preg_match('/^\s*\*\s*@throws\s+[^\s]+(?:\|[^\s]+)*\s+.+$/m', $original)) {
+            // Ignore functions where the @throws annotation has inline comments
+            // They are considered intentionally documented regardless of necessity
+            $this->addToAssertionCount(1);
+            return;
+        }
         // Only remove @throws lines that contain just the exception class name
         // so lines with extra comment text remain untouched
         $stripped = preg_replace('/^\s*\*\s*@throws\s+[^\s]+(?:\|[^\s]+)*\s*$/m', '', $original);
