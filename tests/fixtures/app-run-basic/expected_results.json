@@ -1,0 +1,10 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\AppRunBasic\\Foo::foo": [
+      "RuntimeException"
+    ],
+    "HenkPoley\\DocBlockDoctor\\TestFixtures\\AppRunBasic\\Bar::call": [
+      "RuntimeException"
+    ]
+  }
+}
