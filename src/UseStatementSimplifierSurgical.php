@@ -18,7 +18,11 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
         $this->printer = new PrettyPrinter\Standard();
     }
 
-    public function beforeTraverse(array $nodes): null
+    /**
+     * @param array $nodes
+     * @return null
+     */
+    public function beforeTraverse(array $nodes)
     {
         $this->pendingPatches = [];
         return null;

@@ -1106,7 +1106,7 @@ class AstUtils
                             if (is_subclass_of($thrownFqcn, $caughtTypeFqcn)) {
                                 return true;
                             }
-                        } elseif (self::isSubclassUsingCache($thrownFqcn, $caughtTypeFqcn)) {
+                        } elseif ($this->isSubclassUsingCache($thrownFqcn, $caughtTypeFqcn)) {
                             return true;
                         } elseif (
                             self::classOrInterfaceExistsNoAutoload($thrownFqcn) &&
@@ -1262,7 +1262,7 @@ class AstUtils
      * Determine class inheritance using the cached parent map when classes are
      * not loaded.
      */
-    private static function isSubclassUsingCache(string $child, string $parent): bool
+    private function isSubclassUsingCache(string $child, string $parent): bool
     {
         $current = $child;
         $visited = [];

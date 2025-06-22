@@ -34,10 +34,11 @@ class ThrowsGatherer extends NodeVisitorAbstract
 
     /**
      * @param mixed[] $nodes
+     * @return null
      *
      * @throws \LogicException
      */
-    public function beforeTraverse($nodes): null
+    public function beforeTraverse($nodes)
     {
         $this->currentNamespace = '';
         $this->useMap = [];
@@ -84,10 +85,11 @@ class ThrowsGatherer extends NodeVisitorAbstract
 
     /**
      * @param \PhpParser\Node $node
+     * @return null
      *
      * @throws \LogicException
      */
-    public function enterNode(Node $node): null
+    public function enterNode(Node $node)
     {
         if ($node instanceof Node\Stmt\Class_) {
             $className = '';
@@ -180,10 +182,11 @@ class ThrowsGatherer extends NodeVisitorAbstract
 
     /**
      * @param \PhpParser\Node $node
+     * @return null
      *
      * @throws \LogicException
      */
-    public function leaveNode(Node $node): null
+    public function leaveNode(Node $node)
     {
         if (!$node instanceof Node\Stmt\Function_ && !$node instanceof Node\Stmt\ClassMethod) {
             return null;
