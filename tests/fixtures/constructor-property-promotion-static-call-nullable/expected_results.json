@@ -1,0 +1,10 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\ConstructorPropertyPromotionStaticCallNullable\\Logger::warning": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\ConstructorPropertyPromotionStaticCallNullable\\Service::doCall": [
+      "RuntimeException"
+    ]
+  }
+}
