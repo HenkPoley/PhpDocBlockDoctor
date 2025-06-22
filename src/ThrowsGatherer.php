@@ -312,34 +312,20 @@ class ThrowsGatherer extends NodeVisitorAbstract
                             }
                         }
                         $instanceofTypes = $this->getInstanceofTypesBeforeThrow($catchNode->stmts, $throwExpr, $varName);
-                        foreach ($instanceofTypes as $fq) {
-                            if (!$this->astUtils->isExceptionCaught($throwExpr, $fq, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
-                                $fqcns[] = $fq;
-                                $loc = $this->filePath . ':' . $throwExpr->getStartLine();
-                                $chain = $funcKey . ' <- ' . $loc;
-                                if (!isset(\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq])) {
-                                    \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq] = [];
-                                }
-                                $origins = &\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq];
-                                if (!in_array($chain, $origins, true) && count($origins) < \HenkPoley\DocBlockDoctor\GlobalCache::MAX_ORIGIN_CHAINS) {
-                                    $origins[] = $chain;
-                                }
-                            }
-                        }
                     } else {
                         $instanceofTypes = $this->getInstanceofTypesBeforeThrow($funcOrMethodNode->stmts, $throwExpr, $varName);
-                        foreach ($instanceofTypes as $fq) {
-                            if (!$this->astUtils->isExceptionCaught($throwExpr, $fq, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
-                                $fqcns[] = $fq;
-                                $loc = $this->filePath . ':' . $throwExpr->getStartLine();
-                                $chain = $funcKey . ' <- ' . $loc;
-                                if (!isset(\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq])) {
-                                    \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq] = [];
-                                }
-                                $origins = &\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq];
-                                if (!in_array($chain, $origins, true) && count($origins) < \HenkPoley\DocBlockDoctor\GlobalCache::MAX_ORIGIN_CHAINS) {
-                                    $origins[] = $chain;
-                                }
+                    }
+                    foreach ($instanceofTypes as $fq) {
+                        if (!$this->astUtils->isExceptionCaught($throwExpr, $fq, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
+                            $fqcns[] = $fq;
+                            $loc = $this->filePath . ':' . $throwExpr->getStartLine();
+                            $chain = $funcKey . ' <- ' . $loc;
+                            if (!isset(\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq])) {
+                                \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq] = [];
+                            }
+                            $origins = &\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq];
+                            if (!in_array($chain, $origins, true) && count($origins) < \HenkPoley\DocBlockDoctor\GlobalCache::MAX_ORIGIN_CHAINS) {
+                                $origins[] = $chain;
                             }
                         }
                     }
