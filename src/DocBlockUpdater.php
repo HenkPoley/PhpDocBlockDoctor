@@ -4,7 +4,6 @@ namespace HenkPoley\DocBlockDoctor;
 
 use PhpParser\NodeVisitorAbstract;
 use PhpParser\Node;
-use HenkPoley\DocBlockDoctor\AstUtils;
 
 class DocBlockUpdater extends NodeVisitorAbstract
 {

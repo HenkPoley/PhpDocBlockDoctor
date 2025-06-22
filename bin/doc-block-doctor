@@ -5,7 +5,6 @@ require 'vendor/autoload.php';
 require 'vendor/scheb/tombstone-logger/tombstone-function.php';
 
 use HenkPoley\DocBlockDoctor\Application;
-use Rector\Console\ExitCode;
 use Scheb\Tombstone\Logger\Graveyard\GraveyardBuilder;
 use Scheb\Tombstone\Logger\Handler\AnalyzerLogHandler;
 use Scheb\Tombstone\Logger\Handler\StreamHandler;
