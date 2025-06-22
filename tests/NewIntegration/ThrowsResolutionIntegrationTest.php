@@ -157,6 +157,16 @@ class ThrowsResolutionIntegrationTest extends TestCase
                     $changed = true;
                 }
             }
+            $app = new \HenkPoley\DocBlockDoctor\Application(
+                new \HenkPoley\DocBlockDoctor\NativeFileSystem(),
+                new \HenkPoley\DocBlockDoctor\PhpParserAstParser()
+            );
+            $ref = new \ReflectionClass($app);
+            $m   = $ref->getMethod('propagateInterfaceThrows');
+            $m->setAccessible(true);
+            if ($m->invoke($app)) {
+                $changed = true;
+            }
         } while ($changed && $iteration < $maxIter);
 
         $expectedFile = $fixtureRoot . '/expected_results.json';

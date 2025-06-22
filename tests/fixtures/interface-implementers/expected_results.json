@@ -1,0 +1,18 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\InterfaceImplementers\\FooImplementer::foo": [
+      "LogicException",
+      "RuntimeException"
+    ],
+    "Pitfalls\\InterfaceImplementers\\FirstImplementer::foo": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\InterfaceImplementers\\SecondImplementer::foo": [
+      "LogicException"
+    ],
+    "Pitfalls\\InterfaceImplementers\\Runner::run": [
+      "LogicException",
+      "RuntimeException"
+    ]
+  }
+}

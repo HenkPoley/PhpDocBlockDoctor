@@ -441,6 +441,11 @@ class Application
                 }
             }
 
+            $changedFromInterfaces = $this->propagateInterfaceThrows();
+            if ($changedFromInterfaces) {
+                $changedInThisGlobalIteration = true;
+            }
+
             if ($currentGlobalIteration >= $maxGlobalIterations) {
                 if (!$opt->quiet) {
                     echo "Warning: Global Throws Resolution max iterations ({$currentGlobalIteration}).\n";
@@ -452,6 +457,53 @@ class Application
         if (!$opt->quiet) {
             echo "Global Throws Resolution Complete.\n";
         }
+    }
+
+    private function propagateInterfaceThrows(): bool
+    {
+        $changed = false;
+        foreach (GlobalCache::$interfaceImplementations as $iface => $impls) {
+            $impls = array_values(array_unique($impls));
+            $ifacePrefix = ltrim($iface, '\\') . '::';
+            foreach (GlobalCache::$astNodeMap as $key => $_node) {
+                if (strncmp($key, $ifacePrefix, strlen($ifacePrefix)) !== 0) {
+                    continue;
+                }
+                $method = substr($key, strlen($ifacePrefix));
+                $throws = GlobalCache::$resolvedThrows[$key] ?? [];
+                $orig   = GlobalCache::$throwOrigins[$key] ?? [];
+                foreach ($impls as $class) {
+                    $implKey = ltrim($class, '\\') . '::' . $method;
+                    foreach (GlobalCache::$resolvedThrows[$implKey] ?? [] as $ex) {
+                        if (!in_array($ex, $throws, true)) {
+                            $throws[] = $ex;
+                        }
+                        foreach (GlobalCache::$throwOrigins[$implKey][$ex] ?? [] as $ch) {
+                            if (!isset($orig[$ex])) {
+                                $orig[$ex] = [];
+                            }
+                            if (!in_array($ch, $orig[$ex], true) && count($orig[$ex]) < GlobalCache::MAX_ORIGIN_CHAINS) {
+                                $orig[$ex][] = $ch;
+                            }
+                        }
+                    }
+                }
+                sort($throws);
+                foreach ($orig as $ex => $list) {
+                    $list = array_values(array_unique($list));
+                    if (count($list) > GlobalCache::MAX_ORIGIN_CHAINS) {
+                        $list = array_slice($list, 0, GlobalCache::MAX_ORIGIN_CHAINS);
+                    }
+                    $orig[$ex] = $list;
+                }
+                if ($throws !== (GlobalCache::$resolvedThrows[$key] ?? []) || $orig !== (GlobalCache::$throwOrigins[$key] ?? [])) {
+                    GlobalCache::$resolvedThrows[$key] = $throws;
+                    GlobalCache::$throwOrigins[$key] = $orig;
+                    $changed = true;
+                }
+            }
+        }
+        return $changed;
     }
 
     /**

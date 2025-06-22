@@ -7,6 +7,7 @@ use PhpParser\NodeFinder;
 use PhpParser\NodeVisitorAbstract;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
+use PhpParser\Node\Stmt\Interface_;
 
 class ThrowsGatherer extends NodeVisitorAbstract
 {
@@ -92,6 +93,12 @@ class ThrowsGatherer extends NodeVisitorAbstract
                     $parentFqcn = $this->astUtils->resolveNameNodeToFqcn($node->extends, $this->currentNamespace, $this->useMap, false);
                 }
                 \HenkPoley\DocBlockDoctor\GlobalCache::$classParents[$className] = $parentFqcn;
+                foreach ($node->implements as $iface) {
+                    $ifaceFqcn = $this->astUtils->resolveNameNodeToFqcn($iface, $this->currentNamespace, $this->useMap, false);
+                    if ($ifaceFqcn !== '') {
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$interfaceImplementations[$ifaceFqcn][] = $className;
+                    }
+                }
                 foreach ($node->stmts as $stmt) {
                     if ($stmt instanceof Node\Stmt\TraitUse) {
                         foreach ($stmt->traits as $traitName) {
@@ -100,6 +107,25 @@ class ThrowsGatherer extends NodeVisitorAbstract
                                 \HenkPoley\DocBlockDoctor\GlobalCache::$classTraits[$className][] = $traitFqcn;
                             }
                         }
+                    }
+                }
+            }
+            return null;
+        }
+
+        if ($node instanceof Node\Stmt\Interface_) {
+            $interfaceName = '';
+            if ($node->hasAttribute('namespacedName') && $node->getAttribute('namespacedName') instanceof Node\Name) {
+                $interfaceName = $node->getAttribute('namespacedName')->toString();
+            } elseif ($node->name instanceof \PhpParser\Node\Identifier) {
+                $interfaceName = ($this->currentNamespace ? $this->currentNamespace . '\\' : '') . $node->name->toString();
+            }
+            if ($interfaceName !== '') {
+                foreach ($node->extends as $iface) {
+                    $parentIface = $this->astUtils->resolveNameNodeToFqcn($iface, $this->currentNamespace, $this->useMap, false);
+                    if ($parentIface !== '') {
+                        // treat extended interfaces as having this interface as implementer
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$interfaceImplementations[$parentIface][] = $interfaceName;
                     }
                 }
             }
