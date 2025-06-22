@@ -1,7 +1,9 @@
 <?php
+
 namespace HenkPoley\DocBlockDoctor;
 
 use PhpParser\Node;
+use PhpParser\Modifiers;
 use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Identifier;
@@ -497,7 +499,7 @@ class AstUtils
                 foreach ($classNode->stmts as $stmt) {
                     if ($stmt instanceof Node\Stmt\ClassMethod && $stmt->name->toString() === '__construct') {
                         foreach ($stmt->params as $param) {
-                            if (($param->flags & (Class_::MODIFIER_PUBLIC | Class_::MODIFIER_PROTECTED | Class_::MODIFIER_PRIVATE)) !== 0
+                            if (($param->flags & (Modifiers::PUBLIC | Modifiers::PROTECTED | Modifiers::PRIVATE)) !== 0
                                 && $param->var instanceof Variable
                                 && is_string($param->var->name)
                                 && $param->var->name === $propertyName
@@ -621,7 +623,7 @@ class AstUtils
                     if ($stmt instanceof Node\Stmt\ClassMethod && $stmt->name->toString() === '__construct') {
                         foreach ($stmt->params as $param) {
                             if (
-                                ($param->flags & (Class_::MODIFIER_PUBLIC | Class_::MODIFIER_PROTECTED | Class_::MODIFIER_PRIVATE)) !== 0
+                                ($param->flags & (Modifiers::PUBLIC | Modifiers::PROTECTED | Modifiers::PRIVATE)) !== 0
                                 && $param->var instanceof Variable
                                 && is_string($param->var->name)
                                 && $param->var->name === $propertyName
