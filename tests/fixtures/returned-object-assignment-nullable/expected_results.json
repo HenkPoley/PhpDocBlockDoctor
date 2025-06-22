@@ -1,0 +1,11 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\ReturnedObjectAssignmentNullable\\Provider::maybe": [],
+    "Pitfalls\\ReturnedObjectAssignmentNullable\\Handler::handle": [
+      "DomainException"
+    ],
+    "Pitfalls\\ReturnedObjectAssignmentNullable\\Runner::run": [
+      "DomainException"
+    ]
+  }
+}
