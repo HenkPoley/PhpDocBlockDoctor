@@ -100,12 +100,4 @@ class GlobalCache
     {
         return self::$resolvedThrows;
     }
-
-    /**
-     * @return array<string, array<string, string[]>>
-     */
-    public static function getAllThrowOrigins(): array
-    {
-        return self::$throwOrigins;
-    }
 }
