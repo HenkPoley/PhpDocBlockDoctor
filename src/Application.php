@@ -8,14 +8,24 @@ use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\NodeVisitor\ParentConnectingVisitor;
-use PhpParser\ParserFactory;
-use PhpParser\PhpVersion;
+use HenkPoley\DocBlockDoctor\FileSystem;
+use HenkPoley\DocBlockDoctor\NativeFileSystem;
+use HenkPoley\DocBlockDoctor\AstParser;
+use HenkPoley\DocBlockDoctor\PhpParserAstParser;
 use RecursiveCallbackFilterIterator;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
 class Application
 {
+    private FileSystem $fileSystem;
+    private AstParser $astParser;
+
+    public function __construct(?FileSystem $fileSystem = null, ?AstParser $astParser = null)
+    {
+        $this->fileSystem = $fileSystem ?? new NativeFileSystem();
+        $this->astParser  = $astParser  ?? new PhpParserAstParser();
+    }
     /**
      * @param string[] $argv
      *
@@ -38,16 +48,15 @@ class Application
         $opt = $this->parseOptions($argv);
         $this->resolveDirectories($opt);
 
-        $parser    = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 1));
         $nodeFinder = new NodeFinder();
         $astUtils   = new AstUtils();
 
         $phpFiles  = $this->collectPhpFiles($opt);
-        $filesRead = $this->processFilesPass1($phpFiles, $parser, $nodeFinder, $astUtils, $opt);
+        $filesRead = $this->processFilesPass1($phpFiles, $nodeFinder, $astUtils, $opt);
 
         $this->resolveThrowsGlobally($nodeFinder, $astUtils, $opt);
 
-        $filesFixed = $this->updateFiles($phpFiles, $parser, $astUtils, $opt);
+        $filesFixed = $this->updateFiles($phpFiles, $astUtils, $opt);
 
         if ($opt->verbose) {
             echo "\n=== Summary ===\n";
@@ -114,7 +123,7 @@ class Application
         }
 
         if ($opt->rootDir === '') {
-            $cwd = getcwd();
+            $cwd = $this->fileSystem->getCurrentWorkingDirectory();
             if ($cwd === false) {
                 throw new \RuntimeException('Cannot determine current working directory');
             }
@@ -134,13 +143,13 @@ class Application
 
         if ($readDirs === null) {
             $readDirs = [];
-            if (is_dir($rootDir . DIRECTORY_SEPARATOR . 'src')) {
+            if ($this->fileSystem->isDir($rootDir . DIRECTORY_SEPARATOR . 'src')) {
                 $readDirs[] = $rootDir . DIRECTORY_SEPARATOR . 'src';
             }
-            if (is_dir($rootDir . DIRECTORY_SEPARATOR . 'tests')) {
+            if ($this->fileSystem->isDir($rootDir . DIRECTORY_SEPARATOR . 'tests')) {
                 $readDirs[] = $rootDir . DIRECTORY_SEPARATOR . 'tests';
             }
-            if (is_dir($rootDir . DIRECTORY_SEPARATOR . 'vendor')) {
+            if ($this->fileSystem->isDir($rootDir . DIRECTORY_SEPARATOR . 'vendor')) {
                 $readDirs[] = $rootDir . DIRECTORY_SEPARATOR . 'vendor';
             }
             if ($readDirs === []) {
@@ -157,7 +166,7 @@ class Application
 
         if ($writeDirs === null) {
             $writeDirs = [];
-            if (is_dir($rootDir . DIRECTORY_SEPARATOR . 'src')) {
+            if ($this->fileSystem->isDir($rootDir . DIRECTORY_SEPARATOR . 'src')) {
                 $writeDirs[] = $rootDir . DIRECTORY_SEPARATOR . 'src';
             }
             if ($writeDirs === []) {
@@ -189,9 +198,12 @@ class Application
     {
         $phpFilePaths = [];
         foreach ($opt->readDirs as $dir) {
-            if (is_file($dir)) {
+            if ($this->fileSystem->isFile($dir)) {
                 if (pathinfo($dir, PATHINFO_EXTENSION) === 'php') {
-                    $phpFilePaths[] = realpath($dir);
+                    $real = $this->fileSystem->realPath($dir);
+                    if ($real !== false) {
+                        $phpFilePaths[] = $real;
+                    }
                 }
                 continue;
             }
@@ -232,7 +244,7 @@ class Application
      * @param string[] $phpFilePaths
      * @return string[]
      */
-    private function processFilesPass1(array $phpFilePaths, \PhpParser\Parser $parser, NodeFinder $nodeFinder, AstUtils $astUtils, ApplicationOptions $opt): array
+    private function processFilesPass1(array $phpFilePaths, NodeFinder $nodeFinder, AstUtils $astUtils, ApplicationOptions $opt): array
     {
         if ($opt->verbose) {
             echo 'Pass 1: Gathering info on ' . count($phpFilePaths) . " files...\n";
@@ -252,14 +264,14 @@ class Application
                 echo "  • Processing: {$filePath}\n";
             }
 
-            $code = @file_get_contents($filePath);
+            $code = $this->fileSystem->getContents($filePath);
             if ($code === false) {
                 echo "  ! Cannot read file: {$filePath}\n";
                 continue;
             }
 
             try {
-                $ast = $parser->parse($code);
+                $ast = $this->astParser->parse($code);
                 if (!$ast) {
                     if ($opt->verbose) {
                         echo "    → No AST for {$filePath}\n";
@@ -267,16 +279,16 @@ class Application
                     continue;
                 }
 
-                $traverserPass1 = new NodeTraverser();
-                $traverserPass1->addVisitor($nameResolverForPass1);
-                $traverserPass1->addVisitor($parentConnectorForPass1);
-                $traverserPass1->addVisitor(new ThrowsGatherer(
-                    $nodeFinder,
-                    $astUtils,
-                    $filePath,
-                    $opt->ignoreAnnotatedThrows
-                ));
-                $traverserPass1->traverse($ast);
+                $this->astParser->traverse($ast, [
+                    $nameResolverForPass1,
+                    $parentConnectorForPass1,
+                    new ThrowsGatherer(
+                        $nodeFinder,
+                        $astUtils,
+                        $filePath,
+                        $opt->ignoreAnnotatedThrows
+                    ),
+                ]);
 
             } catch (Error $e) {
                 echo "Parse error (Pass 1) in {$filePath}: {$e->getMessage()}\n";
@@ -429,20 +441,20 @@ class Application
      * @param string[] $phpFilePaths
      * @return string[]
      */
-    private function updateFiles(array $phpFilePaths, \PhpParser\Parser $parser, AstUtils $astUtils, ApplicationOptions $opt): array
+    private function updateFiles(array $phpFilePaths, AstUtils $astUtils, ApplicationOptions $opt): array
     {
         $writeDirs     = $opt->writeDirs;
         $verbose       = $opt->verbose;
         $traceOrigins  = $opt->traceOrigins;
         $traceCallSites = $opt->traceCallSites;
 
-        $phpFilesForWriting = array_filter($phpFilePaths, static function (string $path) use ($writeDirs): bool {
-            $realPath = realpath($path);
+        $phpFilesForWriting = array_filter($phpFilePaths, function (string $path) use ($writeDirs): bool {
+            $realPath = $this->fileSystem->realPath($path);
             if ($realPath === false) {
                 return false;
             }
             foreach ($writeDirs as $dir) {
-                $dirReal = realpath($dir);
+                $dirReal = $this->fileSystem->realPath($dir);
                 if ($dirReal !== false && (strncmp($realPath, $dirReal . DIRECTORY_SEPARATOR, strlen($dirReal . DIRECTORY_SEPARATOR)) === 0 || $realPath === $dirReal)) {
                     return true;
                 }
@@ -474,7 +486,7 @@ class Application
                 }
 
                 $modifiedInThisPass = false;
-                $codeAtStart       = @file_get_contents($filePath);
+                $codeAtStart       = $this->fileSystem->getContents($filePath);
                 if ($codeAtStart === false) {
                     echo "  ! Cannot read file: {$filePath}\n";
                     break;
@@ -483,17 +495,17 @@ class Application
                 try {
                     $currentNameResolver  = new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]);
                     $currentParentConnector = new ParentConnectingVisitor();
-                    $currentAST = $parser->parse($codeAtStart);
+                    $currentAST = $this->astParser->parse($codeAtStart);
 
                     if (!$currentAST) {
                         echo "Error parsing {$filePath} (Pass 2).\n";
                         break;
                     }
 
-                    $setupTraverser = new NodeTraverser();
-                    $setupTraverser->addVisitor($currentNameResolver);
-                    $setupTraverser->addVisitor($currentParentConnector);
-                    $currentAST = $setupTraverser->traverse($currentAST);
+                    $this->astParser->traverse($currentAST, [
+                        $currentNameResolver,
+                        $currentParentConnector,
+                    ]);
                 } catch (Error $e) {
                     echo "Parse error (Pass 2) in {$filePath}: {$e->getMessage()}\n";
                     break;
@@ -519,7 +531,7 @@ class Application
                     }
 
                     if ($newCode !== $codeAtStart) {
-                        file_put_contents($filePath, $newCode);
+                        $this->fileSystem->putContents($filePath, $newCode);
                         if ($verbose) {
                             echo "    → Surgically simplified use statements in {$filePath}\n";
                         }
@@ -529,12 +541,10 @@ class Application
                 }
 
                 $docBlockUpdater   = new DocBlockUpdater($astUtils, $filePath, $traceOrigins, $traceCallSites);
-                $traverserDocBlock = new NodeTraverser();
-                $traverserDocBlock->addVisitor($docBlockUpdater);
-                $traverserDocBlock->traverse($currentAST);
+                $this->astParser->traverse($currentAST, [$docBlockUpdater]);
 
                 if ($docBlockUpdater->pendingPatches !== []) {
-                    $currentFileContent = @file_get_contents($filePath);
+                    $currentFileContent = $this->fileSystem->getContents($filePath);
                     if ($currentFileContent === false) {
                         echo "  ! Cannot read file: {$filePath}\n";
                         break;
@@ -635,7 +645,7 @@ class Application
                     }
 
                     if ($newFileContent !== $currentFileContent) {
-                        file_put_contents($filePath, $newFileContent);
+                        $this->fileSystem->putContents($filePath, $newFileContent);
                         if ($verbose) {
                             echo "    → Applied DocBlock changes to {$filePath}\n";
                         }
