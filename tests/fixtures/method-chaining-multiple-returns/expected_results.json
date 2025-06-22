@@ -1,0 +1,14 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\MethodChainingMultipleReturns\\Factory::create": [],
+    "Pitfalls\\MethodChainingMultipleReturns\\ProductA::doWork": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\MethodChainingMultipleReturns\\ProductB::doWork": [
+      "InvalidArgumentException"
+    ],
+    "Pitfalls\\MethodChainingMultipleReturns\\Caller::run": [
+      "RuntimeException"
+    ]
+  }
+}
