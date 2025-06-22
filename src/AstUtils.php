@@ -200,7 +200,7 @@ class AstUtils
      * @param \PhpParser\Node\Expr $callNode
      * @param string $callerNamespace
      * @param mixed[] $callerUseMap
-     * @param \PhpParser\Node $callerFuncOrMethodNode
+     * @param \PhpParser\Node\FunctionLike $callerFuncOrMethodNode
      *
      * @throws \LogicException
      */
@@ -208,7 +208,7 @@ class AstUtils
         Node\Expr $callNode,
         string    $callerNamespace,
         array     $callerUseMap,
-        Node      $callerFuncOrMethodNode,
+        Node\FunctionLike $callerFuncOrMethodNode,
         array     &$visited = []
     ): ?string
     {
