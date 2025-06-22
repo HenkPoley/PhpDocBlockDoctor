@@ -135,6 +135,49 @@ class ThrowsGathererTest extends TestCase
     /**
      * @throws \LogicException
      */
+    public function testCalculateDirectThrowsFromInstanceofCatchWithoutInterveningThrow(): void
+    {
+        $code = <<<'PHP'
+        <?php
+        namespace T;
+        class C {
+            public function foo(): void {
+                try {
+                    throw new \RuntimeException('fail');
+                } catch (\Throwable $e) {
+                    if ($e instanceof \RuntimeException) {
+                        // no throw here
+                    }
+                    throw $e;
+                }
+            }
+        }
+        PHP;
+
+        $parser   = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast      = $parser->parse($code) ?: [];
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new NameResolver(null, ['replaceNodes' => false, 'preserveOriginalNames' => true]));
+        $traverser->addVisitor(new ParentConnectingVisitor());
+        $tg = new ThrowsGatherer($this->finder, $this->utils, 'dummyPath');
+        $traverser->addVisitor($tg);
+        $traverser->traverse($ast);
+
+        $key = 'T\\C::foo';
+        $this->assertArrayHasKey($key, GlobalCache::$directThrows);
+        $this->assertEqualsCanonicalizing(
+            ['RuntimeException', 'Throwable'],
+            GlobalCache::$directThrows[$key]
+        );
+        $this->assertSame(
+            ['T\\C::foo <- dummyPath:11'],
+            GlobalCache::$throwOrigins[$key]['RuntimeException'] ?? null
+        );
+    }
+
+    /**
+     * @throws \LogicException
+     */
     public function testCalculateDirectThrowsCaughtByRootException(): void
     {
         $code = <<<'PHP'
