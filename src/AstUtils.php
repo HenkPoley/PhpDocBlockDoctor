@@ -94,9 +94,6 @@ class AstUtils
         }
 
         if ($node instanceof Node\Stmt\Function_) {
-            if ($node->name->hasAttribute('resolvedName') && $node->name->getAttribute('resolvedName') instanceof Node\Name) {
-                return $node->name->getAttribute('resolvedName')->toString();
-            }
             $fnName = $node->name->toString();
             return ($currentNamespace && strncmp($fnName, '\\', strlen('\\')) !== 0
                     ? $currentNamespace . '\\'
@@ -134,6 +131,20 @@ class AstUtils
     }
 
     /**
+     * Determine the namespace for a given node by walking up the parent chain.
+     */
+    private function getNamespaceForNode(Node $node): string
+    {
+        $current = $node;
+        while ($current = $current->getAttribute('parent')) {
+            if ($current instanceof Node\Stmt\Namespace_ && $current->name instanceof Name) {
+                return $current->name->toString();
+            }
+        }
+        return '';
+    }
+
+    /**
      * @param \PhpParser\Node\Name $nameNode
      * @param string|null $currentNamespace
      * @param mixed[] $useMap
@@ -142,10 +153,6 @@ class AstUtils
      */
     public function resolveNameNodeToFqcn(Name $nameNode, ?string $currentNamespace, array $useMap, bool $isFunctionContext): string
     {
-        if ($nameNode->hasAttribute('resolvedName') && $nameNode->getAttribute('resolvedName') instanceof Node\Name\FullyQualified) {
-            return $nameNode->getAttribute('resolvedName')->toString();
-        }
-
         $name = $nameNode->toString();
         if ($nameNode->isFullyQualified()) {
             return ltrim($name, '\\');
@@ -240,6 +247,9 @@ class AstUtils
 
                 if ($innerNode instanceof Node\Stmt\ClassMethod && $innerFilePath) {
                     $innerNamespace = GlobalCache::$fileNamespaces[$innerFilePath] ?? '';
+                    if ($innerNamespace === '') {
+                        $innerNamespace = $this->getNamespaceForNode($innerNode);
+                    }
                     $innerUseMap    = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
 
                     // 3a) If the inner method has a return type hint, use that
@@ -334,6 +344,9 @@ class AstUtils
 
                 if ($innerNode instanceof Node\Stmt\ClassMethod && $innerFilePath) {
                     $innerNamespace = GlobalCache::$fileNamespaces[$innerFilePath] ?? '';
+                    if ($innerNamespace === '') {
+                        $innerNamespace = $this->getNamespaceForNode($innerNode);
+                    }
                     $innerUseMap    = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
 
                     $returnType = $innerNode->returnType;
@@ -809,6 +822,9 @@ class AstUtils
 
                     if ($innerNode instanceof Node\FunctionLike && $innerFilePath) {
                         $innerNamespace = GlobalCache::$fileNamespaces[$innerFilePath] ?? '';
+                        if ($innerNamespace === '') {
+                            $innerNamespace = $this->getNamespaceForNode($innerNode);
+                        }
                         $innerUseMap    = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
 
                         $returnType = $innerNode->returnType;
@@ -898,15 +914,9 @@ class AstUtils
                 return null;
             }
 
-            // 2b) "parent::method()" → use the parent class (NameResolver should have attached a resolvedName attribute already)
+            // 2b) "parent::method()" → use the parent class via the AST
             if ($lower === 'parent') {
-                // We rely on NameResolver having already resolved "parent" to a fully qualified name in $callNode->class
-                $resolvedParent = $classNameNode->getAttribute('resolvedName');
-                if ($resolvedParent instanceof Node\Name\FullyQualified) {
-                    $parentFqcn = $resolvedParent->toString();
-                    return ltrim($parentFqcn, '\\') . '::' . $callNode->name->toString();
-                }
-                // As a fallback, attempt to fetch the parent from the AST:
+                // Attempt to fetch the parent from the AST:
                 $classNode = $callerFuncOrMethodNode->getAttribute('parent');
                 if (
                     $classNode instanceof Node\Stmt\Class_
