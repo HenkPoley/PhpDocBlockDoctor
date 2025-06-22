@@ -25,7 +25,9 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
 
         $original = file_get_contents($fullPath);
         $this->assertNotFalse($original);
-        $stripped = preg_replace('/^\s*\*\s*@throws.*$/m', '', $original);
+        // Only remove @throws lines that contain just the exception class name
+        // so lines with extra comment text remain untouched
+        $stripped = preg_replace('/^\s*\*\s*@throws\s+[^\s]+(?:\|[^\s]+)*\s*$/m', '', $original);
         if ($stripped === null) {
             $stripped = $original;
         }
