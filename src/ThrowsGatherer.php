@@ -54,28 +54,17 @@ class ThrowsGatherer extends NodeVisitorAbstract
                     continue;
                 }
                 foreach ($useNode->uses as $useUse) {
-                    $alias = $useUse->alias ? $useUse->alias->toString() : $useUse->name->getLast();
-                    if ($useUse->name->hasAttribute('resolvedName') && $useUse->name->getAttribute('resolvedName') instanceof Node\Name) {
-                        $this->useMap[$alias] = $useUse->name->getAttribute('resolvedName')->toString();
-                    } else {
-                        $this->useMap[$alias] = $this->astUtils->resolveNameNodeToFqcn($useUse->name, '', [], false);
-                    }
+                    $alias              = $useUse->alias ? $useUse->alias->toString() : $useUse->name->getLast();
+                    $this->useMap[$alias] = $this->astUtils->resolveNameNodeToFqcn($useUse->name, '', [], false);
                 }
             } elseif ($useNode instanceof Node\Stmt\GroupUse) {
                 if (in_array($useNode->type, [Node\Stmt\Use_::TYPE_FUNCTION, Node\Stmt\Use_::TYPE_CONSTANT], true)) {
                     continue;
                 }
                 foreach ($useNode->uses as $useUse) {
-                    $alias = $useUse->alias ? $useUse->alias->toString() : $useUse->name->getLast();
-                    if ($useUse->name->hasAttribute('resolvedName') && $useUse->name->getAttribute('resolvedName') instanceof Node\Name) {
-                        $this->useMap[$alias] = $useUse->name->getAttribute('resolvedName')->toString();
-                    } else {
-                        $prefixStr = $useNode->prefix->toString();
-                        if ($useNode->prefix->hasAttribute('resolvedName')) {
-                            $prefixStr = (($nullsafeVariable1 = $useNode->prefix->getAttribute('resolvedName')) ? $nullsafeVariable1->toString() : null) ?? '';
-                        }
-                        $this->useMap[$alias] = $this->astUtils->resolveStringToFqcn($prefixStr . '\\' . $useUse->name->toString(), '', []);
-                    }
+                    $alias     = $useUse->alias ? $useUse->alias->toString() : $useUse->name->getLast();
+                    $prefixStr = $useNode->prefix->toString();
+                    $this->useMap[$alias] = $this->astUtils->resolveStringToFqcn($prefixStr . '\\' . $useUse->name->toString(), '', []);
                 }
             }
         }
