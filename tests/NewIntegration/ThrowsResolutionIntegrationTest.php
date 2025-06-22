@@ -111,7 +111,17 @@ class ThrowsResolutionIntegrationTest extends TestCase
                     $baseThrows = array_values(array_unique($baseThrows));
                 }
                 $throwsFromCallees = [];
-                if (isset($node->stmts) && is_array($node->stmts)) {
+                if ($node->stmts === null) {
+                    $existing = GlobalCache::$resolvedThrows[$methodKey] ?? [];
+                    $newThrows = array_values(array_unique(array_merge($baseThrows, $existing)));
+                    sort($newThrows);
+                    if ($newThrows !== (GlobalCache::$resolvedThrows[$methodKey] ?? [])) {
+                        GlobalCache::$resolvedThrows[$methodKey] = $newThrows;
+                        $changed = true;
+                    }
+                    continue;
+                }
+                if (is_array($node->stmts)) {
                     $calls = array_merge(
                         $finder->findInstanceOf($node->stmts, \PhpParser\Node\Expr\MethodCall::class),
                         $finder->findInstanceOf($node->stmts, \PhpParser\Node\Expr\StaticCall::class),
@@ -156,6 +166,16 @@ class ThrowsResolutionIntegrationTest extends TestCase
                     GlobalCache::$resolvedThrows[$methodKey] = $newThrows;
                     $changed = true;
                 }
+            }
+            $app = new \HenkPoley\DocBlockDoctor\Application(
+                new \HenkPoley\DocBlockDoctor\NativeFileSystem(),
+                new \HenkPoley\DocBlockDoctor\PhpParserAstParser()
+            );
+            $ref = new \ReflectionClass($app);
+            $m   = $ref->getMethod('propagateInterfaceThrows');
+            $m->setAccessible(true);
+            if ($m->invoke($app)) {
+                $changed = true;
             }
         } while ($changed && $iteration < $maxIter);
 
