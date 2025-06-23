@@ -436,8 +436,8 @@ class AstUtils
                         continue;
                     }
 
-                    /** @var Node\Stmt\PropertyProperty $propElem */
                     foreach ($stmt->props as $propElem) {
+                        assert($propElem instanceof Node\Stmt\PropertyProperty);
                         if ($propElem->name->toString() === $propertyName) {
                             // Found something like “private Translate $translator;”
                             $docComment = $stmt->getDocComment();
@@ -760,6 +760,7 @@ class AstUtils
             && $callNode->name instanceof Identifier
         ) {
             $anonClass = $callNode->var->class;
+            assert($anonClass instanceof Class_);
             if ($anonClass->extends instanceof Name) {
                 $parentFqcn = $this->resolveNameNodeToFqcn(
                     $anonClass->extends,
@@ -1206,6 +1207,7 @@ class AstUtils
         foreach (spl_autoload_functions() ?: [] as $fn) {
             if (is_array($fn) && $fn[0] instanceof ClassLoader) {
                 $loader = $fn[0];
+                assert($loader instanceof ClassLoader);
                 if ($loader->findFile($fqcn)) {
                     return true;
                 }
@@ -1223,6 +1225,7 @@ class AstUtils
         foreach (spl_autoload_functions() ?: [] as $fn) {
             if (is_array($fn) && $fn[0] instanceof ClassLoader) {
                 $loader = $fn[0];
+                assert($loader instanceof ClassLoader);
                 $file   = $loader->findFile($fqcn);
                 if ($file) {
                     $normalized = str_replace(['\\', '/'], '/', $file);
