@@ -12,13 +12,18 @@ use PhpParser\Node\Stmt\Interface_;
 class ThrowsGatherer extends NodeVisitorAbstract
 {
     private \PhpParser\NodeFinder $nodeFinder;
+
     private \HenkPoley\DocBlockDoctor\AstUtils $astUtils;
+
     private string $filePath;
+
     private bool $ignoreAnnotatedThrows;
+
     /**
      * @var string
      */
     private $currentNamespace = '';
+
     /**
      * @var mixed[]
      */
@@ -69,6 +74,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
             }
         }
         \HenkPoley\DocBlockDoctor\GlobalCache::$fileUseMaps[$this->filePath] = $this->useMap;
+
         return null;
     }
 
@@ -108,6 +114,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                     }
                 }
             }
+
             return null;
         }
 
@@ -127,6 +134,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                     }
                 }
             }
+
             return null;
         }
 
@@ -148,7 +156,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
             $docText = $docComment->getText();
             $docLines = preg_split('/\R/u', $docText) ?: [];
             $currentThrowsFqcnForDesc = null;
-            $accumulatedDescription = "";
+            $accumulatedDescription = '';
             foreach ($docLines as $docLineIdx => $docLine) {
                 $isFirstLine = ($docLineIdx === 0 && preg_match('/^\s*\/\*\*/', $docLine));
                 $isLastLine = ($docLineIdx === count($docLines) - 1 && preg_match('/\*\/\s*$/', $docLine));
@@ -181,7 +189,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                         \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc] = trim($accumulatedDescription);
                     }
                     $currentThrowsFqcnForDesc = null;
-                    $accumulatedDescription = "";
+                    $accumulatedDescription = '';
                 }
             }
             if ($currentThrowsFqcnForDesc && !in_array(trim($accumulatedDescription), ['', '0'], true) && !isset(\HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc])) {
@@ -189,6 +197,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
             }
         }
         \HenkPoley\DocBlockDoctor\GlobalCache::$annotatedThrows[$key] = array_values(array_unique($currentAnnotatedThrowsFqcns));
+
         return null;
     }
 
@@ -209,6 +218,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         }
         \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$key] =
             $this->calculateDirectThrowsForNode($node, $key);
+
         return null;
     }
 
@@ -376,6 +386,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                 break;
             }
         }
+
         return array_values(array_unique(array_filter($types)));
     }
 
@@ -398,6 +409,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                 $types[] = $this->astUtils->resolveNameNodeToFqcn($ins->class, $this->currentNamespace, $this->useMap, false);
             }
         }
+
         return $types;
     }
 
@@ -418,9 +430,11 @@ class ThrowsGatherer extends NodeVisitorAbstract
                         return false;
                     }
                 }
+
                 return true;
             }
         }
+
         return false;
     }
 
@@ -466,6 +480,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                 }
             }
         }
+
         return $bestFqcn;
     }
 }

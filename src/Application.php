@@ -15,6 +15,7 @@ use RecursiveIteratorIterator;
 class Application
 {
     private FileSystem $fileSystem;
+
     private AstParser $astParser;
 
     public function __construct(?FileSystem $fileSystem = null, ?AstParser $astParser = null)
@@ -22,6 +23,7 @@ class Application
         $this->fileSystem = $fileSystem ?? new NativeFileSystem();
         $this->astParser  = $astParser  ?? new PhpParserAstParser();
     }
+
     /**
      * @param string[] $argv
      *
@@ -38,6 +40,7 @@ class Application
         foreach ($argv as $arg) {
             if ($arg === '--help' || $arg === '-h') {
                 $this->printHelp();
+
                 return 0;
             }
         }
@@ -59,7 +62,7 @@ class Application
 
         if ($opt->verbose && !$opt->quiet) {
             echo "\n=== Summary ===\n";
-            echo "Files read (" . count($filesRead) . "):\n";
+            echo 'Files read (' . count($filesRead) . "):\n";
             foreach ($filesRead as $f) {
                 echo "  - $f\n";
             }
@@ -88,38 +91,45 @@ class Application
 
             if ($arg === '--verbose' || $arg === '-v') {
                 $opt->verbose = true;
+
                 continue;
             }
 
             if ($arg === '--quiet' || $arg === '-q') {
                 $opt->quiet = true;
+
                 continue;
             }
 
             if ($arg === '--trace-throw-origins') {
                 $opt->traceOrigins = true;
+
                 continue;
             }
 
             if ($arg === '--trace-throw-call-sites') {
                 $opt->traceCallSites = true;
+
                 continue;
             }
 
             if ($arg === '--ignore-annotated-throws') {
                 $opt->ignoreAnnotatedThrows = true;
+
                 continue;
             }
 
             if (strncmp($arg, '--read-dirs=', strlen('--read-dirs=')) === 0) {
                 $dirs       = substr($arg, 12);
                 $opt->readDirs = array_filter(array_map('trim', explode(',', $dirs)));
+
                 continue;
             }
 
             if (strncmp($arg, '--write-dirs=', strlen('--write-dirs=')) === 0) {
                 $dirs        = substr($arg, 13);
                 $opt->writeDirs = array_filter(array_map('trim', explode(',', $dirs)));
+
                 continue;
             }
 
@@ -166,6 +176,7 @@ class Application
                 if (strncmp($d, DIRECTORY_SEPARATOR, strlen(DIRECTORY_SEPARATOR)) !== 0 && !preg_match('/^[A-Za-z]:\\\\/', $d)) {
                     return $rootDir . DIRECTORY_SEPARATOR . $d;
                 }
+
                 return $d;
             }, $readDirs);
         }
@@ -183,6 +194,7 @@ class Application
                 if (strncmp($d, DIRECTORY_SEPARATOR, strlen(DIRECTORY_SEPARATOR)) !== 0 && !preg_match('/^[A-Za-z]:\\\\/', $d)) {
                     return $rootDir . DIRECTORY_SEPARATOR . $d;
                 }
+
                 return $d;
             }, $writeDirs);
         }
@@ -192,8 +204,8 @@ class Application
 
         if ($opt->verbose && !$opt->quiet) {
             echo "[Verbose] Running DocBlockDoctor on: {$rootDir}\n";
-            echo "[Verbose] Reading from: " . implode(', ', $readDirs) . "\n";
-            echo "[Verbose] Writing to:  " . implode(', ', $writeDirs) . "\n";
+            echo '[Verbose] Reading from: ' . implode(', ', $readDirs) . "\n";
+            echo '[Verbose] Writing to:  ' . implode(', ', $writeDirs) . "\n";
         }
     }
 
@@ -211,6 +223,7 @@ class Application
                         $phpFilePaths[] = $real;
                     }
                 }
+
                 continue;
             }
 
@@ -226,6 +239,7 @@ class Application
                             if ($iterator->hasChildren()) {
                                 return !in_array($filename, ['.git', 'node_modules', '.history', 'cache'], true);
                             }
+
                             return $file->isFile() && $file->getExtension() === 'php';
                         }
                     ),
@@ -233,6 +247,7 @@ class Application
                 );
             } catch (\UnexpectedValueException $e) {
                 fwrite(STDERR, "Error: Cannot open directory '{$dir}'.\n");
+
                 continue;
             }
 
@@ -280,6 +295,7 @@ class Application
                 if (!$opt->quiet) {
                     echo "  ! Cannot read file: {$filePath}\n";
                 }
+
                 continue;
             }
 
@@ -289,6 +305,7 @@ class Application
                     if ($opt->verbose && !$opt->quiet) {
                         echo "    → No AST for {$filePath}\n";
                     }
+
                     continue;
                 }
 
@@ -385,6 +402,7 @@ class Application
                         GlobalCache::$throwOrigins[$funcKey]   = $newOrigins;
                         $changedInThisGlobalIteration = true;
                     }
+
                     continue;
                 }
                 if (is_array($funcNode->stmts)) {
@@ -527,6 +545,7 @@ class Application
                 }
             }
         }
+
         return $changed;
     }
 
@@ -555,6 +574,7 @@ class Application
                     return true;
                 }
             }
+
             return false;
         });
 
@@ -642,6 +662,7 @@ class Application
                             echo "    → Surgically simplified use statements in {$filePath}\n";
                         }
                         $fileOverallModified = true;
+
                         continue; // Re‐parse from scratch after a surgical change
                     }
                 }

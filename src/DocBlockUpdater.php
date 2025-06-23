@@ -8,14 +8,20 @@ use PhpParser\Node;
 class DocBlockUpdater extends NodeVisitorAbstract
 {
     private \HenkPoley\DocBlockDoctor\AstUtils $astUtils;
+
     private string $currentFilePath;
+
     private bool $traceOrigins;
+
     private bool $traceCallSites;
+
     private bool $quiet;
+
     /**
      * @var mixed[]
      */
     public $pendingPatches = [];
+
     /**
      * @var string
      */
@@ -38,6 +44,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
     {
         $this->pendingPatches = [];
         $this->currentNamespace = \HenkPoley\DocBlockDoctor\GlobalCache::$fileNamespaces[$this->currentFilePath] ?? '';
+
         return null;
     }
 
@@ -51,14 +58,14 @@ class DocBlockUpdater extends NodeVisitorAbstract
         $hasMeaningfulContent = false;
         foreach ($contentLines as $line) {
             $trimmedLine = trim($line);
-            if ($trimmedLine !== "" || $line === "") {
+            if ($trimmedLine !== '' || $line === '') {
                 $actualContent[] = $line;
-                if ($trimmedLine !== "") {
+                if ($trimmedLine !== '') {
                     $hasMeaningfulContent = true;
                 }
             }
         }
-        if (!$hasMeaningfulContent && array_filter($actualContent, fn($l): bool => trim($l) !== "") === []) {
+        if (!$hasMeaningfulContent && array_filter($actualContent, fn($l): bool => trim($l) !== '') === []) {
             return null;
         }
 
@@ -73,11 +80,11 @@ class DocBlockUpdater extends NodeVisitorAbstract
             return null;
         }
 
-        $outputDocBlock = ["/**"];
-        while (count($actualContent) > 0 && trim($actualContent[0]) === "") {
+        $outputDocBlock = ['/**'];
+        while (count($actualContent) > 0 && trim($actualContent[0]) === '') {
             array_shift($actualContent);
         }
-        while (count($actualContent) > 0 && trim(end($actualContent)) === "") {
+        while (count($actualContent) > 0 && trim(end($actualContent)) === '') {
             array_pop($actualContent);
         }
 
@@ -88,13 +95,14 @@ class DocBlockUpdater extends NodeVisitorAbstract
         foreach ($actualContent as $line) {
             if (trim($line) === '') {
                 // preserve a blank docblock line, but no space after the asterisk
-                $outputDocBlock[] = " *";
+                $outputDocBlock[] = ' *';
             } else {
-                $outputDocBlock[] = " * " . rtrim($line);
+                $outputDocBlock[] = ' * ' . rtrim($line);
             }
         }
 
-        $outputDocBlock[] = " */";
+        $outputDocBlock[] = ' */';
+
         return implode("\n", $outputDocBlock);
     }
 
@@ -156,6 +164,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                         !preg_match('/^@\w+/', trim((string)preg_replace('/^\s*\*?\s?/', '', $originalLines[$lineIdx + 1])))) {
                         $lineIdx++;
                     }
+
                     continue;
                 }
 
@@ -169,7 +178,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                     $hasAnyContentForNewDocBlock = true;
                 } elseif ($isInsideGenericTag) {
                     $currentGenericTagLines[] = $lineContent;
-                    if ($trimmedLineContent !== "") {
+                    if ($trimmedLineContent !== '') {
                         $hasAnyContentForNewDocBlock = true;
                     }
                 } elseif ($trimmedLineContent !== '') {
@@ -181,8 +190,8 @@ class DocBlockUpdater extends NodeVisitorAbstract
                     $newDocBlockContentLines[] = $lineContent;
                     $hasAnyContentForNewDocBlock = true;
                     $isInsideGenericTag = false;
-                } elseif ($newDocBlockContentLines !== [] && trim((string)end($newDocBlockContentLines)) !== "") {
-                    $newDocBlockContentLines[] = "";
+                } elseif ($newDocBlockContentLines !== [] && trim((string)end($newDocBlockContentLines)) !== '') {
+                    $newDocBlockContentLines[] = '';
                 }
             }
             if ($currentGenericTagLines !== []) {
@@ -192,8 +201,8 @@ class DocBlockUpdater extends NodeVisitorAbstract
 
         if ($analyzedThrowsFqcns !== []) {
             $hasAnyContentForNewDocBlock = true;
-            if ($newDocBlockContentLines !== [] && trim((string)end($newDocBlockContentLines)) !== "") {
-                $newDocBlockContentLines[] = "";
+            if ($newDocBlockContentLines !== [] && trim((string)end($newDocBlockContentLines)) !== '') {
+                $newDocBlockContentLines[] = '';
             }
             foreach ($analyzedThrowsFqcns as $fqcn) {
                 // This foreach() is not dead code.
@@ -249,10 +258,10 @@ class DocBlockUpdater extends NodeVisitorAbstract
 
         $finalNormalizedNewDocText = null;
         if ($hasAnyContentForNewDocBlock || $newDocBlockContentLines !== []) {
-            while (count($newDocBlockContentLines) > 0 && trim((string)$newDocBlockContentLines[0]) === "") {
+            while (count($newDocBlockContentLines) > 0 && trim((string)$newDocBlockContentLines[0]) === '') {
                 array_shift($newDocBlockContentLines);
             }
-            while (count($newDocBlockContentLines) > 0 && trim((string)end($newDocBlockContentLines)) === "") {
+            while (count($newDocBlockContentLines) > 0 && trim((string)end($newDocBlockContentLines)) === '') {
                 array_pop($newDocBlockContentLines);
             }
 
@@ -321,7 +330,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
             }
             if ($patchType !== '') {
                 if (!$this->quiet) {
-                    echo "Scheduling DocBlock " . strtoupper($patchType) . " for " . $this->getNodeSignatureForMessage($node) . "\n";
+                    echo 'Scheduling DocBlock ' . strtoupper($patchType) . ' for ' . $this->getNodeSignatureForMessage($node) . "\n";
                 }
                 $this->pendingPatches[] = [
                     'type' => $patchType, 'node' => $node,
@@ -330,6 +339,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                 ];
             }
         }
+
         return null;
     }
 
@@ -339,6 +349,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
         if ($node instanceof Node\Stmt\ClassMethod || $node instanceof Node\Stmt\Function_) {
             return $key ?: (($node->name->toString() . '()'));
         }
-        return $key ?: ("unknown_node_type");
+
+        return $key ?: ('unknown_node_type');
     }
 }

@@ -6,50 +6,62 @@ class GlobalCache
 {
     /** Max number of origin call chains stored per exception */
     public const MAX_ORIGIN_CHAINS = 5;
+
     /**
      * @var mixed[]
      */
     public static $directThrows = [];
+
     /**
      * @var mixed[]
      */
     public static $annotatedThrows = [];
+
     /**
      * @var mixed[]
      */
     public static $originalDescriptions = [];
+
     /**
      * @var mixed[]
      */
     public static $fileNamespaces = [];
+
     /**
      * @var mixed[]
      */
     public static $fileUseMaps = [];
+
     /**
      * @var mixed[]
      */
     public static $astNodeMap = [];
+
     /**
      * @var mixed[]
      */
     public static $nodeKeyToFilePath = [];
+
     /**
      * @var mixed[]
      */
     public static $resolvedThrows = [];
+
     /**
      * @var array<string,string|null> Mapping of class FQCN to its parent class FQCN
      */
     public static $classParents = [];
+
     /**
      * @var array<string,string[]> Mapping of class FQCN to the traits it uses
      */
     public static $classTraits = [];
+
     /**
      * @var array<string,string[]> Mapping of interface FQCN to implementing class FQCNs
      */
     public static $interfaceImplementations = [];
+
     /**
      * @var array<string,array<string,string[]>> Mapping of method key to
      * exception FQCN to a list of origin call chain strings. For each method,

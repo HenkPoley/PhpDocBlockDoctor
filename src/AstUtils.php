@@ -55,6 +55,7 @@ class AstUtils
             }
             $this->assignmentCache[$key] = $map;
         }
+
         return $this->assignmentCache[$key];
     }
 
@@ -82,6 +83,7 @@ class AstUtils
                 $bestExpr = $info['expr'];
             }
         }
+
         return $bestExpr;
     }
 
@@ -94,11 +96,13 @@ class AstUtils
     {
         if ($node instanceof Node\Stmt\ClassMethod) {
             $className = $this->getContextClassName($node, $currentNamespace);
+
             return $className ? $className . '::' . $node->name->toString() : null;
         }
 
         if ($node instanceof Node\Stmt\Function_) {
             $fnName = $node->name->toString();
+
             return ($currentNamespace && strncmp($fnName, '\\', strlen('\\')) !== 0
                     ? $currentNamespace . '\\'
                     : '') . $fnName;
@@ -128,9 +132,11 @@ class AstUtils
                 if (isset($current->name)) {
                     return ($currentNamespace ? $currentNamespace . '\\' : '') . $current->name->toString();
                 }
+
                 return null;
             }
         }
+
         return null;
     }
 
@@ -145,6 +151,7 @@ class AstUtils
                 return $current->name->toString();
             }
         }
+
         return '';
     }
 
@@ -167,6 +174,7 @@ class AstUtils
             // First‐part resolution via `use`‐map (for classes/namespaces)
             $baseFqcnFromUse = $useMap[$parts[0]];
             array_shift($parts);
+
             return $baseFqcnFromUse . (count($parts) > 0 ? '\\' . implode('\\', $parts) : '');
         }
 
@@ -199,6 +207,7 @@ class AstUtils
         if (isset($useMap[$parts[0]])) {
             $baseFqcnFromUse = $useMap[$parts[0]];
             array_shift($parts);
+
             return $baseFqcnFromUse . (count($parts) > 0 ? '\\' . implode('\\', $parts) : '');
         }
 
@@ -272,6 +281,7 @@ class AstUtils
                                 $methodName
                             );
                             $target = $decl ?? ltrim($returnedFqcn, '\\');
+
                             return $target . '::' . $methodName;
                         }
                     } elseif ($returnType instanceof Node\NullableType && $returnType->type instanceof Node\Name) {
@@ -288,6 +298,7 @@ class AstUtils
                                 $methodName
                             );
                             $target = $decl ?? ltrim($returnedFqcn, '\\');
+
                             return $target . '::' . $methodName;
                         }
                     }
@@ -320,6 +331,7 @@ class AstUtils
                                     $methodName
                                 );
                                 $target = $decl ?? ltrim($returnedFqcn, '\\');
+
                                 return $target . '::' . $methodName;
                             }
                         }
@@ -368,6 +380,7 @@ class AstUtils
                                 $methodName
                             );
                             $target = $decl ?? ltrim($returnedFqcn, '\\');
+
                             return $target . '::' . $methodName;
                         }
                     } elseif ($returnType instanceof Node\NullableType && $returnType->type instanceof Node\Name) {
@@ -384,6 +397,7 @@ class AstUtils
                                 $methodName
                             );
                             $target = $decl ?? ltrim($returnedFqcn, '\\');
+
                             return $target . '::' . $methodName;
                         }
                     }
@@ -413,6 +427,7 @@ class AstUtils
                                     $methodName
                                 );
                                 $target = $decl ?? ltrim($returnedFqcn, '\\');
+
                                 return $target . '::' . $methodName;
                             }
                         }
@@ -473,6 +488,7 @@ class AstUtils
                                             $methodName
                                         );
                                         $target = $decl ?? ltrim($fqcn, '\\');
+
                                         return $target . '::' . $methodName;
                                     }
                                 }
@@ -490,6 +506,7 @@ class AstUtils
                                         $methodName
                                     );
                                     $target = $decl ?? ltrim($fqcn, '\\');
+
                                     return $target . '::' . $methodName;
                                 }
                             } elseif ($stmt->type instanceof NullableType && $stmt->type->type instanceof Name) {
@@ -505,6 +522,7 @@ class AstUtils
                                         $methodName
                                     );
                                     $target = $decl ?? ltrim($fqcn, '\\');
+
                                     return $target . '::' . $methodName;
                                 }
                             }
@@ -546,14 +564,15 @@ class AstUtils
                                         $methodName
                                     );
                                     $target = $decl ?? ltrim($fqcn, '\\');
+
                                     return $target . '::' . $methodName;
                                 }
                             }
                         }
                     }
                 }
-        }
-        // If we didn’t find a matching @var or couldn’t resolve it, fall through:
+            }
+            // If we didn’t find a matching @var or couldn’t resolve it, fall through:
         }
 
         // StaticCall on $this->property → translate "$this->prop::foo()" → "ClassName::foo"
@@ -597,6 +616,7 @@ class AstUtils
                                             $methodName
                                         );
                                         $target = $decl ?? ltrim($fqcn, '\\');
+
                                         return $target . '::' . $methodName;
                                     }
                                 }
@@ -614,6 +634,7 @@ class AstUtils
                                         $methodName
                                     );
                                     $target = $decl ?? ltrim($fqcn, '\\');
+
                                     return $target . '::' . $methodName;
                                 }
                             } elseif ($stmt->type instanceof NullableType && $stmt->type->type instanceof Name) {
@@ -629,6 +650,7 @@ class AstUtils
                                         $methodName
                                     );
                                     $target = $decl ?? ltrim($fqcn, '\\');
+
                                     return $target . '::' . $methodName;
                                 }
                             }
@@ -670,6 +692,7 @@ class AstUtils
                                         $methodName
                                     );
                                     $target = $decl ?? ltrim($fqcn, '\\');
+
                                     return $target . '::' . $methodName;
                                 }
                             }
@@ -730,6 +753,7 @@ class AstUtils
                             $methodName
                         );
                         $target = $decl ?? ltrim($paramFqcn, '\\');
+
                         return $target . '::' . $methodName;
                     }
                 }
@@ -757,6 +781,7 @@ class AstUtils
                     $callNode->name->toString()
                 );
                 $target = $decl ?? ltrim($classFqcn, '\\');
+
                 return $target . '::' . $callNode->name->toString();
             }
         }
@@ -783,6 +808,7 @@ class AstUtils
                         $callNode->name->toString()
                     );
                     $target = $decl ?? ltrim($parentFqcn, '\\');
+
                     return $target . '::' . $callNode->name->toString();
                 }
             }
@@ -810,6 +836,7 @@ class AstUtils
                 if ($classFqcn !== '' && $classFqcn !== '0') {
                     $decl  = $this->findDeclaringClassForMethod(ltrim($classFqcn, '\\'), $methodName);
                     $target = $decl ?? ltrim($classFqcn, '\\');
+
                     return $target . '::' . $methodName;
                 }
             } elseif ($assignedExpr instanceof Node\Expr\FuncCall || $assignedExpr instanceof Node\Expr\MethodCall || $assignedExpr instanceof Node\Expr\StaticCall) {
@@ -842,6 +869,7 @@ class AstUtils
                             if ($returnedFqcn !== '') {
                                 $decl  = $this->findDeclaringClassForMethod(ltrim($returnedFqcn, '\\'), $methodName);
                                 $target = $decl ?? ltrim($returnedFqcn, '\\');
+
                                 return $target . '::' . $methodName;
                             }
                         } elseif ($returnType instanceof NullableType && $returnType->type instanceof Name) {
@@ -854,6 +882,7 @@ class AstUtils
                             if ($returnedFqcn !== '') {
                                 $decl  = $this->findDeclaringClassForMethod(ltrim($returnedFqcn, '\\'), $methodName);
                                 $target = $decl ?? ltrim($returnedFqcn, '\\');
+
                                 return $target . '::' . $methodName;
                             }
                         }
@@ -874,6 +903,7 @@ class AstUtils
                                 if ($returnedFqcn !== '' && $returnedFqcn !== '0') {
                                     $decl  = $this->findDeclaringClassForMethod(ltrim($returnedFqcn, '\\'), $methodName);
                                     $target = $decl ?? ltrim($returnedFqcn, '\\');
+
                                     return $target . '::' . $methodName;
                                 }
                             }
@@ -896,6 +926,7 @@ class AstUtils
                 $methodName  = $callNode->name->toString();
                 $declaring   = $this->findDeclaringClassForMethod($callerClass, $methodName);
                 $targetClass = $declaring ?? $callerClass;
+
                 return $targetClass . '::' . $methodName;
             }
         }
@@ -915,6 +946,7 @@ class AstUtils
                 if ($callerClass) {
                     return $callerClass . '::' . $callNode->name->toString();
                 }
+
                 return null;
             }
 
@@ -932,8 +964,10 @@ class AstUtils
                         $callerUseMap,
                         false
                     );
+
                     return ltrim($parentFqcn, '\\') . '::' . $callNode->name->toString();
                 }
+
                 return null;
             }
 
@@ -986,6 +1020,7 @@ class AstUtils
                             // ignore
                         }
                     }
+
                     return $decl . '::' . $methodName;
                 }
             }
@@ -1022,6 +1057,7 @@ class AstUtils
                 $callerUseMap,
                 true
             );
+
             return ltrim($functionFqcn, '\\');
         }
 
@@ -1039,6 +1075,7 @@ class AstUtils
                 if ($callerClass) {
                     return $callerClass . '::__construct';
                 }
+
                 return null;
             }
 
@@ -1058,6 +1095,7 @@ class AstUtils
                         return ltrim($parentFqcn, '\\') . '::__construct';
                     }
                 }
+
                 return null;
             }
 
@@ -1068,6 +1106,7 @@ class AstUtils
                 $callerUseMap,
                 false
             );
+
             return ltrim($classFqcn, '\\') . '::__construct';
         }
 
@@ -1208,6 +1247,7 @@ class AstUtils
                 }
             }
         }
+
         return false;
     }
 
@@ -1229,6 +1269,7 @@ class AstUtils
                 }
             }
         }
+
         return false;
     }
 
@@ -1261,6 +1302,7 @@ class AstUtils
                     }
                     $parent = $ref->getParentClass();
                     $current = $parent ? $parent->getName() : null;
+
                     continue;
                 } catch (\ReflectionException $e) {
                     break;
@@ -1287,6 +1329,7 @@ class AstUtils
             $visited[] = $current;
             $current = GlobalCache::$classParents[$current] ?? null;
         }
+
         return false;
     }
 }

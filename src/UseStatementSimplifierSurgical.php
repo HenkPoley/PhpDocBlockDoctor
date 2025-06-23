@@ -11,6 +11,7 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
 {
     /** @var array<int, array{startPos: int, length: int, replacementText: string}> */
     public $pendingPatches = [];
+
     private \PhpParser\PrettyPrinter\Standard $printer;
 
     public function __construct()
@@ -25,6 +26,7 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
     public function beforeTraverse(array $nodes)
     {
         $this->pendingPatches = [];
+
         return null;
     }
 
@@ -65,7 +67,7 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
             // Strip "\<\?php " or "\<\?php\n" prefix if present
             // The PrettyPrinter wraps a single statement array in \<\?php ... \?\>
             $phpPrefixNewline = "<?php\n";
-            $phpPrefixSpace = "<?php "; // Note: nikic/php-parser often uses "\<\?php \n" (with space)
+            $phpPrefixSpace = '<?php '; // Note: nikic/php-parser often uses "\<\?php \n" (with space)
             $phpPrefixSpaceNewline = "<?php \n";
 
             if (strncmp($replacementCode, $phpPrefixSpaceNewline, strlen($phpPrefixSpaceNewline)) === 0) {
@@ -82,16 +84,17 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
                 $replacementCode .= "\n";
             }
 
-
             $this->pendingPatches[] = [
                 'startPos' => $node->getStartFilePos(),
                 'length' => $node->getEndFilePos() - $node->getStartFilePos() + 1,
                 'replacementText' => $replacementCode,
             ];
+
             // Return null to signify that the traverser should not replace this node in the AST.
             // The change will be applied textually.
             return null;
         }
+
         return null;
     }
 }
