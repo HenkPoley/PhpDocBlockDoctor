@@ -81,7 +81,7 @@ class ApplicationFileMethodsTest extends TestCase
         return $out;
     }
 
-    private function prepareGlobalCache(string $file, string $code): void
+    private function prepareGlobalCache(string $file, string $code, array $resolvedThrows = ['RuntimeException']): void
     {
         GlobalCache::clear();
         $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
@@ -95,7 +95,7 @@ class ApplicationFileMethodsTest extends TestCase
         GlobalCache::$nodeKeyToFilePath['foo'] = $file;
         GlobalCache::$fileNamespaces[$file] = '';
         GlobalCache::$fileUseMaps[$file] = [];
-        GlobalCache::$resolvedThrows['foo'] = ['RuntimeException'];
+        GlobalCache::$resolvedThrows['foo'] = $resolvedThrows;
     }
 
     public function testUpdateFilesWritesPatchedContent(): void
@@ -152,7 +152,37 @@ class ApplicationFileMethodsTest extends TestCase
         $this->assertGreaterThanOrEqual(3, $fs->writes);
         $this->assertSame($code, $fs->files[$file]);
         $this->assertStringContainsString('Warning: Max iterations for file', $out);
-}
+    }
+
+    public function testUpdateFilesRemovesDocBlock(): void
+    {
+        $code = "<?php\n/**\n * @throws \\RuntimeException\n */\nfunction foo() {}\n";
+        $file = '/tmp/patch_' . uniqid() . '.php';
+        $fs = new class($file, $code) implements FileSystem {
+            public array $files; public int $writes = 0; public bool $fail = false;
+            public function __construct(string $f, string $c) { $this->files = [$f => $c]; }
+            public function getContents(string $path): string|false { return $this->files[$path] ?? false; }
+            public function putContents(string $path, string $contents): bool {
+                $this->writes++; if ($this->fail) return false; $this->files[$path] = $contents; return true;
+            }
+            public function isFile(string $path): bool { return isset($this->files[$path]); }
+            public function isDir(string $path): bool { return true; }
+            public function realPath(string $path): string|false { return $path; }
+            public function getCurrentWorkingDirectory(): string|false { return '/'; }
+        };
+        $parser = new PhpParserAstParser();
+        $app = new Application($fs, $parser);
+        $this->prepareGlobalCache($file, $code, []);
+        $opt = new ApplicationOptions();
+        $opt->writeDirs = [dirname($file)];
+        $opt->quiet = true;
+        $opt->ignoreAnnotatedThrows = true;
+        $utils = new AstUtils();
+        $filesFixed = self::invokeUpdate($app, [$file], $utils, $opt);
+        $this->assertSame([$file], $filesFixed);
+        $this->assertGreaterThan(0, $fs->writes);
+        $this->assertSame("<?php\n\nfunction foo() {}\n", $fs->files[$file]);
+    }
 
     public function testResolveDirectoriesHandlesDefaultsAndRelative(): void
     {
