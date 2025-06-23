@@ -20,8 +20,16 @@ return RectorConfig::configure()
     ->withSets([
         PHPUnitSetList::PHPUNIT_110,
     ])
+    ->withRules([
+        \Rector\TypeDeclaration\Rector\StmtsAwareInterface\DeclareStrictTypesRector::class,
+    ])
     ->withSkip([
         \Rector\DeadCode\Rector\ClassMethod\RemoveUselessParamTagRector::class,
         \Rector\DeadCode\Rector\ClassMethod\RemoveUselessReturnTagRector::class,
-        \Rector\DeadCode\Rector\ClassMethod\RemoveNullTagValueNodeRector::class
+        \Rector\DeadCode\Rector\ClassMethod\RemoveNullTagValueNodeRector::class,
+
+        // Couple of ones that seem to break Psalm 'perfect' (>99.8%) score.
+        \Rector\DeadCode\Rector\Cast\RecastingRemovalRector::class,
+        \Rector\DeadCode\Rector\Node\RemoveNonExistingVarAnnotationRector::class,
+        \Rector\CodeQuality\Rector\Foreach_\UnusedForeachValueToArrayKeysRector::class,
     ]);

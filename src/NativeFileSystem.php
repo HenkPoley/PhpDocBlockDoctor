@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace HenkPoley\DocBlockDoctor;
 
 class NativeFileSystem implements FileSystem
