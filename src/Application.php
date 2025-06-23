@@ -120,14 +120,14 @@ class Application
             }
 
             if (strncmp($arg, '--read-dirs=', strlen('--read-dirs=')) === 0) {
-                $dirs       = substr($arg, 12);
+                $dirs       = (string) substr($arg, 12);
                 $opt->readDirs = array_filter(array_map('trim', explode(',', $dirs)));
 
                 continue;
             }
 
             if (strncmp($arg, '--write-dirs=', strlen('--write-dirs=')) === 0) {
-                $dirs        = substr($arg, 13);
+                $dirs        = (string) substr($arg, 13);
                 $opt->writeDirs = array_filter(array_map('trim', explode(',', $dirs)));
 
                 continue;
@@ -215,7 +215,7 @@ class Application
     private function collectPhpFiles(ApplicationOptions $opt): array
     {
         $phpFilePaths = [];
-        foreach ($opt->readDirs as $dir) {
+        foreach ($opt->readDirs ?? [] as $dir) {
             if ($this->fileSystem->isFile($dir)) {
                 if (pathinfo($dir, PATHINFO_EXTENSION) === 'php') {
                     $real = $this->fileSystem->realPath($dir);
@@ -417,6 +417,7 @@ class Application
                         if ($astUtils->isNodeAfterExecutionEndingStmt($callNode, $funcNode)) {
                             continue;
                         }
+                        /** @var Node\FunctionLike $funcNode */
                         $calleeKey = $astUtils->getCalleeKey($callNode, $callerNamespace, $callerUseMap, $funcNode);
                         if ($calleeKey && $calleeKey !== $funcKey) {
                             $exceptionsFromCallee = GlobalCache::$resolvedThrows[$calleeKey] ?? [];
@@ -511,10 +512,13 @@ class Application
                 if (strncmp($key, $ifacePrefix, strlen($ifacePrefix)) !== 0) {
                     continue;
                 }
-                $method = substr($key, strlen($ifacePrefix));
+                $method = (string) substr($key, strlen($ifacePrefix));
                 $throws = GlobalCache::$resolvedThrows[$key] ?? [];
                 $orig   = GlobalCache::$throwOrigins[$key] ?? [];
                 foreach ($impls as $class) {
+                    if (!is_string($class)) {
+                        continue;
+                    }
                     $implKey = ltrim($class, '\\') . '::' . $method;
                     foreach (GlobalCache::$resolvedThrows[$implKey] ?? [] as $ex) {
                         if (!in_array($ex, $throws, true)) {
@@ -568,7 +572,7 @@ class Application
             if ($realPath === false) {
                 return false;
             }
-            foreach ($writeDirs as $dir) {
+            foreach (($writeDirs ?? []) as $dir) {
                 $dirReal = $this->fileSystem->realPath($dir);
                 if ($dirReal !== false && (strncmp($realPath, $dirReal . DIRECTORY_SEPARATOR, strlen($dirReal . DIRECTORY_SEPARATOR)) === 0 || $realPath === $dirReal)) {
                     return true;
@@ -715,14 +719,14 @@ class Application
                             if ($patch['type'] === 'add') {
                                 $replacementText = $indentedDocBlock . $lineEnding;
                                 $lineStartPos    = strrpos(
-                                    substr($newFileContent, 0, $patch['patchStart']),
+                                    (string) substr($newFileContent, 0, $patch['patchStart']),
                                     $newlineSearch
                                 );
                                 $currentAppliedPatchStartPos = ($lineStartPos !== false ? $lineStartPos + 1 : 0);
                                 $currentAppliedOriginalLength = 0;
                             } else {
                                 $lf      = $newlineSearch;
-                                $upToSlash = substr($newFileContent, 0, $patch['patchStart']);
+                                $upToSlash = (string) substr($newFileContent, 0, $patch['patchStart']);
                                 $lastNl  = strrpos($upToSlash, $lf);
                                 $lineStart = $lastNl === false ? 0 : $lastNl + 1;
 
@@ -737,7 +741,7 @@ class Application
 
                             if ($currentAppliedPatchStartPos > 0) {
                                 $startOfLine = strrpos(
-                                    substr($newFileContent, 0, $currentAppliedPatchStartPos),
+                                    (string) substr($newFileContent, 0, $currentAppliedPatchStartPos),
                                     $newlineSearch
                                 );
                                 $startOfLine = ($startOfLine === false) ? 0 : $startOfLine + 1;
@@ -746,7 +750,9 @@ class Application
                             }
 
                             $isDocBlockAlone = trim(
-                                    substr($newFileContent, $startOfLine,
+                                    (string) substr(
+                                        $newFileContent,
+                                        $startOfLine,
                                         $currentAppliedPatchStartPos - $startOfLine
                                     )
                                 ) === '';

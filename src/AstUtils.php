@@ -166,7 +166,7 @@ class AstUtils
 
     public function resolveStringToFqcn(string $name, ?string $currentNamespace, array $useMap): string
     {
-        if ($name === null || $name === '' || $name === '0') {
+        if ($name === '' || $name === '0') {
             return '';
         }
         if (strpos($name, '|') !== false) {
@@ -234,7 +234,7 @@ class AstUtils
                     $innerUseMap    = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
 
                     // 3a) If the inner method has a return type hint, use that
-                    $returnType = $innerNode->returnType;
+                    $returnType = $innerNode->getReturnType();
                     if ($returnType instanceof Node\Name) {
                         $returnedFqcn = $this->resolveNameNodeToFqcn(
                             $returnType,
@@ -274,7 +274,7 @@ class AstUtils
                     // 3b) Find any “return new SomeClass();” inside that method
                     $finder = new NodeFinder();
                     $returns = $finder->findInstanceOf(
-                        $innerNode->stmts ?? [],
+                        $innerNode->getStmts() ?? [],
                         Return_::class
                     );
 
@@ -333,7 +333,7 @@ class AstUtils
                     }
                     $innerUseMap    = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
 
-                    $returnType = $innerNode->returnType;
+                    $returnType = $innerNode->getReturnType();
                     if ($returnType instanceof Node\Name) {
                         $returnedFqcn = $this->resolveNameNodeToFqcn(
                             $returnType,
@@ -372,7 +372,7 @@ class AstUtils
 
                     $finder  = new NodeFinder();
                     $returns = $finder->findInstanceOf(
-                        $innerNode->stmts ?? [],
+                        $innerNode->getStmts() ?? [],
                         Return_::class
                     );
 
@@ -735,7 +735,6 @@ class AstUtils
             && $callNode->var instanceof Node\Expr\New_
             && $callNode->var->class instanceof Name
             && $callNode->name instanceof Identifier
-            && !($callNode->var->class instanceof Class_)
         ) {
             $classFqcn = $this->resolveNameNodeToFqcn(
                 $callNode->var->class,
@@ -761,7 +760,6 @@ class AstUtils
             && $callNode->var->class instanceof Class_
             && $callNode->name instanceof Identifier
         ) {
-            /** @var Class_ $anonClass */
             $anonClass = $callNode->var->class;
             if ($anonClass->extends instanceof Name) {
                 $parentFqcn = $this->resolveNameNodeToFqcn(
@@ -826,7 +824,7 @@ class AstUtils
                         }
                         $innerUseMap    = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
 
-                        $returnType = $innerNode->returnType;
+                        $returnType = $innerNode->getReturnType();
                         if ($returnType instanceof Name) {
                             $returnedFqcn = $this->resolveNameNodeToFqcn(
                                 $returnType,
@@ -856,7 +854,7 @@ class AstUtils
                         }
 
                         $finder2 = new NodeFinder();
-                        $returns = $finder2->findInstanceOf($innerNode->stmts ?? [], Return_::class);
+                        $returns = $finder2->findInstanceOf($innerNode->getStmts() ?? [], Return_::class);
                         foreach ($returns as $returnStmt) {
                             if (
                                 $returnStmt->expr instanceof Node\Expr\New_
@@ -955,7 +953,8 @@ class AstUtils
                 foreach (array_keys(GlobalCache::$astNodeMap) as $k) {
                     if (strtolower($k) === $lowerKey) {
                         $key = $k;
-                        $methodName = substr($k, strrpos($k, '::') + 2);
+                        $pos = strrpos($k, '::');
+                        $methodName = (string) substr($k, ($pos === false ? 0 : $pos + 2));
                         $exists = true;
                         break;
                     }
@@ -964,8 +963,8 @@ class AstUtils
             if (!$exists && class_exists($classFqcn, false)) {
                 try {
                     $ref = new \ReflectionClass($classFqcn);
-                    if ($ref->hasMethod($methodName)) {
-                        $methodName = $ref->getMethod($methodName)->getName();
+                    if ($ref->hasMethod((string) $methodName)) {
+                        $methodName = $ref->getMethod((string) $methodName)->getName();
                         $key = ltrim($classFqcn, '\\') . '::' . $methodName;
                         $exists = true;
                     } else {
@@ -978,12 +977,12 @@ class AstUtils
             if (!$exists) {
                 $decl = $this->findDeclaringClassForMethod(
                     ltrim($classFqcn, '\\'),
-                    $methodName
+                    (string) $methodName
                 );
                 if ($decl !== null) {
                     if (class_exists($decl, false)) {
                         try {
-                            $methodName = (new \ReflectionClass($decl))->getMethod($methodName)->getName();
+                            $methodName = (new \ReflectionClass($decl))->getMethod((string) $methodName)->getName();
                         } catch (\ReflectionException $e) {
                             // ignore
                         }
@@ -1125,6 +1124,7 @@ class AstUtils
                             return true;
                         }
                         if ($thrownLoaded && $caughtLoaded) {
+                            /** @psalm-suppress ArgumentTypeCoercion */
                             if (is_subclass_of($thrownFqcn, $caughtTypeFqcn)) {
                                 return true;
                             }
@@ -1135,7 +1135,7 @@ class AstUtils
                             self::classOrInterfaceExistsNoAutoload($caughtTypeFqcn) &&
                             !self::classFileIsInVendor($thrownFqcn) &&
                             !self::classFileIsInVendor($caughtTypeFqcn) &&
-                            is_a($thrownFqcn, $caughtTypeFqcn, true)
+                            /** @psalm-suppress ArgumentTypeCoercion */is_a($thrownFqcn, $caughtTypeFqcn, true)
                         ) {
                             // Use autoload to inspect class hierarchy for non-vendor classes
                             return true;
@@ -1207,9 +1207,8 @@ class AstUtils
         if (isset(\HenkPoley\DocBlockDoctor\GlobalCache::$classParents[$fqcn])) {
             return true;
         }
-        foreach (spl_autoload_functions() as $fn) {
+        foreach (spl_autoload_functions() ?: [] as $fn) {
             if (is_array($fn) && $fn[0] instanceof ClassLoader) {
-                /** @var ClassLoader $loader */
                 $loader = $fn[0];
                 if ($loader->findFile($fqcn)) {
                     return true;
@@ -1225,9 +1224,8 @@ class AstUtils
      */
     public static function classFileIsInVendor(string $fqcn): bool
     {
-        foreach (spl_autoload_functions() as $fn) {
+        foreach (spl_autoload_functions() ?: [] as $fn) {
             if (is_array($fn) && $fn[0] instanceof ClassLoader) {
-                /** @var ClassLoader $loader */
                 $loader = $fn[0];
                 $file   = $loader->findFile($fqcn);
                 if ($file) {
