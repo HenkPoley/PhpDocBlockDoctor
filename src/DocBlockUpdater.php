@@ -116,7 +116,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
             return null;
         }
         $nodeKey = $this->astUtils->getNodeKey($node, $this->currentNamespace);
-        if (!$nodeKey) {
+        if ($nodeKey === null || $nodeKey === '') {
             return null;
         }
 
@@ -145,13 +145,13 @@ class DocBlockUpdater extends NodeVisitorAbstract
                 $isFirst = ($lineIdx === 0 && preg_match('/^\s*\/\*\*/', $currentDocLine));
                 $isLast  = ($lineIdx === count($originalLines) - 1 && preg_match('/\*\/\s*$/', $currentDocLine));
                 if ($isFirst) {
-                    $currentDocLine = (string) preg_replace('/^\s*\/\*\*\s?/', '', $currentDocLine);
+                    $currentDocLine = preg_replace('/^\s*\/\*\*\s?/', '', $currentDocLine) ?? '';
                 }
                 if ($isLast) {
-                    $currentDocLine = (string) preg_replace('/\s*\*\/$/', '', $currentDocLine);
+                    $currentDocLine = preg_replace('/\s*\*\/$/', '', $currentDocLine) ?? '';
                 }
-                $lineContent = preg_replace('/^\s*\*?\s?/', '', (string) $currentDocLine);
-                $trimmedLineContent = trim((string)$lineContent);
+                $lineContent = preg_replace('/^\s*\*?\s?/', '', $currentDocLine) ?? '';
+                $trimmedLineContent = trim($lineContent);
 
                 if (preg_match('/^@throws\s/i', $trimmedLineContent)) {
                     if ($currentGenericTagLines !== []) {
@@ -161,7 +161,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                     }
                     $isInsideGenericTag = false;
                     while ($lineIdx + 1 < count($originalLines) - 1 &&
-                        !preg_match('/^@\w+/', trim((string)preg_replace('/^\s*\*?\s?/', '', $originalLines[$lineIdx + 1])))) {
+                        !preg_match('/^@\w+/', trim((string) preg_replace('/^\s*\*?\s?/', '', $originalLines[$lineIdx + 1])))) {
                         $lineIdx++;
                     }
 
@@ -190,7 +190,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                     $newDocBlockContentLines[] = $lineContent;
                     $hasAnyContentForNewDocBlock = true;
                     $isInsideGenericTag = false;
-                } elseif ($newDocBlockContentLines !== [] && trim((string)end($newDocBlockContentLines)) !== '') {
+                } elseif ($newDocBlockContentLines !== [] && trim(end($newDocBlockContentLines)) !== '') {
                     $newDocBlockContentLines[] = '';
                 }
             }
@@ -201,13 +201,13 @@ class DocBlockUpdater extends NodeVisitorAbstract
 
         if ($analyzedThrowsFqcns !== []) {
             $hasAnyContentForNewDocBlock = true;
-            if ($newDocBlockContentLines !== [] && trim((string)end($newDocBlockContentLines)) !== '') {
+            if ($newDocBlockContentLines !== [] && trim(end($newDocBlockContentLines)) !== '') {
                 $newDocBlockContentLines[] = '';
             }
             foreach ($analyzedThrowsFqcns as $fqcn) {
                 // This foreach() is not dead code.
                 // tombstone("ERROR: NoValue - src/DocBlockUpdater.php:188:46 - All possible types for this assignment were invalidated - This may be dead code (see https://psalm.dev/179)");
-                $fqcnWithBackslash = '\\' . ltrim((string)$fqcn, '\\');
+                $fqcnWithBackslash = '\\' . ltrim($fqcn, '\\');
                 if ($this->traceOrigins) {
                     $originChains = \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$nodeKey][$fqcn] ?? [];
                     $cleaned = [];
@@ -240,11 +240,11 @@ class DocBlockUpdater extends NodeVisitorAbstract
                     $lineStrs = array_map(static fn(int $n): string => ':' . $n, $lines);
                     $description = implode(', ', $lineStrs);
                 } else {
-                    $description = $originalNodeDescriptions[$fqcn] ?? ($originalNodeDescriptions[ltrim((string)$fqcn, '\\')] ?? '');
+                    $description = $originalNodeDescriptions[$fqcn] ?? ($originalNodeDescriptions[ltrim($fqcn, '\\')] ?? '');
                 }
                 $throwsLine = '@throws ' . $fqcnWithBackslash;
                 if (!empty($description)) {
-                    $descLines = explode("\n", (string)$description);
+                    $descLines = explode("\n", $description);
                     $throwsLine .= ' ' . array_shift($descLines);
                     $newDocBlockContentLines[] = $throwsLine;
                     foreach ($descLines as $dLine) {
@@ -258,10 +258,10 @@ class DocBlockUpdater extends NodeVisitorAbstract
 
         $finalNormalizedNewDocText = null;
         if ($hasAnyContentForNewDocBlock || $newDocBlockContentLines !== []) {
-            while (count($newDocBlockContentLines) > 0 && trim((string)$newDocBlockContentLines[0]) === '') {
+            while (count($newDocBlockContentLines) > 0 && trim($newDocBlockContentLines[0]) === '') {
                 array_shift($newDocBlockContentLines);
             }
-            while (count($newDocBlockContentLines) > 0 && trim((string)end($newDocBlockContentLines)) === '') {
+            while (count($newDocBlockContentLines) > 0 && trim(end($newDocBlockContentLines)) === '') {
                 array_pop($newDocBlockContentLines);
             }
 
@@ -281,12 +281,12 @@ class DocBlockUpdater extends NodeVisitorAbstract
                     $isFirst = ($i === 0 && preg_match('/^\s*\/\*\*/', $line));
                     $isLast  = ($i === count($lines) - 1 && preg_match('/\*\/\s*$/', $line));
                     if ($isFirst) {
-                        $line = (string) preg_replace('/^\s*\/\*\*\s?/', '', $line);
+                        $line = preg_replace('/^\s*\/\*\*\s?/', '', $line) ?? '';
                     }
                     if ($isLast) {
-                        $line = (string) preg_replace('/\s*\*\/$/', '', $line);
+                        $line = preg_replace('/\s*\*\/$/', '', $line) ?? '';
                     }
-                    $line = (string) preg_replace('/^\s*\*?\s?/', '', $line);
+                    $line = preg_replace('/^\s*\*?\s?/', '', $line) ?? '';
                     $originalContentOnlyLines[] = $line;
                 }
                 $originalTextToNormalize = implode("\n", $originalContentOnlyLines);
@@ -347,9 +347,9 @@ class DocBlockUpdater extends NodeVisitorAbstract
     {
         $key = $this->astUtils->getNodeKey($node, $this->currentNamespace);
         if ($node instanceof Node\Stmt\ClassMethod || $node instanceof Node\Stmt\Function_) {
-            return $key ?: (($node->name->toString() . '()'));
+            return ($key !== null && $key !== '') ? $key : ($node->name->toString() . '()');
         }
 
-        return $key ?: ('unknown_node_type');
+        return ($key !== null && $key !== '') ? $key : 'unknown_node_type';
     }
 }

@@ -142,7 +142,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
             return null;
         }
         $key = $this->astUtils->getNodeKey($node, $this->currentNamespace);
-        if (!$key) {
+        if ($key === null || $key === '') {
             return null;
         }
         \HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap[$key] = $node;
@@ -171,7 +171,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                 $contentLine = rtrim((string)$contentLine);
 
                 if (preg_match('/^@throws\s+([^\s]+)\s*(.*)/i', $contentLine, $matches)) {
-                    if ($currentThrowsFqcnForDesc && !isset(\HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc]) && !in_array(trim($accumulatedDescription), ['', '0'], true)) {
+                    if ($currentThrowsFqcnForDesc !== null && $currentThrowsFqcnForDesc !== '' && !isset(\HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc]) && !in_array(trim($accumulatedDescription), ['', '0'], true)) {
                         \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc] = trim($accumulatedDescription);
                     }
                     $exceptionNameInAnnotation = trim($matches[1]);
@@ -182,17 +182,17 @@ class ThrowsGatherer extends NodeVisitorAbstract
                         $currentAnnotatedThrowsFqcns[] = $resolvedFqcnForAnnotation;
                     }
 
-                } elseif ($currentThrowsFqcnForDesc && !$isFirstLine && !$isLastLine && !preg_match('/^@\w+/', $contentLine)) {
+                } elseif ($currentThrowsFqcnForDesc !== null && $currentThrowsFqcnForDesc !== '' && !$isFirstLine && !$isLastLine && !preg_match('/^@\w+/', $contentLine)) {
                     $accumulatedDescription .= (in_array(trim($accumulatedDescription), ['', '0'], true) && $contentLine === '' ? '' : "\n") . $contentLine;
                 } elseif ($isLastLine || preg_match('/^@\w+/', $contentLine)) {
-                    if ($currentThrowsFqcnForDesc && !in_array(trim($accumulatedDescription), ['', '0'], true) && !isset(\HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc])) {
+                    if ($currentThrowsFqcnForDesc !== null && $currentThrowsFqcnForDesc !== '' && !in_array(trim($accumulatedDescription), ['', '0'], true) && !isset(\HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc])) {
                         \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc] = trim($accumulatedDescription);
                     }
                     $currentThrowsFqcnForDesc = null;
                     $accumulatedDescription = '';
                 }
             }
-            if ($currentThrowsFqcnForDesc && !in_array(trim($accumulatedDescription), ['', '0'], true) && !isset(\HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc])) {
+            if ($currentThrowsFqcnForDesc !== null && $currentThrowsFqcnForDesc !== '' && !in_array(trim($accumulatedDescription), ['', '0'], true) && !isset(\HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc])) {
                 \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc] = trim($accumulatedDescription);
             }
         }
@@ -213,7 +213,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
             return null;
         }
         $key = $this->astUtils->getNodeKey($node, $this->currentNamespace);
-        if (!$key) {
+        if ($key === null || $key === '') {
             return null;
         }
         \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$key] =
@@ -315,18 +315,16 @@ class ThrowsGatherer extends NodeVisitorAbstract
                     }
                     if ($catchNode && $catchNode->var instanceof Node\Expr\Variable && $catchNode->var->name === $varName) {
                         foreach ($catchNode->types as $typeNode) {
-                            if ($typeNode instanceof Node\Name) {
-                                $thrownFqcn = $this->astUtils->resolveNameNodeToFqcn($typeNode, $this->currentNamespace, $this->useMap, false);
-                                if (!$this->astUtils->isExceptionCaught($throwExpr, $thrownFqcn, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
-                                    $fqcns[] = $thrownFqcn;
-                                    $loc = $this->filePath . ':' . $throwExpr->getStartLine();
-                                    $chain = $funcKey . ' <- ' . $loc;
-                                    $origins = \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn] ?? [];
-                                    if (!in_array($chain, $origins, true) && count($origins) < \HenkPoley\DocBlockDoctor\GlobalCache::MAX_ORIGIN_CHAINS) {
-                                        $origins[] = $chain;
-                                    }
-                                    \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn] = $origins;
+                            $thrownFqcn = $this->astUtils->resolveNameNodeToFqcn($typeNode, $this->currentNamespace, $this->useMap, false);
+                            if (!$this->astUtils->isExceptionCaught($throwExpr, $thrownFqcn, $funcOrMethodNode, $this->currentNamespace, $this->useMap)) {
+                                $fqcns[] = $thrownFqcn;
+                                $loc = $this->filePath . ':' . $throwExpr->getStartLine();
+                                $chain = $funcKey . ' <- ' . $loc;
+                                $origins = \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn] ?? [];
+                                if (!in_array($chain, $origins, true) && count($origins) < \HenkPoley\DocBlockDoctor\GlobalCache::MAX_ORIGIN_CHAINS) {
+                                    $origins[] = $chain;
                                 }
+                                \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn] = $origins;
                             }
                         }
                         $instanceofTypes = $this->getInstanceofTypesBeforeThrow($catchNode->stmts, $throwExpr, $varName);
