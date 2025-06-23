@@ -70,7 +70,14 @@ class Application
             foreach ($filesFixed as $f) {
                 echo "  - $f\n";
             }
-            echo "\n";
+            $resolvedCount = count(GlobalCache::getAllResolvedThrows());
+            $firstKey = array_key_first(GlobalCache::$resolvedThrows);
+            if ($firstKey !== null) {
+                $resolvedForKey = GlobalCache::getResolvedThrowsForKey($firstKey);
+                $originsForKey  = GlobalCache::getThrowOriginsForKey($firstKey);
+                $resolvedCount += count($resolvedForKey) + count($originsForKey);
+            }
+            echo "\nResolved throws: $resolvedCount\n\n";
         }
 
         return 0;
@@ -120,14 +127,14 @@ class Application
             }
 
             if (strncmp($arg, '--read-dirs=', strlen('--read-dirs=')) === 0) {
-                $dirs       = substr($arg, 12);
+                $dirs       = (string) substr($arg, 12);
                 $opt->readDirs = array_filter(array_map('trim', explode(',', $dirs)));
 
                 continue;
             }
 
             if (strncmp($arg, '--write-dirs=', strlen('--write-dirs=')) === 0) {
-                $dirs        = substr($arg, 13);
+                $dirs        = (string) substr($arg, 13);
                 $opt->writeDirs = array_filter(array_map('trim', explode(',', $dirs)));
 
                 continue;
@@ -215,7 +222,7 @@ class Application
     private function collectPhpFiles(ApplicationOptions $opt): array
     {
         $phpFilePaths = [];
-        foreach ($opt->readDirs as $dir) {
+        foreach ($opt->readDirs ?? [] as $dir) {
             if ($this->fileSystem->isFile($dir)) {
                 if (pathinfo($dir, PATHINFO_EXTENSION) === 'php') {
                     $real = $this->fileSystem->realPath($dir);
@@ -301,7 +308,7 @@ class Application
 
             try {
                 $ast = $this->astParser->parse($code);
-                if (!$ast) {
+                if ($ast === null) {
                     if ($opt->verbose && !$opt->quiet) {
                         echo "    → No AST for {$filePath}\n";
                     }
@@ -417,8 +424,9 @@ class Application
                         if ($astUtils->isNodeAfterExecutionEndingStmt($callNode, $funcNode)) {
                             continue;
                         }
+                        /** @var Node\FunctionLike $funcNode */
                         $calleeKey = $astUtils->getCalleeKey($callNode, $callerNamespace, $callerUseMap, $funcNode);
-                        if ($calleeKey && $calleeKey !== $funcKey) {
+                        if ($calleeKey !== null && $calleeKey !== $funcKey) {
                             $exceptionsFromCallee = GlobalCache::$resolvedThrows[$calleeKey] ?? [];
                             foreach ($exceptionsFromCallee as $ex) {
                                 if ($astUtils->isExceptionCaught($callNode, $ex, $funcNode, $callerNamespace, $callerUseMap)) {
@@ -511,7 +519,7 @@ class Application
                 if (strncmp($key, $ifacePrefix, strlen($ifacePrefix)) !== 0) {
                     continue;
                 }
-                $method = substr($key, strlen($ifacePrefix));
+                $method = (string) substr($key, strlen($ifacePrefix));
                 $throws = GlobalCache::$resolvedThrows[$key] ?? [];
                 $orig   = GlobalCache::$throwOrigins[$key] ?? [];
                 foreach ($impls as $class) {
@@ -568,7 +576,7 @@ class Application
             if ($realPath === false) {
                 return false;
             }
-            foreach ($writeDirs as $dir) {
+            foreach (($writeDirs ?? []) as $dir) {
                 $dirReal = $this->fileSystem->realPath($dir);
                 if ($dirReal !== false && (strncmp($realPath, $dirReal . DIRECTORY_SEPARATOR, strlen($dirReal . DIRECTORY_SEPARATOR)) === 0 || $realPath === $dirReal)) {
                     return true;
@@ -619,7 +627,7 @@ class Application
                     $currentParentConnector = new ParentConnectingVisitor();
                     $currentAST = $this->astParser->parse($codeAtStart);
 
-                    if (!$currentAST) {
+                    if ($currentAST === null) {
                         if (!$opt->quiet) {
                             echo "Error parsing {$filePath} (Pass 2).\n";
                         }
@@ -657,7 +665,10 @@ class Application
                     }
 
                     if ($newCode !== $codeAtStart) {
-                        $this->fileSystem->putContents($filePath, $newCode);
+                    $writeOk = $this->fileSystem->putContents($filePath, $newCode);
+                    if (!$writeOk && !$opt->quiet) {
+                        echo "  ! Unable to write file: {$filePath}\n";
+                    }
                         if ($verbose && !$opt->quiet) {
                             echo "    → Surgically simplified use statements in {$filePath}\n";
                         }
@@ -715,14 +726,14 @@ class Application
                             if ($patch['type'] === 'add') {
                                 $replacementText = $indentedDocBlock . $lineEnding;
                                 $lineStartPos    = strrpos(
-                                    substr($newFileContent, 0, $patch['patchStart']),
+                                    (string) substr($newFileContent, 0, $patch['patchStart']),
                                     $newlineSearch
                                 );
                                 $currentAppliedPatchStartPos = ($lineStartPos !== false ? $lineStartPos + 1 : 0);
                                 $currentAppliedOriginalLength = 0;
                             } else {
                                 $lf      = $newlineSearch;
-                                $upToSlash = substr($newFileContent, 0, $patch['patchStart']);
+                                $upToSlash = (string) substr($newFileContent, 0, $patch['patchStart']);
                                 $lastNl  = strrpos($upToSlash, $lf);
                                 $lineStart = $lastNl === false ? 0 : $lastNl + 1;
 
@@ -737,7 +748,7 @@ class Application
 
                             if ($currentAppliedPatchStartPos > 0) {
                                 $startOfLine = strrpos(
-                                    substr($newFileContent, 0, $currentAppliedPatchStartPos),
+                                    (string) substr($newFileContent, 0, $currentAppliedPatchStartPos),
                                     $newlineSearch
                                 );
                                 $startOfLine = ($startOfLine === false) ? 0 : $startOfLine + 1;
@@ -746,7 +757,9 @@ class Application
                             }
 
                             $isDocBlockAlone = trim(
-                                    substr($newFileContent, $startOfLine,
+                                    (string) substr(
+                                        $newFileContent,
+                                        $startOfLine,
                                         $currentAppliedPatchStartPos - $startOfLine
                                     )
                                 ) === '';
@@ -774,7 +787,10 @@ class Application
                     }
 
                     if ($newFileContent !== $currentFileContent) {
-                        $this->fileSystem->putContents($filePath, $newFileContent);
+                    $writeOk = $this->fileSystem->putContents($filePath, $newFileContent);
+                    if (!$writeOk && !$opt->quiet) {
+                        echo "  ! Unable to write file: {$filePath}\n";
+                    }
                         if ($verbose && !$opt->quiet) {
                             echo "    → Applied DocBlock changes to {$filePath}\n";
                         }

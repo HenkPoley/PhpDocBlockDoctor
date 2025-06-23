@@ -145,12 +145,12 @@ class DocBlockUpdater extends NodeVisitorAbstract
                 $isFirst = ($lineIdx === 0 && preg_match('/^\s*\/\*\*/', $currentDocLine));
                 $isLast  = ($lineIdx === count($originalLines) - 1 && preg_match('/\*\/\s*$/', $currentDocLine));
                 if ($isFirst) {
-                    $currentDocLine = preg_replace('/^\s*\/\*\*\s?/', '', $currentDocLine);
+                    $currentDocLine = (string) preg_replace('/^\s*\/\*\*\s?/', '', $currentDocLine);
                 }
                 if ($isLast) {
-                    $currentDocLine = preg_replace('/\s*\*\/$/', '', $currentDocLine);
+                    $currentDocLine = (string) preg_replace('/\s*\*\/$/', '', $currentDocLine);
                 }
-                $lineContent = preg_replace('/^\s*\*?\s?/', '', $currentDocLine);
+                $lineContent = preg_replace('/^\s*\*?\s?/', '', (string) $currentDocLine);
                 $trimmedLineContent = trim((string)$lineContent);
 
                 if (preg_match('/^@throws\s/i', $trimmedLineContent)) {
@@ -229,7 +229,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                         } elseif (preg_match('/^(.*?:\d+) <- ' . preg_quote($nodeKey, '/') . ' <- (.*)$/', $ch, $m)) {
                             $ch = $m[1] . ' <- ' . $m[2];
                         }
-                        $parts = explode(' <- ', $ch);
+                        $parts = explode(' <- ', (string) $ch);
                         $first = $parts[0] ?? '';
                         if (preg_match('/:(\d+)$/', $first, $m2)) {
                             $lines[] = (int)$m2[1];
@@ -281,12 +281,12 @@ class DocBlockUpdater extends NodeVisitorAbstract
                     $isFirst = ($i === 0 && preg_match('/^\s*\/\*\*/', $line));
                     $isLast  = ($i === count($lines) - 1 && preg_match('/\*\/\s*$/', $line));
                     if ($isFirst) {
-                        $line = preg_replace('/^\s*\/\*\*\s?/', '', $line);
+                        $line = (string) preg_replace('/^\s*\/\*\*\s?/', '', $line);
                     }
                     if ($isLast) {
-                        $line = preg_replace('/\s*\*\/$/', '', $line);
+                        $line = (string) preg_replace('/\s*\*\/$/', '', $line);
                     }
-                    $line = preg_replace('/^\s*\*?\s?/', '', $line);
+                    $line = (string) preg_replace('/^\s*\*?\s?/', '', $line);
                     $originalContentOnlyLines[] = $line;
                 }
                 $originalTextToNormalize = implode("\n", $originalContentOnlyLines);

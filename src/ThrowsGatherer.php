@@ -266,13 +266,11 @@ class ThrowsGatherer extends NodeVisitorAbstract
                         $fqcns[] = $thrownFqcn;
                         $loc = $this->filePath . ':' . $throwExpr->getStartLine();
                         $chain = $funcKey . ' <- ' . $loc;
-                        if (!isset(\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn])) {
-                            \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn] = [];
-                        }
-                        $origins = &\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn];
+                        $origins = \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn] ?? [];
                         if (!in_array($chain, $origins, true) && count($origins) < \HenkPoley\DocBlockDoctor\GlobalCache::MAX_ORIGIN_CHAINS) {
                             $origins[] = $chain;
                         }
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn] = $origins;
                     }
                 } elseif ($newExpr->class instanceof Node\Expr\Variable) {
                     $varName = $newExpr->class->name;
@@ -292,13 +290,11 @@ class ThrowsGatherer extends NodeVisitorAbstract
                             $fqcns[] = $classFqcn;
                             $loc = $this->filePath . ':' . $throwExpr->getStartLine();
                             $chain = $funcKey . ' <- ' . $loc;
-                            if (!isset(\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$classFqcn])) {
-                                \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$classFqcn] = [];
-                            }
-                            $origins = &\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$classFqcn];
+                            $origins = \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$classFqcn] ?? [];
                             if (!in_array($chain, $origins, true) && count($origins) < \HenkPoley\DocBlockDoctor\GlobalCache::MAX_ORIGIN_CHAINS) {
                                 $origins[] = $chain;
                             }
+                            \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$classFqcn] = $origins;
                         }
                     }
                 }
@@ -325,13 +321,11 @@ class ThrowsGatherer extends NodeVisitorAbstract
                                     $fqcns[] = $thrownFqcn;
                                     $loc = $this->filePath . ':' . $throwExpr->getStartLine();
                                     $chain = $funcKey . ' <- ' . $loc;
-                                    if (!isset(\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn])) {
-                                        \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn] = [];
-                                    }
-                                    $origins = &\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn];
+                                    $origins = \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn] ?? [];
                                     if (!in_array($chain, $origins, true) && count($origins) < \HenkPoley\DocBlockDoctor\GlobalCache::MAX_ORIGIN_CHAINS) {
                                         $origins[] = $chain;
                                     }
+                                    \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$thrownFqcn] = $origins;
                                 }
                             }
                         }
@@ -344,13 +338,11 @@ class ThrowsGatherer extends NodeVisitorAbstract
                             $fqcns[] = $fq;
                             $loc = $this->filePath . ':' . $throwExpr->getStartLine();
                             $chain = $funcKey . ' <- ' . $loc;
-                            if (!isset(\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq])) {
-                                \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq] = [];
-                            }
-                            $origins = &\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq];
+                            $origins = \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq] ?? [];
                             if (!in_array($chain, $origins, true) && count($origins) < \HenkPoley\DocBlockDoctor\GlobalCache::MAX_ORIGIN_CHAINS) {
                                 $origins[] = $chain;
                             }
+                            \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fq] = $origins;
                         }
                     }
                 }
@@ -452,8 +444,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
         $bestFqcn = null;
         foreach ($assigns as $assign) {
             if ($assign->var instanceof Node\Expr\Variable && $assign->var->name === $varName) {
-                $pos = $assign->getStartFilePos() ?? -1;
-                $refPos = $reference->getStartFilePos() ?? 0;
+                $pos = $assign->getStartFilePos();
+                $refPos = $reference->getStartFilePos();
                 if ($pos >= $refPos) {
                     continue;
                 }
