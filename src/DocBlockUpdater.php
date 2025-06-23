@@ -18,7 +18,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
     private bool $quiet;
 
     /**
-     * @var mixed[]
+     * @var list<array{type:string,node:\PhpParser\Node,newDocText:null|string,patchStart:int,patchEnd:int}>
      */
     public $pendingPatches = [];
 
@@ -37,11 +37,12 @@ class DocBlockUpdater extends NodeVisitorAbstract
     }
 
     /**
-     * @param mixed[] $nodes
+     * @param array $nodes
      * @return null
      */
-    public function beforeTraverse($nodes)
+    public function beforeTraverse(array $nodes)
     {
+        /** @var Node[] $nodes */
         $this->pendingPatches = [];
         $this->currentNamespace = \HenkPoley\DocBlockDoctor\GlobalCache::$fileNamespaces[$this->currentFilePath] ?? '';
 
@@ -54,6 +55,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
             return null;
         }
         $contentLines = preg_split('/\R/u', $contentOnlyText) ?: [];
+        /** @var list<string> $actualContent */
         $actualContent = [];
         $hasMeaningfulContent = false;
         foreach ($contentLines as $line) {
@@ -132,11 +134,13 @@ class DocBlockUpdater extends NodeVisitorAbstract
         $docCommentNode = $node->getDocComment();
         $originalNodeDescriptions = \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$nodeKey] ?? [];
 
+        /** @var list<string> $newDocBlockContentLines */
         $newDocBlockContentLines = [];
         $hasAnyContentForNewDocBlock = false;
 
         if ($docCommentNode instanceof \PhpParser\Comment\Doc) {
             $originalLines = preg_split('/\R/u', $docCommentNode->getText()) ?: [];
+            /** @var list<string> $currentGenericTagLines */
             $currentGenericTagLines = [];
             $isInsideGenericTag = false;
 
@@ -155,8 +159,9 @@ class DocBlockUpdater extends NodeVisitorAbstract
 
                 if (preg_match('/^@throws\s/i', $trimmedLineContent)) {
                     if ($currentGenericTagLines !== []) {
-                        // TODO: [EA] 'array_merge(...)' is used in a loop and is a resources greedy construction.
-                        $newDocBlockContentLines = array_merge($newDocBlockContentLines, $currentGenericTagLines);
+                        foreach ($currentGenericTagLines as $tagLine) {
+                            $newDocBlockContentLines[] = $tagLine;
+                        }
                         $currentGenericTagLines = [];
                     }
                     $isInsideGenericTag = false;
@@ -170,8 +175,9 @@ class DocBlockUpdater extends NodeVisitorAbstract
 
                 if (preg_match('/^@\w+/', $trimmedLineContent)) {
                     if ($currentGenericTagLines !== []) {
-                        // TODO: [EA] 'array_merge(...)' is used in a loop and is a resources greedy construction.
-                        $newDocBlockContentLines = array_merge($newDocBlockContentLines, $currentGenericTagLines);
+                        foreach ($currentGenericTagLines as $tagLine) {
+                            $newDocBlockContentLines[] = $tagLine;
+                        }
                     }
                     $currentGenericTagLines = [$lineContent];
                     $isInsideGenericTag = true;
@@ -183,8 +189,9 @@ class DocBlockUpdater extends NodeVisitorAbstract
                     }
                 } elseif ($trimmedLineContent !== '') {
                     if ($currentGenericTagLines !== []) {
-                        // TODO: [EA] 'array_merge(...)' is used in a loop and is a resources greedy construction.
-                        $newDocBlockContentLines = array_merge($newDocBlockContentLines, $currentGenericTagLines);
+                        foreach ($currentGenericTagLines as $tagLine) {
+                            $newDocBlockContentLines[] = $tagLine;
+                        }
                         $currentGenericTagLines = [];
                     }
                     $newDocBlockContentLines[] = $lineContent;
@@ -195,7 +202,9 @@ class DocBlockUpdater extends NodeVisitorAbstract
                 }
             }
             if ($currentGenericTagLines !== []) {
-                $newDocBlockContentLines = array_merge($newDocBlockContentLines, $currentGenericTagLines);
+                foreach ($currentGenericTagLines as $tagLine) {
+                    $newDocBlockContentLines[] = $tagLine;
+                }
             }
         }
 
