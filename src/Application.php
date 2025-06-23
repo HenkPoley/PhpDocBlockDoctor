@@ -72,7 +72,7 @@ class Application
             }
             $resolvedCount = count(GlobalCache::getAllResolvedThrows());
             $firstKey = array_key_first(GlobalCache::$resolvedThrows);
-            if ($firstKey !== null) {
+            if (is_string($firstKey)) {
                 $resolvedForKey = GlobalCache::getResolvedThrowsForKey($firstKey);
                 $originsForKey  = GlobalCache::getThrowOriginsForKey($firstKey);
                 $resolvedCount += count($resolvedForKey) + count($originsForKey);
@@ -221,6 +221,7 @@ class Application
      */
     private function collectPhpFiles(ApplicationOptions $opt): array
     {
+        /** @var list<string> $phpFilePaths */
         $phpFilePaths = [];
         foreach ($opt->readDirs ?? [] as $dir) {
             if ($this->fileSystem->isFile($dir)) {
@@ -241,7 +242,7 @@ class Application
                             $dir,
                             RecursiveDirectoryIterator::SKIP_DOTS | RecursiveDirectoryIterator::FOLLOW_SYMLINKS
                         ),
-                        function ($file, $key, $iterator): bool {
+                        function ($file, $key, \RecursiveDirectoryIterator $iterator): bool {
                             $filename = $file->getFilename();
                             if ($iterator->hasChildren()) {
                                 return !in_array($filename, ['.git', 'node_modules', '.history', 'cache'], true);
@@ -259,8 +260,10 @@ class Application
             }
 
             foreach ($rii as $fileInfo) {
-                if ($fileInfo->getRealPath()) {
-                    $phpFilePaths[] = $fileInfo->getRealPath();
+                /** @var \SplFileInfo $fileInfo */
+                $realPath = $fileInfo->getRealPath();
+                if ($realPath !== false) {
+                    $phpFilePaths[] = $realPath;
                 }
             }
         }
@@ -412,15 +415,14 @@ class Application
 
                     continue;
                 }
-                if (is_array($funcNode->stmts)) {
-                    $callNodes = array_merge(
-                        $nodeFinder->findInstanceOf($funcNode->stmts, Node\Expr\MethodCall::class),
-                        $nodeFinder->findInstanceOf($funcNode->stmts, Node\Expr\StaticCall::class),
-                        $nodeFinder->findInstanceOf($funcNode->stmts, Node\Expr\FuncCall::class),
-                        $nodeFinder->findInstanceOf($funcNode->stmts, Node\Expr\New_::class)
-                    );
+                $callNodes = array_merge(
+                    $nodeFinder->findInstanceOf($funcNode->stmts, Node\Expr\MethodCall::class),
+                    $nodeFinder->findInstanceOf($funcNode->stmts, Node\Expr\StaticCall::class),
+                    $nodeFinder->findInstanceOf($funcNode->stmts, Node\Expr\FuncCall::class),
+                    $nodeFinder->findInstanceOf($funcNode->stmts, Node\Expr\New_::class)
+                );
 
-                    foreach ($callNodes as $callNode) {
+                foreach ($callNodes as $callNode) {
                         if ($astUtils->isNodeAfterExecutionEndingStmt($callNode, $funcNode)) {
                             continue;
                         }
@@ -458,8 +460,7 @@ class Application
                             }
                         }
                     }
-                }
-
+                
                 $newThrows = array_values(array_unique(array_merge($baseThrows, $throwsFromCallees)));
                 sort($newThrows);
 
