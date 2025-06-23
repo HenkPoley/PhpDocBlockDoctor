@@ -88,15 +88,24 @@ class AstUtils
         if ($node instanceof Node\Stmt\ClassMethod) {
             $className = $this->getContextClassName($node, $currentNamespace);
 
-            return $className ? $className . '::' . $node->name->toString() : null;
+            if ($className !== null && $className !== '') {
+                return $className . '::' . $node->name->toString();
+            }
+
+            return null;
         }
 
         if ($node instanceof Node\Stmt\Function_) {
             $fnName = $node->name->toString();
 
-            return ($currentNamespace && strncmp($fnName, '\\', strlen('\\')) !== 0
-                    ? $currentNamespace . '\\'
-                    : '') . $fnName;
+            $prefix = '';
+            if ($currentNamespace !== null
+                && $currentNamespace !== ''
+                && strncmp($fnName, '\\', strlen('\\')) !== 0) {
+                $prefix = $currentNamespace . '\\';
+            }
+
+            return $prefix . $fnName;
         }
 
         return null;
@@ -116,7 +125,11 @@ class AstUtils
                 }
 
                 if (isset($current->name)) {
-                    return ($currentNamespace ? $currentNamespace . '\\' : '') . $current->name->toString();
+                    $prefix = ($currentNamespace !== null && $currentNamespace !== '')
+                        ? $currentNamespace . '\\'
+                        : '';
+
+                    return $prefix . $current->name->toString();
                 }
 
                 return null;
@@ -157,7 +170,7 @@ class AstUtils
             return $baseFqcnFromUse . (count($parts) > 0 ? '\\' . implode('\\', $parts) : '');
         }
 
-        if ($currentNamespace) {
+        if ($currentNamespace !== null && $currentNamespace !== '') {
             return $currentNamespace . '\\' . $name;
         }
 
@@ -184,7 +197,7 @@ class AstUtils
             return $baseFqcnFromUse . (count($parts) > 0 ? '\\' . implode('\\', $parts) : '');
         }
 
-        if ($currentNamespace) {
+        if ($currentNamespace !== null && $currentNamespace !== '') {
             return $currentNamespace . '\\' . $name;
         }
 
@@ -221,12 +234,12 @@ class AstUtils
                 $visited
             );
 
-            if ($innerKey) {
+            if ($innerKey !== null && $innerKey !== '') {
                 // 2) Look up that inner method's AST node from the GlobalCache
                 $innerNode     = GlobalCache::$astNodeMap[$innerKey] ?? null;
                 $innerFilePath = GlobalCache::$nodeKeyToFilePath[$innerKey] ?? null;
 
-                if ($innerNode instanceof Node\Stmt\ClassMethod && $innerFilePath) {
+                if ($innerNode instanceof Node\Stmt\ClassMethod && is_string($innerFilePath) && $innerFilePath !== '') {
                     $innerNamespace = GlobalCache::$fileNamespaces[$innerFilePath] ?? '';
                     if ($innerNamespace === '') {
                         $innerNamespace = $this->getNamespaceForNode($innerNode);
@@ -322,11 +335,11 @@ class AstUtils
                 $visited
             );
 
-            if ($innerKey) {
+            if ($innerKey !== null && $innerKey !== '') {
                 $innerNode     = GlobalCache::$astNodeMap[$innerKey] ?? null;
                 $innerFilePath = GlobalCache::$nodeKeyToFilePath[$innerKey] ?? null;
 
-                if ($innerNode instanceof Node\Stmt\ClassMethod && $innerFilePath) {
+                if ($innerNode instanceof Node\Stmt\ClassMethod && is_string($innerFilePath) && $innerFilePath !== '') {
                     $innerNamespace = GlobalCache::$fileNamespaces[$innerFilePath] ?? '';
                     if ($innerNamespace === '') {
                         $innerNamespace = $this->getNamespaceForNode($innerNode);
@@ -812,11 +825,11 @@ class AstUtils
                     $callerFuncOrMethodNode,
                     $visited
                 );
-                if ($innerKey) {
+                if ($innerKey !== null && $innerKey !== '') {
                     $innerNode     = GlobalCache::$astNodeMap[$innerKey] ?? null;
                     $innerFilePath = GlobalCache::$nodeKeyToFilePath[$innerKey] ?? null;
 
-                    if ($innerNode instanceof Node\FunctionLike && $innerFilePath) {
+                    if ($innerNode instanceof Node\FunctionLike && is_string($innerFilePath) && $innerFilePath !== '') {
                         $innerNamespace = GlobalCache::$fileNamespaces[$innerFilePath] ?? '';
                         if ($innerNamespace === '') {
                             $innerNamespace = $this->getNamespaceForNode($innerNode);
@@ -887,7 +900,7 @@ class AstUtils
             && $callNode->name instanceof Node\Identifier
         ) {
             $callerClass = $this->getContextClassName($callerFuncOrMethodNode, $callerNamespace);
-            if ($callerClass) {
+            if ($callerClass !== null && $callerClass !== '') {
                 $methodName  = $callNode->name->toString();
                 $declaring   = $this->findDeclaringClassForMethod($callerClass, $methodName);
                 $targetClass = $declaring ?? $callerClass;
@@ -908,7 +921,7 @@ class AstUtils
             // 2a) "self::method()" or "static::method()" → use the current class
             if ($lower === 'self' || $lower === 'static') {
                 $callerClass = $this->getContextClassName($callerFuncOrMethodNode, $callerNamespace);
-                if ($callerClass) {
+                if ($callerClass !== null && $callerClass !== '') {
                     return $callerClass . '::' . $callNode->name->toString();
                 }
 
@@ -1038,7 +1051,7 @@ class AstUtils
             // 4a) "new self()" or "new static()" → current class
             if ($lower === 'self' || $lower === 'static') {
                 $callerClass = $this->getContextClassName($callerFuncOrMethodNode, $callerNamespace);
-                if ($callerClass) {
+                if ($callerClass !== null && $callerClass !== '') {
                     return $callerClass . '::__construct';
                 }
 
@@ -1203,10 +1216,15 @@ class AstUtils
         if (isset(\HenkPoley\DocBlockDoctor\GlobalCache::$classParents[$fqcn])) {
             return true;
         }
-        foreach (spl_autoload_functions() ?: [] as $fn) {
+        $autoloaders = spl_autoload_functions();
+        if ($autoloaders === false) {
+            $autoloaders = [];
+        }
+        foreach ($autoloaders as $fn) {
             if (is_array($fn) && $fn[0] instanceof ClassLoader) {
                 $loader = $fn[0];
-                if ($loader->findFile($fqcn)) {
+                $file   = $loader->findFile($fqcn);
+                if ($file !== false) {
                     return true;
                 }
             }
@@ -1220,11 +1238,15 @@ class AstUtils
      */
     public static function classFileIsInVendor(string $fqcn): bool
     {
-        foreach (spl_autoload_functions() ?: [] as $fn) {
+        $autoloaders = spl_autoload_functions();
+        if ($autoloaders === false) {
+            $autoloaders = [];
+        }
+        foreach ($autoloaders as $fn) {
             if (is_array($fn) && $fn[0] instanceof ClassLoader) {
                 $loader = $fn[0];
                 $file   = $loader->findFile($fqcn);
-                if ($file) {
+                if ($file !== false) {
                     $normalized = str_replace(['\\', '/'], '/', $file);
                     if (strpos($normalized, '/vendor/') !== false) {
                         return true;
