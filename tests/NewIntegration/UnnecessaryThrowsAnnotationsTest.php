@@ -24,7 +24,10 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
         $fullPath    = $fixtureRoot . '/' . $relativeFile;
 
         $original = file_get_contents($fullPath);
-        $this->assertNotFalse($original);
+        $this->assertNotFalse(
+            $original,
+            'Failed to read fixture file: ' . $fullPath
+        );
         if (preg_match('/^\s*\*\s*@throws\s+[^\s]+(?:\|[^\s]+)*\s+.+$/m', $original)) {
             // Ignore functions where the @throws annotation has inline comments
             // They are considered intentionally documented regardless of necessity
@@ -41,7 +44,10 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
         $actual = $this->gatherResolvedThrowsForScenario($scenario, [$fullPath => $stripped]);
 
         $expectedFile = $fixtureRoot . '/expected_results.json';
-        $this->assertFileExists($expectedFile);
+        $this->assertFileExists(
+            $expectedFile,
+            'Expected results missing for scenario ' . $scenario
+        );
         $expectedData = json_decode(file_get_contents($expectedFile), true, 512, JSON_THROW_ON_ERROR);
 
         $allSame = true;

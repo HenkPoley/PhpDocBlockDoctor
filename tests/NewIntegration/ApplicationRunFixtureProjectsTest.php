@@ -27,10 +27,23 @@ class ApplicationRunFixtureProjectsTest extends TestCase
         $this->assertStringContainsString('=== Summary ===', $output);
 
         foreach ($files as $file) {
-            $expected = file_get_contents($srcDir . '/expected_' . $file);
-            $this->assertNotFalse($expected);
-            $actual = file_get_contents($tmpRoot . '/' . $file);
-            $this->assertSame($expected, $actual, $file . ' mismatch');
+            $expectedPath = $srcDir . '/expected_' . $file;
+            $expected     = file_get_contents($expectedPath);
+            $this->assertNotFalse(
+                $expected,
+                'Failed to read expected file: ' . $expectedPath
+            );
+            $actualPath = $tmpRoot . '/' . $file;
+            $actual     = file_get_contents($actualPath);
+            $this->assertNotFalse(
+                $actual,
+                'Failed to read temporary file: ' . $actualPath
+            );
+            $this->assertSame(
+                $expected,
+                $actual,
+                $actualPath . ' mismatch'
+            );
             unlink($tmpRoot . '/' . $file);
         }
         rmdir($tmpRoot);

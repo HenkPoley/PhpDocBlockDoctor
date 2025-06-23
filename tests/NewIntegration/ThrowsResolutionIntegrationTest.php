@@ -49,7 +49,10 @@ class ThrowsResolutionIntegrationTest extends TestCase
         $this->runApplicationPhases($phpFiles, $ignoreAnnotated);
 
         $expectedFile = $fixtureRoot . '/expected_results.json';
-        $this->assertFileExists($expectedFile);
+        $this->assertFileExists(
+            $expectedFile,
+            'Missing expected results file: ' . $expectedFile
+        );
         $expectedData = json_decode(file_get_contents($expectedFile), true, 512, JSON_THROW_ON_ERROR);
         $allResolved = GlobalCache::getAllResolvedThrows();
         foreach ($expectedData['fullyQualifiedMethodKeys'] as $methodKey => $throws) {
