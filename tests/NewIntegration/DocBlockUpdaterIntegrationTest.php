@@ -33,7 +33,10 @@ class DocBlockUpdaterIntegrationTest extends TestCase
 
         // 1) Read input
         $code = file_get_contents($inputFile);
-        $this->assertNotFalse($code);
+        $this->assertNotFalse(
+            $code,
+            'Failed to read fixture file: ' . $inputFile
+        );
 
         // 2) First pass: gather throws + build GlobalCache
         GlobalCache::clear();
@@ -159,8 +162,15 @@ class DocBlockUpdaterIntegrationTest extends TestCase
 
         // 6) Compare with expected rewritten code
         $expectedCode = file_get_contents($expectedOut);
-        $this->assertNotFalse($expectedCode);
-        $this->assertSame($expectedCode, $patchedCode, 'Rewritten code did not match expected for docblock rewrite');
+        $this->assertNotFalse(
+            $expectedCode,
+            'Failed to read expected file: ' . $expectedOut
+        );
+        $this->assertSame(
+            $expectedCode,
+            $patchedCode,
+            'Rewritten code did not match expected for ' . $inputFile
+        );
     }
 
     public static function fixtureProvider(): array

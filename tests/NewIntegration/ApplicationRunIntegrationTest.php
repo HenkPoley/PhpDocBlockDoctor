@@ -15,8 +15,11 @@ class ApplicationRunIntegrationTest extends TestCase
     {
         $tmpRoot = sys_get_temp_dir() . '/docblockdoctor-run-' . uniqid();
         mkdir($tmpRoot);
-        copy(__DIR__ . '/../fixtures/single-line-method-docblock/InlineDocblock.php', $tmpRoot . '/InlineDocblock.php');
-        $expected = file_get_contents(__DIR__ . '/../fixtures/single-line-method-docblock/expected_rewritten.php');
+        $fixture = __DIR__ . '/../fixtures/single-line-method-docblock/InlineDocblock.php';
+        copy($fixture, $tmpRoot . '/InlineDocblock.php');
+        $expectedPath = __DIR__ . '/../fixtures/single-line-method-docblock/expected_rewritten.php';
+        $expected = file_get_contents($expectedPath);
+        $this->assertNotFalse($expected, 'Failed to read expected file: ' . $expectedPath);
 
         $app = new Application();
         ob_start();
@@ -27,8 +30,10 @@ class ApplicationRunIntegrationTest extends TestCase
         $this->assertStringContainsString('Files read (1):', $output);
         $this->assertStringContainsString('Files fixed (1):', $output);
 
-        $result = file_get_contents($tmpRoot . '/InlineDocblock.php');
-        $this->assertSame($expected, $result);
+        $resultPath = $tmpRoot . '/InlineDocblock.php';
+        $result = file_get_contents($resultPath);
+        $this->assertNotFalse($result, 'Failed to read rewritten file: ' . $resultPath);
+        $this->assertSame($expected, $result, $resultPath . ' mismatch');
 
         unlink($tmpRoot . '/InlineDocblock.php');
         rmdir($tmpRoot);
