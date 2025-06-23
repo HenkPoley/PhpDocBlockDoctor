@@ -9,7 +9,6 @@ interface FileSystem
      */
     public function getContents(string $path);
 
-    /** @psalm-suppress PossiblyUnusedReturnValue */
     public function putContents(string $path, string $contents): bool;
 
     public function isFile(string $path): bool;

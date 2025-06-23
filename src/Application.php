@@ -70,7 +70,14 @@ class Application
             foreach ($filesFixed as $f) {
                 echo "  - $f\n";
             }
-            echo "\n";
+            $resolvedCount = count(GlobalCache::getAllResolvedThrows());
+            $firstKey = array_key_first(GlobalCache::$resolvedThrows);
+            if ($firstKey !== null) {
+                $resolvedForKey = GlobalCache::getResolvedThrowsForKey($firstKey);
+                $originsForKey  = GlobalCache::getThrowOriginsForKey($firstKey);
+                $resolvedCount += count($resolvedForKey) + count($originsForKey);
+            }
+            echo "\nResolved throws: $resolvedCount\n\n";
         }
 
         return 0;
@@ -301,7 +308,7 @@ class Application
 
             try {
                 $ast = $this->astParser->parse($code);
-                if (!$ast) {
+                if ($ast === null) {
                     if ($opt->verbose && !$opt->quiet) {
                         echo "    → No AST for {$filePath}\n";
                     }
@@ -419,7 +426,7 @@ class Application
                         }
                         /** @var Node\FunctionLike $funcNode */
                         $calleeKey = $astUtils->getCalleeKey($callNode, $callerNamespace, $callerUseMap, $funcNode);
-                        if ($calleeKey && $calleeKey !== $funcKey) {
+                        if ($calleeKey !== null && $calleeKey !== $funcKey) {
                             $exceptionsFromCallee = GlobalCache::$resolvedThrows[$calleeKey] ?? [];
                             foreach ($exceptionsFromCallee as $ex) {
                                 if ($astUtils->isExceptionCaught($callNode, $ex, $funcNode, $callerNamespace, $callerUseMap)) {
@@ -516,9 +523,6 @@ class Application
                 $throws = GlobalCache::$resolvedThrows[$key] ?? [];
                 $orig   = GlobalCache::$throwOrigins[$key] ?? [];
                 foreach ($impls as $class) {
-                    if (!is_string($class)) {
-                        continue;
-                    }
                     $implKey = ltrim($class, '\\') . '::' . $method;
                     foreach (GlobalCache::$resolvedThrows[$implKey] ?? [] as $ex) {
                         if (!in_array($ex, $throws, true)) {
@@ -623,7 +627,7 @@ class Application
                     $currentParentConnector = new ParentConnectingVisitor();
                     $currentAST = $this->astParser->parse($codeAtStart);
 
-                    if (!$currentAST) {
+                    if ($currentAST === null) {
                         if (!$opt->quiet) {
                             echo "Error parsing {$filePath} (Pass 2).\n";
                         }
@@ -661,7 +665,10 @@ class Application
                     }
 
                     if ($newCode !== $codeAtStart) {
-                        $this->fileSystem->putContents($filePath, $newCode);
+                    $writeOk = $this->fileSystem->putContents($filePath, $newCode);
+                    if (!$writeOk && !$opt->quiet) {
+                        echo "  ! Unable to write file: {$filePath}\n";
+                    }
                         if ($verbose && !$opt->quiet) {
                             echo "    → Surgically simplified use statements in {$filePath}\n";
                         }
@@ -780,7 +787,10 @@ class Application
                     }
 
                     if ($newFileContent !== $currentFileContent) {
-                        $this->fileSystem->putContents($filePath, $newFileContent);
+                    $writeOk = $this->fileSystem->putContents($filePath, $newFileContent);
+                    if (!$writeOk && !$opt->quiet) {
+                        echo "  ! Unable to write file: {$filePath}\n";
+                    }
                         if ($verbose && !$opt->quiet) {
                             echo "    → Applied DocBlock changes to {$filePath}\n";
                         }

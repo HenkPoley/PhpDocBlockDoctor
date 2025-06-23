@@ -40,10 +40,10 @@ class AstUtils
         $key = spl_object_hash($func);
         if (!isset($this->assignmentCache[$key])) {
             $map = [];
-            /** @psalm-suppress NoInterfaceProperties */
-            if (property_exists($func, 'stmts') && is_array($func->stmts)) {
+            $stmts = $func->getStmts();
+            if ($stmts !== null) {
                 $finder = new NodeFinder();
-                $assigns = $finder->findInstanceOf($func->stmts, Assign::class);
+                $assigns = $finder->findInstanceOf($stmts, Assign::class);
                 foreach ($assigns as $assign) {
                     if ($assign->var instanceof Variable && is_string($assign->var->name)) {
                         $map[$assign->var->name][] = [
@@ -684,8 +684,7 @@ class AstUtils
             $methodName = $callNode->name->toString();
 
             // Search the enclosing function/method for a parameter with the same name:
-            /** @psalm-suppress NoInterfaceProperties */
-            foreach ($callerFuncOrMethodNode->params as $param) {
+            foreach ($callerFuncOrMethodNode->getParams() as $param) {
                 if ($param->var instanceof Variable
                     && is_string($param->var->name)
                     && $param->var->name === $varName
@@ -963,8 +962,8 @@ class AstUtils
             if (!$exists && class_exists($classFqcn, false)) {
                 try {
                     $ref = new \ReflectionClass($classFqcn);
-                    if ($ref->hasMethod((string) $methodName)) {
-                        $methodName = $ref->getMethod((string) $methodName)->getName();
+                    if ($ref->hasMethod($methodName)) {
+                        $methodName = $ref->getMethod($methodName)->getName();
                         $key = ltrim($classFqcn, '\\') . '::' . $methodName;
                         $exists = true;
                     } else {
@@ -977,12 +976,12 @@ class AstUtils
             if (!$exists) {
                 $decl = $this->findDeclaringClassForMethod(
                     ltrim($classFqcn, '\\'),
-                    (string) $methodName
+                    $methodName
                 );
                 if ($decl !== null) {
                     if (class_exists($decl, false)) {
                         try {
-                            $methodName = (new \ReflectionClass($decl))->getMethod((string) $methodName)->getName();
+                            $methodName = (new \ReflectionClass($decl))->getMethod($methodName)->getName();
                         } catch (\ReflectionException $e) {
                             // ignore
                         }
@@ -1118,13 +1117,10 @@ class AstUtils
                             $useMap,
                             false
                         );
-                        $thrownLoaded = class_exists($thrownFqcn, false);
-                        $caughtLoaded = class_exists($caughtTypeFqcn, false);
                         if ($thrownFqcn === $caughtTypeFqcn) {
                             return true;
                         }
-                        if ($thrownLoaded && $caughtLoaded) {
-                            /** @psalm-suppress ArgumentTypeCoercion */
+                        if (class_exists($thrownFqcn, false) && class_exists($caughtTypeFqcn, false)) {
                             if (is_subclass_of($thrownFqcn, $caughtTypeFqcn)) {
                                 return true;
                             }
@@ -1135,7 +1131,7 @@ class AstUtils
                             self::classOrInterfaceExistsNoAutoload($caughtTypeFqcn) &&
                             !self::classFileIsInVendor($thrownFqcn) &&
                             !self::classFileIsInVendor($caughtTypeFqcn) &&
-                            /** @psalm-suppress ArgumentTypeCoercion */is_a($thrownFqcn, $caughtTypeFqcn, true)
+                            (class_exists($caughtTypeFqcn) || interface_exists($caughtTypeFqcn)) && is_a($thrownFqcn, $caughtTypeFqcn, true)
                         ) {
                             // Use autoload to inspect class hierarchy for non-vendor classes
                             return true;
