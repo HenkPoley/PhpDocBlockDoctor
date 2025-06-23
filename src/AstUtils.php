@@ -62,10 +62,6 @@ class AstUtils
     /**
      * Find the expression assigned to $varName before the given call position.
      *
-     * @param string $varName
-     * @param Node $callNode
-     * @param Node\FunctionLike $func
-     *
      * @throws \LogicException
      */
     private function findPriorAssignment(string $varName, Node $callNode, Node\FunctionLike $func): ?Node\Expr
@@ -87,11 +83,6 @@ class AstUtils
         return $bestExpr;
     }
 
-    /**
-     * @param \PhpParser\Node $node
-     * @param string|null $currentNamespace
-     * @return string|null
-     */
     public function getNodeKey(Node $node, ?string $currentNamespace): ?string
     {
         if ($node instanceof Node\Stmt\ClassMethod) {
@@ -111,11 +102,6 @@ class AstUtils
         return null;
     }
 
-    /**
-     * @param \PhpParser\Node $nodeContext
-     * @param string|null $currentNamespace
-     * @return string|null
-     */
     public function getContextClassName(Node $nodeContext, ?string $currentNamespace): ?string
     {
         $current = $nodeContext;
@@ -155,13 +141,6 @@ class AstUtils
         return '';
     }
 
-    /**
-     * @param \PhpParser\Node\Name $nameNode
-     * @param string|null $currentNamespace
-     * @param mixed[] $useMap
-     * @param bool $isFunctionContext
-     * @return string
-     */
     public function resolveNameNodeToFqcn(Name $nameNode, ?string $currentNamespace, array $useMap, bool $isFunctionContext): string
     {
         $name = $nameNode->toString();
@@ -185,12 +164,6 @@ class AstUtils
         return $name;
     }
 
-    /**
-     * @param string $name
-     * @param string|null $currentNamespace
-     * @param mixed[] $useMap
-     * @return string
-     */
     public function resolveStringToFqcn(string $name, ?string $currentNamespace, array $useMap): string
     {
         if ($name === null || $name === '' || $name === '0') {
@@ -219,11 +192,6 @@ class AstUtils
     }
 
     /**
-     * @param \PhpParser\Node\Expr $callNode
-     * @param string $callerNamespace
-     * @param mixed[] $callerUseMap
-     * @param \PhpParser\Node\FunctionLike $callerFuncOrMethodNode
-     *
      * @throws \LogicException
      */
     public function getCalleeKey(
@@ -1131,7 +1099,8 @@ class AstUtils
         Node    $boundaryNode,
         ?string $currentNamespace,
         array   $useMap
-    ): bool {
+    ): bool
+    {
         $parent = $node->getAttribute('parent');
         $currentCatch = null;
         while ($parent && $parent !== $boundaryNode->getAttribute('parent')) {
@@ -1279,7 +1248,8 @@ class AstUtils
     private function findDeclaringClassForMethod(
         string $classFqcn,
         string $method
-    ): ?string {
+    ): ?string
+    {
         $current = $classFqcn;
         $visited = [];
         while ($current !== null && $current !== '' && !in_array($current, $visited, true)) {
