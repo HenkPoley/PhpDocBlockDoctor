@@ -25,7 +25,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
     private $currentNamespace = '';
 
     /**
-     * @var mixed[]
+     * @var array<string, string>
      */
     private array $useMap = [];
 
@@ -38,13 +38,14 @@ class ThrowsGatherer extends NodeVisitorAbstract
     }
 
     /**
-     * @param mixed[] $nodes
+     * @param array $nodes
      * @return null
      *
      * @throws \LogicException
      */
-    public function beforeTraverse($nodes)
+    public function beforeTraverse(array $nodes)
     {
+        /** @var Node[] $nodes */
         $this->currentNamespace = '';
         $this->useMap = [];
         $nsNode = $this->nodeFinder->findFirstInstanceOf($nodes, Node\Stmt\Namespace_::class);
@@ -85,9 +86,14 @@ class ThrowsGatherer extends NodeVisitorAbstract
     public function enterNode(Node $node)
     {
         if ($node instanceof Node\Stmt\Class_) {
+            /** @var string $className */
             $className = '';
-            if ($node->hasAttribute('namespacedName') && $node->getAttribute('namespacedName') instanceof Node\Name) {
-                $className = $node->getAttribute('namespacedName')->toString();
+            if ($node->hasAttribute('namespacedName')) {
+                /** @var mixed $nsName */
+                $nsName = $node->getAttribute('namespacedName');
+                if ($nsName instanceof Node\Name) {
+                    $className = $nsName->toString();
+                }
             } elseif ($node->name instanceof \PhpParser\Node\Identifier) {
                 $className = ($this->currentNamespace ? $this->currentNamespace . '\\' : '') . $node->name->toString();
             }
@@ -96,11 +102,14 @@ class ThrowsGatherer extends NodeVisitorAbstract
                 if ($node->extends instanceof Node\Name) {
                     $parentFqcn = $this->astUtils->resolveNameNodeToFqcn($node->extends, $this->currentNamespace, $this->useMap, false);
                 }
-                \HenkPoley\DocBlockDoctor\GlobalCache::$classParents[$className] = $parentFqcn;
+                $classKey = $className;
+                \HenkPoley\DocBlockDoctor\GlobalCache::$classParents[$classKey] = $parentFqcn;
                 foreach ($node->implements as $iface) {
                     $ifaceFqcn = $this->astUtils->resolveNameNodeToFqcn($iface, $this->currentNamespace, $this->useMap, false);
                     if ($ifaceFqcn !== '') {
-                        \HenkPoley\DocBlockDoctor\GlobalCache::$interfaceImplementations[$ifaceFqcn][] = $className;
+                        $impls = \HenkPoley\DocBlockDoctor\GlobalCache::$interfaceImplementations[$ifaceFqcn] ?? [];
+                        $impls[] = $className;
+                        \HenkPoley\DocBlockDoctor\GlobalCache::$interfaceImplementations[$ifaceFqcn] = $impls;
                     }
                 }
                 foreach ($node->stmts as $stmt) {
@@ -108,7 +117,15 @@ class ThrowsGatherer extends NodeVisitorAbstract
                         foreach ($stmt->traits as $traitName) {
                             $traitFqcn = $this->astUtils->resolveNameNodeToFqcn($traitName, $this->currentNamespace, $this->useMap, false);
                             if ($traitFqcn !== '') {
-                                \HenkPoley\DocBlockDoctor\GlobalCache::$classTraits[$className][] = $traitFqcn;
+                                /** @var string[] $traits */
+                                $classKey = $className;
+                                if (isset(\HenkPoley\DocBlockDoctor\GlobalCache::$classTraits[$classKey])) {
+                                    $traits = \HenkPoley\DocBlockDoctor\GlobalCache::$classTraits[$classKey];
+                                } else {
+                                    $traits = [];
+                                }
+                                $traits[] = $traitFqcn;
+                                \HenkPoley\DocBlockDoctor\GlobalCache::$classTraits[$classKey] = $traits;
                             }
                         }
                     }
@@ -120,8 +137,12 @@ class ThrowsGatherer extends NodeVisitorAbstract
 
         if ($node instanceof Node\Stmt\Interface_) {
             $interfaceName = '';
-            if ($node->hasAttribute('namespacedName') && $node->getAttribute('namespacedName') instanceof Node\Name) {
-                $interfaceName = $node->getAttribute('namespacedName')->toString();
+            if ($node->hasAttribute('namespacedName')) {
+                /** @var mixed $nsName */
+                $nsName = $node->getAttribute('namespacedName');
+                if ($nsName instanceof Node\Name) {
+                    $interfaceName = $nsName->toString();
+                }
             } elseif ($node->name instanceof \PhpParser\Node\Identifier) {
                 $interfaceName = ($this->currentNamespace ? $this->currentNamespace . '\\' : '') . $node->name->toString();
             }
@@ -155,6 +176,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         if ($docComment instanceof \PhpParser\Comment\Doc) {
             $docText = $docComment->getText();
             $docLines = preg_split('/\R/u', $docText) ?: [];
+            /** @var string|null $currentThrowsFqcnForDesc */
             $currentThrowsFqcnForDesc = null;
             $accumulatedDescription = '';
             foreach ($docLines as $docLineIdx => $docLine) {
@@ -227,7 +249,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
      * @psalm-param Function_|ClassMethod $funcOrMethodNode
      * @param string $funcKey Fully qualified method/function key
      *
-     * @return array
+     * @return list<string>
      *
      * @throws \LogicException
      */
@@ -301,9 +323,10 @@ class ThrowsGatherer extends NodeVisitorAbstract
             } elseif ($throwExpr->expr instanceof Node\Expr\Variable) {
                 $varName = $throwExpr->expr->name;
                 if (is_string($varName)) {
+                    /** @var Node|null $parent */
                     $parent = $throwExpr->getAttribute('parent');
                     $catchNode = null;
-                    while ($parent && $parent !== $funcOrMethodNode->getAttribute('parent')) {
+                    while ($parent instanceof Node && $parent !== $funcOrMethodNode->getAttribute('parent')) {
                         if ($parent instanceof Node\Stmt\Catch_) {
                             $catchNode = $parent;
                             break;
@@ -311,6 +334,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                         if (($parent instanceof Node\Stmt\Function_ || $parent instanceof Node\Stmt\ClassMethod || $parent instanceof Node\Expr\Closure) && $parent !== $funcOrMethodNode) {
                             break;
                         }
+                        /** @var Node|null $parent */
                         $parent = $parent->getAttribute('parent');
                     }
                     if ($catchNode && $catchNode->var instanceof Node\Expr\Variable && $catchNode->var->name === $varName) {
@@ -366,9 +390,12 @@ class ThrowsGatherer extends NodeVisitorAbstract
      * @param Node[] $stmts
      *
      * @throws \LogicException
+     *
+     * @return list<string>
      */
     private function getInstanceofTypesBeforeThrow(array $stmts, Node\Expr\Throw_ $throwExpr, string $varName): array
     {
+        /** @var list<string> $types */
         $types = [];
         foreach ($stmts as $stmt) {
             $types = array_merge($types, $this->findInstanceofTypes($stmt, $varName));
@@ -382,6 +409,8 @@ class ThrowsGatherer extends NodeVisitorAbstract
 
     /**
      * @throws \LogicException
+     *
+     * @return list<string>
      */
     private function findInstanceofTypes(Node $node, string $varName): array
     {
@@ -408,8 +437,10 @@ class ThrowsGatherer extends NodeVisitorAbstract
      */
     private function instanceofHasInterveningThrow(Node\Expr\Instanceof_ $ins, string $varName): bool
     {
+        /** @var Node|null $parent */
         $parent = $ins->getAttribute('parent');
-        while ($parent && !$parent instanceof Node\Stmt\If_) {
+        while ($parent instanceof Node && !$parent instanceof Node\Stmt\If_) {
+            /** @var Node|null $parent */
             $parent = $parent->getAttribute('parent');
         }
         if ($parent instanceof Node\Stmt\If_) {

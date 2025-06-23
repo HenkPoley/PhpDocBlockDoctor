@@ -236,6 +236,7 @@ class Application
             }
 
             try {
+                /** @var RecursiveIteratorIterator $rii */
                 $rii = new RecursiveIteratorIterator(
                     new RecursiveCallbackFilterIterator(
                         new RecursiveDirectoryIterator(
@@ -243,12 +244,13 @@ class Application
                             RecursiveDirectoryIterator::SKIP_DOTS | RecursiveDirectoryIterator::FOLLOW_SYMLINKS
                         ),
                         function ($file, $key, \RecursiveDirectoryIterator $iterator): bool {
-                            $filename = $file->getFilename();
+                            $fileInfo = $file instanceof \SplFileInfo ? $file : new \SplFileInfo((string)$file);
+                            $filename = $fileInfo->getFilename();
                             if ($iterator->hasChildren()) {
                                 return !in_array($filename, ['.git', 'node_modules', '.history', 'cache'], true);
                             }
 
-                            return $file->isFile() && $file->getExtension() === 'php';
+                            return $fileInfo->isFile() && $fileInfo->getExtension() === 'php';
                         }
                     ),
                     RecursiveIteratorIterator::LEAVES_ONLY
@@ -259,8 +261,8 @@ class Application
                 continue;
             }
 
+            /** @var \SplFileInfo $fileInfo */
             foreach ($rii as $fileInfo) {
-                /** @var \SplFileInfo $fileInfo */
                 $realPath = $fileInfo->getRealPath();
                 if ($realPath !== false) {
                     $phpFilePaths[] = $realPath;
@@ -426,7 +428,6 @@ class Application
                         if ($astUtils->isNodeAfterExecutionEndingStmt($callNode, $funcNode)) {
                             continue;
                         }
-                        /** @var Node\FunctionLike $funcNode */
                         $calleeKey = $astUtils->getCalleeKey($callNode, $callerNamespace, $callerUseMap, $funcNode);
                         if ($calleeKey !== null && $calleeKey !== $funcKey) {
                             $exceptionsFromCallee = GlobalCache::$resolvedThrows[$calleeKey] ?? [];
@@ -717,7 +718,11 @@ class Application
                                 $baseIndent = $indentMatches[1];
                             }
 
-                            $docBlockLines   = explode("\n", (string)$patch['newDocText']);
+                            $newDocText = $patch['newDocText'];
+                            if ($newDocText === null) {
+                                continue;
+                            }
+                            $docBlockLines   = explode("\n", $newDocText);
                             $indentedLines = [];
                             foreach ($docBlockLines as $docLine) {
                                 $indentedLines[] = $baseIndent . $docLine;

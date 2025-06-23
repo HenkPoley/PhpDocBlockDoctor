@@ -8,6 +8,7 @@ use PhpParser\Node\Name;
 use PhpParser\Node\NullableType;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Stmt\Class_;
+use PhpParser\Node\Stmt\ClassLike;
 use PhpParser\Node\Expr\PropertyFetch;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Expr\Assign;
@@ -114,14 +115,23 @@ class AstUtils
     public function getContextClassName(Node $nodeContext, ?string $currentNamespace): ?string
     {
         $current = $nodeContext;
-        while ($current = $current->getAttribute('parent')) {
+        while (true) {
+            $parentNode = $current->getAttribute('parent');
+            if (!$parentNode instanceof Node) {
+                break;
+            }
+            $current = $parentNode;
             if (
                 $current instanceof Node\Stmt\Class_
                 || $current instanceof Node\Stmt\Interface_
                 || $current instanceof Node\Stmt\Trait_
             ) {
-                if ($current->hasAttribute('namespacedName') && $current->getAttribute('namespacedName') instanceof Node\Name) {
-                    return $current->getAttribute('namespacedName')->toString();
+                if ($current->hasAttribute('namespacedName')) {
+                    /** @var mixed $attr */
+                    $attr = $current->getAttribute('namespacedName');
+                    if ($attr instanceof Node\Name) {
+                        return $attr->toString();
+                    }
                 }
 
                 if (isset($current->name)) {
@@ -145,7 +155,12 @@ class AstUtils
     private function getNamespaceForNode(Node $node): string
     {
         $current = $node;
-        while ($current = $current->getAttribute('parent')) {
+        while (true) {
+            $parentNode = $current->getAttribute('parent');
+            if (!$parentNode instanceof Node) {
+                break;
+            }
+            $current = $parentNode;
             if ($current instanceof Node\Stmt\Namespace_ && $current->name instanceof Name) {
                 return $current->name->toString();
             }
@@ -154,6 +169,9 @@ class AstUtils
         return '';
     }
 
+    /**
+     * @param array<string, string> $useMap
+     */
     public function resolveNameNodeToFqcn(Name $nameNode, ?string $currentNamespace, array $useMap, bool $isFunctionContext): string
     {
         $name = $nameNode->toString();
@@ -177,6 +195,9 @@ class AstUtils
         return $name;
     }
 
+    /**
+     * @param array<string, string> $useMap
+     */
     public function resolveStringToFqcn(string $name, ?string $currentNamespace, array $useMap): string
     {
         if ($name === '' || $name === '0') {
@@ -205,14 +226,17 @@ class AstUtils
     }
 
     /**
+     * @param array<string, string> $callerUseMap
+     * @param array<string, bool>   $visited
+     *
      * @throws \LogicException
      */
     public function getCalleeKey(
         Node\Expr $callNode,
-        string    $callerNamespace,
-        array     $callerUseMap,
+        string $callerNamespace,
+        array $callerUseMap,
         Node\FunctionLike $callerFuncOrMethodNode,
-        array     &$visited = []
+        array &$visited = []
     ): ?string
     {
         $hash = spl_object_hash($callNode);
@@ -436,8 +460,13 @@ class AstUtils
 
             // Walk up from the current method/function node to find the enclosing Class_ or Trait_ node.
             $parent = $callerFuncOrMethodNode;
-            while ($parent !== null && (!$parent instanceof Class_ && !$parent instanceof Node\Stmt\Trait_)) {
-                $parent = $parent->getAttribute('parent');
+            while ($parent instanceof Node && !$parent instanceof Class_ && !$parent instanceof Node\Stmt\Trait_) {
+                /** @var Node|null $parentAttr */
+                $parentAttr = $parent->getAttribute('parent');
+                if (!$parentAttr instanceof Node) {
+                    break;
+                }
+                $parent = $parentAttr;
             }
 
             if ($parent instanceof Class_ || $parent instanceof Node\Stmt\Trait_) {
@@ -569,8 +598,12 @@ class AstUtils
             $methodName   = $callNode->name->toString();
 
             $parent = $callerFuncOrMethodNode;
-            while ($parent !== null && (!$parent instanceof Class_ && !$parent instanceof Node\Stmt\Trait_)) {
-                $parent = $parent->getAttribute('parent');
+            while ($parent instanceof Node && !$parent instanceof Class_ && !$parent instanceof Node\Stmt\Trait_) {
+                $nextParent = $parent->getAttribute('parent');
+                if (!$nextParent instanceof Node) {
+                    break;
+                }
+                $parent = $nextParent;
             }
 
             if ($parent instanceof Class_ || $parent instanceof Node\Stmt\Trait_) {
@@ -904,7 +937,6 @@ class AstUtils
                 $methodName  = $callNode->name->toString();
                 $declaring   = $this->findDeclaringClassForMethod($callerClass, $methodName);
                 $targetClass = $declaring ?? $callerClass;
-
                 return $targetClass . '::' . $methodName;
             }
         }
@@ -931,6 +963,7 @@ class AstUtils
             // 2b) "parent::method()" → use the parent class via the AST
             if ($lower === 'parent') {
                 // Attempt to fetch the parent from the AST:
+                /** @var Node|null $classNode */
                 $classNode = $callerFuncOrMethodNode->getAttribute('parent');
                 if (
                     $classNode instanceof Node\Stmt\Class_
@@ -1061,11 +1094,12 @@ class AstUtils
             // 4b) "new parent()" → parent class of current class, if it exists
             if ($lower === 'parent') {
                 // Attempt to find the AST Class_ node that contains this method/function:
-                $classNode = $callerFuncOrMethodNode->getAttribute('parent');
-                if ($classNode instanceof Node\Stmt\Class_ && $classNode->extends instanceof Node\Name) {
+                /** @var mixed $maybeParent */
+                $maybeParent = $callerFuncOrMethodNode->getAttribute('parent');
+                if ($maybeParent instanceof Node\Stmt\Class_ && $maybeParent->extends instanceof Node\Name) {
                     // Resolve parent’s FQCN using useMap + namespace:
                     $parentFqcn = $this->resolveNameNodeToFqcn(
-                        $classNode->extends,
+                        $maybeParent->extends,
                         $callerNamespace,
                         $callerUseMap,
                         false
@@ -1100,9 +1134,9 @@ class AstUtils
      *
      * @param Node   $node             Starting point for upward traversal
      * @param string $thrownFqcn       Fully-qualified class name of the thrown exception
-     * @param Node $boundaryNode     Typically the enclosing function or method node
+     * @param Node   $boundaryNode     Typically the enclosing function or method node
      * @param string|null $currentNamespace Namespace of the starting node
-     * @param mixed[] $useMap          Use statements in effect for the file
+     * @param array<string, string> $useMap Use statements in effect for the file
      */
     public function isExceptionCaught(
         Node    $node,
@@ -1112,9 +1146,10 @@ class AstUtils
         array   $useMap
     ): bool
     {
+        /** @var Node|null $parent */
         $parent = $node->getAttribute('parent');
         $currentCatch = null;
-        while ($parent && $parent !== $boundaryNode->getAttribute('parent')) {
+        while ($parent instanceof Node && $parent !== $boundaryNode->getAttribute('parent')) {
             if ($parent instanceof Node\Stmt\Catch_) {
                 $currentCatch = $parent;
             }
@@ -1164,7 +1199,11 @@ class AstUtils
                 break;
             }
 
-            $parent = $parent->getAttribute('parent');
+            $nextParent = $parent->getAttribute('parent');
+            if (!$nextParent instanceof Node) {
+                break;
+            }
+            $parent = $nextParent;
         }
 
         return false;
@@ -1181,10 +1220,20 @@ class AstUtils
     public function isNodeAfterExecutionEndingStmt(Node $node, Node $boundary): bool
     {
         $current = $node;
-        while ($current && $current !== $boundary) {
+        while ($current instanceof Node && $current !== $boundary) {
+            /** @var Node|null $parent */
             $parent = $current->getAttribute('parent');
-            if ($parent && property_exists($parent, 'stmts') && is_array($parent->stmts)) {
-                $stmts = $parent->stmts;
+            if ($parent instanceof Node && property_exists($parent, 'stmts')) {
+                /** @var object{stmts:mixed} $parentObj */
+                $parentObj = $parent;
+                /** @var mixed $stmtsProp */
+                $stmtsProp = $parentObj->stmts;
+                if (is_array($stmtsProp)) {
+                    /** @var list<Node> $stmts */
+                    $stmts = $stmtsProp;
+                } else {
+                    $stmts = [];
+                }
                 $idx = array_search($current, $stmts, true);
                 if ($idx !== false) {
                     for ($i = 0; $i < $idx; $i++) {
