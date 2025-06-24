@@ -344,9 +344,9 @@ class ThrowsGatherer extends NodeVisitorAbstract
     /**
      * @param Node[] $stmts
      *
-     * @throws \LogicException
-     *
      * @return list<string>
+     *
+     * @throws \LogicException
      */
     private function getInstanceofTypesBeforeThrow(array $stmts, Node\Expr\Throw_ $throwExpr, string $varName): array
     {
@@ -363,9 +363,9 @@ class ThrowsGatherer extends NodeVisitorAbstract
     }
 
     /**
-     * @throws \LogicException
-     *
      * @return list<string>
+     *
+     * @throws \LogicException
      */
     private function findInstanceofTypes(Node $node, string $varName): array
     {

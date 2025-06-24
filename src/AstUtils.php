@@ -1072,6 +1072,9 @@ class AstUtils
      * @param array<string,string> $callerUseMap
      * @param Node\FunctionLike    $callerFuncOrMethodNode
      * @param array<string,bool>   $visited
+     *
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     private function resolveInnerMethodCall(
         Node\Expr $innerCall,
