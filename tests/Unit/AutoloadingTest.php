@@ -62,7 +62,7 @@ class AutoloadingTest extends TestCase
 
         $this->assertFalse($autoloadCalled, 'Autoloader should not be called');
         // Non-existent classes should be filtered out
-        $this->assertSame([], GlobalCache::$directThrows['foo'] ?? []);
+        $this->assertSame([], GlobalCache::getDirectThrowsForKey('foo'));
     }
 
     /**

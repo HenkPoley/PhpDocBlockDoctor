@@ -17,7 +17,7 @@ class GlobalCache
     /**
      * @var array<string, string[]>
      */
-    public static array $directThrows = [];
+    private static array $directThrows = [];
 
     /**
      * @var array<string, string[]>
@@ -94,6 +94,39 @@ class GlobalCache
         self::$classParents = [];
         self::$classTraits = [];
         self::$interfaceImplementations = [];
+    }
+
+    /**
+     * @return array<string,string[]>
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public static function getDirectThrows(): array
+    {
+        return self::$directThrows;
+    }
+
+    /**
+     * @return string[]
+     */
+    public static function getDirectThrowsForKey(string $key): array
+    {
+        return self::$directThrows[$key] ?? [];
+    }
+
+    /**
+     * @param string[] $throws
+     */
+    public static function setDirectThrowsForKey(string $key, array $throws): void
+    {
+        self::$directThrows[$key] = $throws;
+    }
+
+    /**
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public static function addDirectThrow(string $key, string $exception): void
+    {
+        self::$directThrows[$key][] = $exception;
     }
 
     /**

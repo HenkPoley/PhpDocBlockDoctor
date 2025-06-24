@@ -361,7 +361,7 @@ class Application
 
         GlobalCache::$resolvedThrows = [];
         foreach (array_keys(GlobalCache::getAstNodeMap()) as $funcKey) {
-            $direct    = GlobalCache::$directThrows[$funcKey]    ?? [];
+            $direct    = GlobalCache::getDirectThrowsForKey($funcKey);
             $annotated = GlobalCache::$annotatedThrows[$funcKey] ?? [];
             $initial   = $direct;
             if (!$opt->ignoreAnnotatedThrows) {
@@ -393,7 +393,7 @@ class Application
                 $callerNamespace = GlobalCache::getFileNamespace($filePathOfFunc);
                 $callerUseMap    = GlobalCache::getFileUseMap($filePathOfFunc);
 
-                $baseThrows = GlobalCache::$directThrows[$funcKey] ?? [];
+                $baseThrows = GlobalCache::getDirectThrowsForKey($funcKey);
                 if (!$opt->ignoreAnnotatedThrows) {
                     $baseThrows = array_values(array_unique(array_merge(
                         $baseThrows,
