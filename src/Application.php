@@ -558,7 +558,7 @@ class Application
      *
      * @param string   $funcKey
      * @param string[] $newThrows
-     * @param array    $newOrigins
+     * @param array<string, string[]> $newOrigins
      *
      * @return bool True when data changed.
      */
