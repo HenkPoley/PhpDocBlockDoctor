@@ -44,7 +44,7 @@ class DocBlockUpdaterPatchTest extends TestCase
                 GlobalCache::$nodeKeyToFilePath[$node->name->toString()] = $file;
             }
         }
-        GlobalCache::$fileNamespaces[$file] = '';
+        GlobalCache::setFileNamespace($file, '');
         foreach ($resolved as $key => $vals) {
             GlobalCache::$resolvedThrows[$key] = $vals;
         }
@@ -116,7 +116,7 @@ class DocBlockUpdaterPatchTest extends TestCase
         $func = $this->finder->findFirstInstanceOf($ast, PhpParser\Node\Stmt\Function_::class);
         GlobalCache::$astNodeMap['foo'] = $func;
         GlobalCache::$nodeKeyToFilePath['foo'] = 'dummy.php';
-        GlobalCache::$fileNamespaces['dummy.php'] = '';
+        GlobalCache::setFileNamespace('dummy.php', '');
         GlobalCache::$fileUseMaps['dummy.php'] = [];
         GlobalCache::$resolvedThrows['foo'] = $throws;
         return $ast;

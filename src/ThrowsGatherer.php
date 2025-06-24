@@ -54,7 +54,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         if ($nsNode && $nsNode->name) {
             $this->currentNamespace = $nsNode->name->toString();
         }
-        \HenkPoley\DocBlockDoctor\GlobalCache::$fileNamespaces[$this->filePath] = $this->currentNamespace;
+        \HenkPoley\DocBlockDoctor\GlobalCache::setFileNamespace($this->filePath, $this->currentNamespace);
 
         foreach ($this->nodeFinder->find($nodes, fn(Node $n): bool => $n instanceof Node\Stmt\Use_ || $n instanceof Node\Stmt\GroupUse) as $useNode) {
             if ($useNode instanceof Node\Stmt\Use_) {

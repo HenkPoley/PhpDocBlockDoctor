@@ -99,4 +99,23 @@ class UseMapTest extends TestCase
         ksort($map);
         $this->assertSame($expected, $map);
     }
+
+    /**
+     * @throws \LogicException
+     */
+    public function testThrowsGathererCachesNamespace(): void
+    {
+        $code = <<<'PHP'
+        <?php
+        namespace NS; 
+        function foo(){}
+        PHP;
+        $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast = $parser->parse($code) ?: [];
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new ThrowsGatherer($this->finder, $this->utils, 'nsfile.php'));
+        $traverser->traverse($ast);
+
+        $this->assertSame('NS', GlobalCache::getFileNamespace('nsfile.php'));
+    }
 }

@@ -46,7 +46,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
     {
         /** @var Node[] $nodes */
         $this->pendingPatches = [];
-        $this->currentNamespace = \HenkPoley\DocBlockDoctor\GlobalCache::$fileNamespaces[$this->currentFilePath] ?? '';
+        $this->currentNamespace = \HenkPoley\DocBlockDoctor\GlobalCache::getFileNamespace($this->currentFilePath);
 
         return null;
     }
