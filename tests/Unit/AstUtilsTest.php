@@ -87,7 +87,7 @@ class AstUtilsTest extends TestCase
             {
                 if ($node instanceof Node\Stmt\ClassMethod) {
                     $key = $this->u->getNodeKey($node, $this->namespace);
-                    GlobalCache::$astNodeMap[$key] = $node;
+                    GlobalCache::setAstNode($key, $node);
                     GlobalCache::setFilePathForKey($key, 'dummy'); // path is not used in this test
                 }
             }
@@ -167,7 +167,7 @@ class AstUtilsTest extends TestCase
             {
                 if ($node instanceof Node\Stmt\ClassMethod) {
                     $key = $this->u->getNodeKey($node, $this->ns);
-                    GlobalCache::$astNodeMap[$key] = $node;
+                    GlobalCache::setAstNode($key, $node);
                     GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
@@ -229,7 +229,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -280,7 +280,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -332,7 +332,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -384,7 +384,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -433,7 +433,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -486,7 +486,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -533,7 +533,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -578,7 +578,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -627,7 +627,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -676,7 +676,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -725,7 +725,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -778,7 +778,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -831,7 +831,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -887,7 +887,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -948,7 +948,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -1016,7 +1016,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -1078,7 +1078,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -1134,7 +1134,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -1197,7 +1197,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -1264,7 +1264,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -1332,7 +1332,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -1381,7 +1381,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -1427,7 +1427,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -1477,7 +1477,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });
@@ -1527,7 +1527,7 @@ class AstUtilsTest extends TestCase
             }
             public function enterNode(Node $n) {
                 if ($n instanceof Node\Stmt\ClassMethod) {
-                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::$astNodeMap[$key] = $n; GlobalCache::setFilePathForKey($key, 'dummy');
+                    $key = $this->u->getNodeKey($n, $this->ns); GlobalCache::setAstNode($key, $n); GlobalCache::setFilePathForKey($key, 'dummy');
                 }
             }
         });

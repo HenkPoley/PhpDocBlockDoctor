@@ -360,7 +360,7 @@ class Application
         }
 
         GlobalCache::$resolvedThrows = [];
-        foreach (array_keys(GlobalCache::$astNodeMap) as $funcKey) {
+        foreach (array_keys(GlobalCache::getAstNodeMap()) as $funcKey) {
             $direct    = GlobalCache::$directThrows[$funcKey]    ?? [];
             $annotated = GlobalCache::$annotatedThrows[$funcKey] ?? [];
             $initial   = $direct;
@@ -381,14 +381,14 @@ class Application
             }
         }
 
-        $maxGlobalIterations   = count(GlobalCache::$astNodeMap) + 5;
+        $maxGlobalIterations   = count(GlobalCache::getAstNodeMap()) + 5;
         $currentGlobalIteration = 0;
 
         do {
             $changedInThisGlobalIteration = false;
             $currentGlobalIteration++;
 
-            foreach (GlobalCache::$astNodeMap as $funcKey => $funcNode) {
+            foreach (GlobalCache::getAstNodeMap() as $funcKey => $funcNode) {
                 $filePathOfFunc  = GlobalCache::getFilePathForKey($funcKey) ?? '';
                 $callerNamespace = GlobalCache::getFileNamespace($filePathOfFunc);
                 $callerUseMap    = GlobalCache::getFileUseMap($filePathOfFunc);
@@ -513,7 +513,7 @@ class Application
         foreach (GlobalCache::$interfaceImplementations as $iface => $impls) {
             $impls = array_values(array_unique($impls));
             $ifacePrefix = ltrim($iface, '\\') . '::';
-            foreach (array_keys(GlobalCache::$astNodeMap) as $key) {
+            foreach (array_keys(GlobalCache::getAstNodeMap()) as $key) {
                 if (strncmp($key, $ifacePrefix, strlen($ifacePrefix)) !== 0) {
                     continue;
                 }

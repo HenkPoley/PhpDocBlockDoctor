@@ -150,7 +150,7 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
             $traverser->traverse($ast);
         }
 
-        foreach (array_keys(GlobalCache::$astNodeMap) as $key) {
+        foreach (array_keys(GlobalCache::getAstNodeMap()) as $key) {
             $direct    = GlobalCache::$directThrows[$key]    ?? [];
             $annotated = GlobalCache::$annotatedThrows[$key] ?? [];
             $combined  = array_values(array_unique(array_merge($direct, $annotated)));
@@ -173,12 +173,12 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
             ));
         }
 
-        $maxIter = count(GlobalCache::$astNodeMap) + 5;
+        $maxIter = count(GlobalCache::getAstNodeMap()) + 5;
         $iteration = 0;
         do {
             $changed = false;
             $iteration++;
-            foreach (GlobalCache::$astNodeMap as $methodKey => $node) {
+            foreach (GlobalCache::getAstNodeMap() as $methodKey => $node) {
                 $filePath  = GlobalCache::getFilePathForKey($methodKey) ?? '';
                 $namespace = GlobalCache::getFileNamespace($filePath);
                 $useMap    = GlobalCache::getFileUseMap($filePath);
@@ -312,8 +312,8 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
             if ($calleeKey === null) {
                 $calleeKey = $utils->getCalleeKey($expr, $namespace, $useMap, $scopeNode);
             }
-            if ($calleeKey && isset(GlobalCache::$astNodeMap[$calleeKey])) {
-                $calleeNode = GlobalCache::$astNodeMap[$calleeKey];
+            if ($calleeKey && GlobalCache::getAstNode($calleeKey) !== null) {
+                $calleeNode = GlobalCache::getAstNode($calleeKey);
                 $file = GlobalCache::getFilePathForKey($calleeKey) ?? '';
                 $ns   = GlobalCache::getFileNamespace($file);
                 $umap = GlobalCache::getFileUseMap($file);

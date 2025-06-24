@@ -91,7 +91,7 @@ class ApplicationFileMethodsTest extends TestCase
         $tr->addVisitor(new ParentConnectingVisitor());
         $tr->traverse($ast);
         $func = $ast[0];
-        GlobalCache::$astNodeMap['foo'] = $func;
+        GlobalCache::setAstNode('foo', $func);
         GlobalCache::setFilePathForKey('foo', $file);
         GlobalCache::setFileNamespace($file, '');
         GlobalCache::setFileUseMap($file, []);
@@ -234,7 +234,7 @@ class ApplicationFileMethodsTest extends TestCase
         $func = $ast[0];
 
         GlobalCache::clear();
-        GlobalCache::$astNodeMap['foo'] = $func;
+        GlobalCache::setAstNode('foo', $func);
         GlobalCache::setFilePathForKey('foo', 'dummy.php');
         GlobalCache::setFileNamespace('dummy.php', '');
         GlobalCache::setFileUseMap('dummy.php', []);

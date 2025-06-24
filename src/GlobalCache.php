@@ -7,6 +7,7 @@ namespace HenkPoley\DocBlockDoctor;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\ClassMethod;
 use PhpParser\Node\Stmt\Function_;
+use PhpParser\Node\FunctionLike;
 
 class GlobalCache
 {
@@ -41,7 +42,7 @@ class GlobalCache
     /**
      * @var array<string, Function_|ClassMethod>
      */
-    public static array $astNodeMap = [];
+    private static array $astNodeMap = [];
 
     /**
      * @var array<string, string>
@@ -161,6 +162,27 @@ class GlobalCache
     public static function setFileUseMap(string $path, array $map): void
     {
         self::$fileUseMaps[$path] = $map;
+    }
+
+    /**
+     * @return array<string, Function_|ClassMethod>
+     */
+    public static function getAstNodeMap(): array
+    {
+        return self::$astNodeMap;
+    }
+
+    public static function getAstNode(string $key): ?Node\FunctionLike
+    {
+        return self::$astNodeMap[$key] ?? null;
+    }
+
+    /**
+     * @param Function_|ClassMethod $node
+     */
+    public static function setAstNode(string $key, Node\FunctionLike $node): void
+    {
+        self::$astNodeMap[$key] = $node;
     }
 
     /**
