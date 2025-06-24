@@ -238,7 +238,7 @@ class ApplicationFileMethodsTest extends TestCase
         GlobalCache::setFilePathForKey('foo', 'dummy.php');
         GlobalCache::setFileNamespace('dummy.php', '');
         GlobalCache::setFileUseMap('dummy.php', []);
-        GlobalCache::$directThrows['foo'] = ['RuntimeException'];
+        GlobalCache::setDirectThrowsForKey('foo', ['RuntimeException']);
         GlobalCache::$resolvedThrows['foo'] = [];
 
         $app = new Application();

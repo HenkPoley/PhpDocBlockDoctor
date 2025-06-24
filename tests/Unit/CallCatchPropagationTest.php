@@ -52,7 +52,7 @@ class CallCatchPropagationTest extends TestCase
         $tr1->traverse($ast);
 
         foreach (array_keys(GlobalCache::getAstNodeMap()) as $key) {
-            $direct    = GlobalCache::$directThrows[$key] ?? [];
+            $direct    = GlobalCache::getDirectThrowsForKey($key);
             $annotated = GlobalCache::$annotatedThrows[$key] ?? [];
             $combined  = array_values(array_unique(array_merge($direct, $annotated)));
             sort($combined);

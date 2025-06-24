@@ -141,7 +141,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         }
         \HenkPoley\DocBlockDoctor\GlobalCache::setAstNode($key, $node);
         \HenkPoley\DocBlockDoctor\GlobalCache::setFilePathForKey($key, $this->filePath);
-        \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$key] = [];
+        \HenkPoley\DocBlockDoctor\GlobalCache::setDirectThrowsForKey($key, []);
         \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key] = [];
         $currentAnnotatedThrowsFqcns = [];
 
@@ -211,8 +211,10 @@ class ThrowsGatherer extends NodeVisitorAbstract
         if ($key === null || $key === '') {
             return null;
         }
-        \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$key] =
-            $this->calculateDirectThrowsForNode($node, $key);
+        \HenkPoley\DocBlockDoctor\GlobalCache::setDirectThrowsForKey(
+            $key,
+            $this->calculateDirectThrowsForNode($node, $key)
+        );
 
         return null;
     }

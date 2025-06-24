@@ -53,9 +53,9 @@ class ThrowsGathererTest extends TestCase
         $traverser->traverse($ast);
 
         $key = 'T\\C::foo';
-        $this->assertArrayHasKey($key, GlobalCache::$directThrows);
+        $this->assertArrayHasKey($key, GlobalCache::getDirectThrows());
         // The thrown LogicException is caught within the method, so no direct throws should be reported
-        $this->assertSame([], GlobalCache::$directThrows[$key] ?? []);
+        $this->assertSame([], GlobalCache::getDirectThrowsForKey($key));
     }
 
     /**
@@ -83,10 +83,10 @@ class ThrowsGathererTest extends TestCase
         $traverser->traverse($ast);
 
         $key = 'T\\C::foo';
-        $this->assertArrayHasKey($key, GlobalCache::$directThrows);
+        $this->assertArrayHasKey($key, GlobalCache::getDirectThrows());
         $this->assertEqualsCanonicalizing(
             ['RuntimeException'],
-            GlobalCache::$directThrows[$key]
+            GlobalCache::getDirectThrowsForKey($key)
         );
     }
 
@@ -125,10 +125,10 @@ class ThrowsGathererTest extends TestCase
         $traverser->traverse($ast);
 
         $key = 'T\\C::foo';
-        $this->assertArrayHasKey($key, GlobalCache::$directThrows);
+        $this->assertArrayHasKey($key, GlobalCache::getDirectThrows());
         $this->assertEqualsCanonicalizing(
             ['Exception'],
-            GlobalCache::$directThrows[$key]
+            GlobalCache::getDirectThrowsForKey($key)
         );
     }
 
@@ -164,10 +164,10 @@ class ThrowsGathererTest extends TestCase
         $traverser->traverse($ast);
 
         $key = 'T\\C::foo';
-        $this->assertArrayHasKey($key, GlobalCache::$directThrows);
+        $this->assertArrayHasKey($key, GlobalCache::getDirectThrows());
         $this->assertEqualsCanonicalizing(
             ['RuntimeException', 'Throwable'],
-            GlobalCache::$directThrows[$key]
+            GlobalCache::getDirectThrowsForKey($key)
         );
         $origins = GlobalCache::getThrowOriginsForKey($key);
         $this->assertSame(
@@ -209,10 +209,10 @@ class ThrowsGathererTest extends TestCase
         $traverser->traverse($ast);
 
         $key = 'Pitfalls\\CatchRootException\\C::foo';
-        $this->assertArrayHasKey($key, GlobalCache::$directThrows);
+        $this->assertArrayHasKey($key, GlobalCache::getDirectThrows());
         $this->assertEqualsCanonicalizing(
             ['Exception'],
-            GlobalCache::$directThrows[$key]
+            GlobalCache::getDirectThrowsForKey($key)
         );
     }
 
@@ -249,8 +249,8 @@ class ThrowsGathererTest extends TestCase
         $traverser->traverse($ast);
 
         $key = 'Pitfalls\\CatchParentException\\C::foo';
-        $this->assertArrayHasKey($key, GlobalCache::$directThrows);
-        $this->assertSame([], GlobalCache::$directThrows[$key]);
+        $this->assertArrayHasKey($key, GlobalCache::getDirectThrows());
+        $this->assertSame([], GlobalCache::getDirectThrowsForKey($key));
     }
 
     /**
@@ -284,8 +284,8 @@ class ThrowsGathererTest extends TestCase
         $traverser->traverse($ast);
 
         $key = 'Pitfalls\\CatchParentSameFile\\C::foo';
-        $this->assertArrayHasKey($key, GlobalCache::$directThrows);
-        $this->assertSame([], GlobalCache::$directThrows[$key]);
+        $this->assertArrayHasKey($key, GlobalCache::getDirectThrows());
+        $this->assertSame([], GlobalCache::getDirectThrowsForKey($key));
     }
 
     /**
@@ -314,7 +314,7 @@ class ThrowsGathererTest extends TestCase
         $traverser->traverse($ast);
 
         $key = 'T\\C::foo';
-        $this->assertArrayHasKey($key, GlobalCache::$directThrows);
-        $this->assertEquals(['RuntimeException'], GlobalCache::$directThrows[$key]);
+        $this->assertArrayHasKey($key, GlobalCache::getDirectThrows());
+        $this->assertEquals(['RuntimeException'], GlobalCache::getDirectThrowsForKey($key));
     }
 }

@@ -151,19 +151,22 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
         }
 
         foreach (array_keys(GlobalCache::getAstNodeMap()) as $key) {
-            $direct    = GlobalCache::$directThrows[$key]    ?? [];
+            $direct    = GlobalCache::getDirectThrowsForKey($key);
             $annotated = GlobalCache::$annotatedThrows[$key] ?? [];
             $combined  = array_values(array_unique(array_merge($direct, $annotated)));
             sort($combined);
             GlobalCache::$resolvedThrows[$key] = $combined;
         }
 
-        foreach (GlobalCache::$directThrows as $methodKey => $throws) {
-            GlobalCache::$directThrows[$methodKey] = array_values(array_filter(
-                $throws,
-                static fn(string $fqcn): bool => AstUtils::classOrInterfaceExistsNoAutoload($fqcn)
-                    || array_key_exists($fqcn, GlobalCache::getClassParents())
-            ));
+        foreach (GlobalCache::getDirectThrows() as $methodKey => $throws) {
+            GlobalCache::setDirectThrowsForKey(
+                $methodKey,
+                array_values(array_filter(
+                    $throws,
+                    static fn(string $fqcn): bool => AstUtils::classOrInterfaceExistsNoAutoload($fqcn)
+                        || array_key_exists($fqcn, GlobalCache::getClassParents())
+                ))
+            );
         }
         foreach (GlobalCache::$resolvedThrows as $methodKey => $throws) {
             GlobalCache::$resolvedThrows[$methodKey] = array_values(array_filter(
@@ -184,7 +187,7 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
                 $useMap    = GlobalCache::getFileUseMap($filePath);
 
                 $baseThrows = array_values(array_unique(array_merge(
-                    GlobalCache::$directThrows[$methodKey] ?? [],
+                    GlobalCache::getDirectThrowsForKey($methodKey),
                     GlobalCache::$annotatedThrows[$methodKey] ?? []
                 )));
                 $throwsFromCallees = [];
