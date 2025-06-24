@@ -52,7 +52,7 @@ class DocBlockUpdaterIntegrationTest extends TestCase
         $traverser1->traverse($ast);
 
         // 3) Intermediate: propagate throws
-        $directKeys = array_keys(GlobalCache::$astNodeMap);
+        $directKeys = array_keys(GlobalCache::getAstNodeMap());
         foreach ($directKeys as $methodKey) {
             $direct    = GlobalCache::$directThrows[$methodKey] ?? [];
             $annotated = GlobalCache::$annotatedThrows[$methodKey] ?? [];
@@ -65,7 +65,7 @@ class DocBlockUpdaterIntegrationTest extends TestCase
         do {
             $changed = false;
             $itCount++;
-            foreach (GlobalCache::$astNodeMap as $methodKey => $node) {
+            foreach (GlobalCache::getAstNodeMap() as $methodKey => $node) {
                 $allBase = array_values(array_unique(array_merge(
                     GlobalCache::$directThrows[$methodKey]    ?? [],
                     GlobalCache::$annotatedThrows[$methodKey] ?? []

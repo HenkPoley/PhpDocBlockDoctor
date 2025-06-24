@@ -149,7 +149,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         if ($key === null || $key === '') {
             return null;
         }
-        \HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap[$key] = $node;
+        \HenkPoley\DocBlockDoctor\GlobalCache::setAstNode($key, $node);
         \HenkPoley\DocBlockDoctor\GlobalCache::setFilePathForKey($key, $this->filePath);
         \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$key] = [];
         \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key] = [];

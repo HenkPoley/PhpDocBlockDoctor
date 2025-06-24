@@ -465,7 +465,7 @@ class AstUtils
                     $visited
                 );
                 if ($innerKey !== null && $innerKey !== '') {
-                    $innerNode     = GlobalCache::$astNodeMap[$innerKey] ?? null;
+                    $innerNode     = GlobalCache::getAstNode($innerKey);
                     $innerFilePath = GlobalCache::getFilePathForKey($innerKey);
 
                     if ($innerNode instanceof Node\FunctionLike && is_string($innerFilePath) && $innerFilePath !== '') {
@@ -598,10 +598,10 @@ class AstUtils
             $methodName = $callNode->name->toString();
             $key        = ltrim($classFqcn, '\\') . '::' . $methodName;
 
-            $exists = isset(GlobalCache::$astNodeMap[$key]);
+            $exists = GlobalCache::getAstNode($key) !== null;
             if (!$exists) {
                 $lowerKey = strtolower($key);
-                foreach (array_keys(GlobalCache::$astNodeMap) as $k) {
+                foreach (array_keys(GlobalCache::getAstNodeMap()) as $k) {
                     if (strtolower($k) === $lowerKey) {
                         $key = $k;
                         $pos = strrpos($k, '::');
@@ -645,7 +645,7 @@ class AstUtils
 
             if (!$exists) {
                 $magicKey = ltrim($classFqcn, '\\') . '::__callStatic';
-                $magicExists = isset(GlobalCache::$astNodeMap[$magicKey]);
+                $magicExists = GlobalCache::getAstNode($magicKey) !== null;
                 if (!$magicExists && class_exists($classFqcn, false)) {
                     try {
                         $ref = new \ReflectionClass($classFqcn);
@@ -926,12 +926,12 @@ class AstUtils
         while ($current !== null && $current !== '' && !in_array($current, $visited, true)) {
             $visited[] = $current;
             $candidateKey = ltrim($current, '\\') . '::' . $method;
-            if (isset(GlobalCache::$astNodeMap[$candidateKey])) {
+            if (GlobalCache::getAstNode($candidateKey) !== null) {
                 return ltrim($current, '\\');
             }
             foreach (GlobalCache::$classTraits[$current] ?? [] as $traitFqcn) {
                 $traitKey = ltrim($traitFqcn, '\\') . '::' . $method;
-                if (isset(GlobalCache::$astNodeMap[$traitKey])) {
+                if (GlobalCache::getAstNode($traitKey) !== null) {
                     return ltrim($traitFqcn, '\\');
                 }
             }
@@ -1096,7 +1096,7 @@ class AstUtils
             return null;
         }
 
-        $innerNode     = GlobalCache::$astNodeMap[$innerKey] ?? null;
+        $innerNode     = GlobalCache::getAstNode($innerKey);
         $innerFilePath = GlobalCache::getFilePathForKey($innerKey);
 
         if (!$innerNode instanceof Node\Stmt\ClassMethod || !is_string($innerFilePath) || $innerFilePath === '') {

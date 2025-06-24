@@ -51,7 +51,7 @@ class CallCatchPropagationTest extends TestCase
         $tr1->addVisitor($tg);
         $tr1->traverse($ast);
 
-        foreach (array_keys(GlobalCache::$astNodeMap) as $key) {
+        foreach (array_keys(GlobalCache::getAstNodeMap()) as $key) {
             $direct    = GlobalCache::$directThrows[$key] ?? [];
             $annotated = GlobalCache::$annotatedThrows[$key] ?? [];
             $combined  = array_values(array_unique(array_merge($direct, $annotated)));
@@ -67,7 +67,7 @@ class CallCatchPropagationTest extends TestCase
             }
         }
 
-        foreach (GlobalCache::$astNodeMap as $funcKey => $funcNode) {
+        foreach (GlobalCache::getAstNodeMap() as $funcKey => $funcNode) {
             $filePathOfFunc  = GlobalCache::getFilePathForKey($funcKey) ?? '';
             $callerNamespace = GlobalCache::getFileNamespace($filePathOfFunc);
             $callerUseMap    = GlobalCache::getFileUseMap($filePathOfFunc);

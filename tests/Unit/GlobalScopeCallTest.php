@@ -47,6 +47,6 @@ class GlobalScopeCallTest extends TestCase
         $traverser->traverse($ast);
 
         // Only the method inside Foo should be registered, the top-level call should be ignored
-        $this->assertArrayHasKey('Foo::bar', GlobalCache::$astNodeMap);
+        $this->assertArrayHasKey('Foo::bar', GlobalCache::getAstNodeMap());
     }
 }

@@ -40,7 +40,7 @@ class DocBlockUpdaterPatchTest extends TestCase
         $utils = new AstUtils();
         foreach ($ast as $node) {
             if ($node instanceof \PhpParser\Node\Stmt\Function_) {
-                GlobalCache::$astNodeMap[$node->name->toString()] = $node;
+                GlobalCache::setAstNode($node->name->toString(), $node);
                 GlobalCache::setFilePathForKey($node->name->toString(), $file);
             }
         }
@@ -114,7 +114,9 @@ class DocBlockUpdaterPatchTest extends TestCase
         $tr->addVisitor(new ParentConnectingVisitor());
         $tr->traverse($ast);
         $func = $this->finder->findFirstInstanceOf($ast, PhpParser\Node\Stmt\Function_::class);
-        GlobalCache::$astNodeMap['foo'] = $func;
+        if ($func instanceof \PhpParser\Node\FunctionLike) {
+            GlobalCache::setAstNode('foo', $func);
+        }
         GlobalCache::setFilePathForKey('foo', 'dummy.php');
         GlobalCache::setFileNamespace('dummy.php', '');
         GlobalCache::setFileUseMap('dummy.php', []);

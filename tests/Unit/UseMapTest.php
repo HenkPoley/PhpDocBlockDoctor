@@ -169,4 +169,32 @@ class UseMapTest extends TestCase
         ksort($map);
         $this->assertSame($expected, $map);
     }
+
+    /**
+     * @throws \LogicException
+     */
+    public function testThrowsGathererCachesAstNodeMap(): void
+    {
+        $code = <<<'PHP'
+        <?php
+        namespace NS;
+        function foo(){}
+        class C { public function bar(){} }
+        PHP;
+        $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast = $parser->parse($code) ?: [];
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new ParentConnectingVisitor());
+        $traverser->addVisitor(new ThrowsGatherer($this->finder, $this->utils, 'anfile.php'));
+        $traverser->traverse($ast);
+
+        $expectedKeys = [
+            'NS\\C::bar',
+            'NS\\foo',
+        ];
+        $mapKeys = array_keys(GlobalCache::getAstNodeMap());
+        sort($mapKeys);
+        sort($expectedKeys);
+        $this->assertSame($expectedKeys, $mapKeys);
+    }
 }
