@@ -249,202 +249,24 @@ class AstUtils
             return null;
         }
         $visited[$hash] = true;
-        // If this is a MethodCall whose “var” is itself another MethodCall, try to follow the returned object.
+        // If this is a MethodCall whose “var” is itself another MethodCall or a StaticCall,
+        // try to follow the returned object from that inner call.
         if (
             $callNode instanceof Node\Expr\MethodCall
-            && $callNode->var instanceof Node\Expr\MethodCall
+            && ($callNode->var instanceof Node\Expr\MethodCall || $callNode->var instanceof Node\Expr\StaticCall)
         ) {
-            // 1) First, resolve the “inner” call (e.g. OneMoreClass::nonStaticFunction)
-            $innerKey = $this->getCalleeKey(
+            $resolved = $this->resolveInnerMethodCall(
                 $callNode->var,
+                $callNode,
                 $callerNamespace,
                 $callerUseMap,
                 $callerFuncOrMethodNode,
                 $visited
             );
-
-            if ($innerKey !== null && $innerKey !== '') {
-                // 2) Look up that inner method's AST node from the GlobalCache
-                $innerNode     = GlobalCache::$astNodeMap[$innerKey] ?? null;
-                $innerFilePath = GlobalCache::$nodeKeyToFilePath[$innerKey] ?? null;
-
-                if ($innerNode instanceof Node\Stmt\ClassMethod && is_string($innerFilePath) && $innerFilePath !== '') {
-                    $innerNamespace = GlobalCache::$fileNamespaces[$innerFilePath] ?? '';
-                    if ($innerNamespace === '') {
-                        $innerNamespace = $this->getNamespaceForNode($innerNode);
-                    }
-                    $innerUseMap    = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
-
-                    // 3a) If the inner method has a return type hint, use that
-                    $returnType = $innerNode->getReturnType();
-                    if ($returnType instanceof Node\Name) {
-                        $returnedFqcn = $this->resolveNameNodeToFqcn(
-                            $returnType,
-                            $innerNamespace,
-                            $innerUseMap,
-                            false
-                        );
-                        if ($returnedFqcn !== '') {
-                            $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
-                            $decl = $this->findDeclaringClassForMethod(
-                                ltrim($returnedFqcn, '\\'),
-                                $methodName
-                            );
-                            $target = $decl ?? ltrim($returnedFqcn, '\\');
-
-                            return $target . '::' . $methodName;
-                        }
-                    } elseif ($returnType instanceof Node\NullableType && $returnType->type instanceof Node\Name) {
-                        $returnedFqcn = $this->resolveNameNodeToFqcn(
-                            $returnType->type,
-                            $innerNamespace,
-                            $innerUseMap,
-                            false
-                        );
-                        if ($returnedFqcn !== '') {
-                            $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
-                            $decl = $this->findDeclaringClassForMethod(
-                                ltrim($returnedFqcn, '\\'),
-                                $methodName
-                            );
-                            $target = $decl ?? ltrim($returnedFqcn, '\\');
-
-                            return $target . '::' . $methodName;
-                        }
-                    }
-
-                    // 3b) Find any “return new SomeClass();” inside that method
-                    $finder = new NodeFinder();
-                    $returns = $finder->findInstanceOf(
-                        $innerNode->getStmts() ?? [],
-                        Return_::class
-                    );
-
-                    foreach ($returns as $returnStmt) {
-                        if (
-                            $returnStmt->expr instanceof Node\Expr\New_
-                            && $returnStmt->expr->class instanceof Node\Name
-                        ) {
-                            // Resolve the FQCN of the returned class:
-                            $returnedFqcn = $this->resolveNameNodeToFqcn(
-                                $returnStmt->expr->class,
-                                $innerNamespace,
-                                $innerUseMap,
-                                false
-                            );
-
-                            if ($returnedFqcn !== '' && $returnedFqcn !== '0') {
-                                // 4) Synthesize “ReturnedClass::outerMethod”
-                                $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
-                                $decl = $this->findDeclaringClassForMethod(
-                                    ltrim($returnedFqcn, '\\'),
-                                    $methodName
-                                );
-                                $target = $decl ?? ltrim($returnedFqcn, '\\');
-
-                                return $target . '::' . $methodName;
-                            }
-                        }
-                    }
-                }
+            if ($resolved !== null) {
+                return $resolved;
             }
-            // If we can’t follow it, we just “fall through” to the existing logic below.
-        }
-
-        // If this is a MethodCall whose “var” is a StaticCall, try to follow the returned object
-        if (
-            $callNode instanceof Node\Expr\MethodCall
-            && $callNode->var instanceof Node\Expr\StaticCall
-        ) {
-            $innerKey = $this->getCalleeKey(
-                $callNode->var,
-                $callerNamespace,
-                $callerUseMap,
-                $callerFuncOrMethodNode,
-                $visited
-            );
-
-            if ($innerKey !== null && $innerKey !== '') {
-                $innerNode     = GlobalCache::$astNodeMap[$innerKey] ?? null;
-                $innerFilePath = GlobalCache::$nodeKeyToFilePath[$innerKey] ?? null;
-
-                if ($innerNode instanceof Node\Stmt\ClassMethod && is_string($innerFilePath) && $innerFilePath !== '') {
-                    $innerNamespace = GlobalCache::$fileNamespaces[$innerFilePath] ?? '';
-                    if ($innerNamespace === '') {
-                        $innerNamespace = $this->getNamespaceForNode($innerNode);
-                    }
-                    $innerUseMap    = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
-
-                    $returnType = $innerNode->getReturnType();
-                    if ($returnType instanceof Node\Name) {
-                        $returnedFqcn = $this->resolveNameNodeToFqcn(
-                            $returnType,
-                            $innerNamespace,
-                            $innerUseMap,
-                            false
-                        );
-                        if ($returnedFqcn !== '') {
-                            $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
-                            $decl = $this->findDeclaringClassForMethod(
-                                ltrim($returnedFqcn, '\\'),
-                                $methodName
-                            );
-                            $target = $decl ?? ltrim($returnedFqcn, '\\');
-
-                            return $target . '::' . $methodName;
-                        }
-                    } elseif ($returnType instanceof Node\NullableType && $returnType->type instanceof Node\Name) {
-                        $returnedFqcn = $this->resolveNameNodeToFqcn(
-                            $returnType->type,
-                            $innerNamespace,
-                            $innerUseMap,
-                            false
-                        );
-                        if ($returnedFqcn !== '') {
-                            $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
-                            $decl = $this->findDeclaringClassForMethod(
-                                ltrim($returnedFqcn, '\\'),
-                                $methodName
-                            );
-                            $target = $decl ?? ltrim($returnedFqcn, '\\');
-
-                            return $target . '::' . $methodName;
-                        }
-                    }
-
-                    $finder  = new NodeFinder();
-                    $returns = $finder->findInstanceOf(
-                        $innerNode->getStmts() ?? [],
-                        Return_::class
-                    );
-
-                    foreach ($returns as $returnStmt) {
-                        if (
-                            $returnStmt->expr instanceof Node\Expr\New_
-                            && $returnStmt->expr->class instanceof Node\Name
-                        ) {
-                            $returnedFqcn = $this->resolveNameNodeToFqcn(
-                                $returnStmt->expr->class,
-                                $innerNamespace,
-                                $innerUseMap,
-                                false
-                            );
-
-                            if ($returnedFqcn !== '' && $returnedFqcn !== '0') {
-                                $methodName = $callNode->name instanceof Node\Identifier ? $callNode->name->toString() : '';
-                                $decl = $this->findDeclaringClassForMethod(
-                                    ltrim($returnedFqcn, '\\'),
-                                    $methodName
-                                );
-                                $target = $decl ?? ltrim($returnedFqcn, '\\');
-
-                                return $target . '::' . $methodName;
-                            }
-                        }
-                    }
-                }
-            }
-            // If we can’t follow it, we just fall through
+            // If we can’t follow it, we just fall through to the existing logic below.
         }
 
         // MethodCall on $this->property → translate “$this->prop->foo()” → “ClassName::foo”
@@ -1233,6 +1055,112 @@ class AstUtils
                             }
                         }
                     }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Follow a chained inner call (MethodCall or StaticCall) and try to resolve
+     * the returned object for the outer MethodCall.
+     *
+     * @param Node\Expr            $innerCall
+     * @param Node\Expr\MethodCall $outerCall
+     * @param string               $callerNamespace
+     * @param array<string,string> $callerUseMap
+     * @param Node\FunctionLike    $callerFuncOrMethodNode
+     * @param array<string,bool>   $visited
+     *
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     */
+    private function resolveInnerMethodCall(
+        Node\Expr $innerCall,
+        Node\Expr\MethodCall $outerCall,
+        string $callerNamespace,
+        array $callerUseMap,
+        Node\FunctionLike $callerFuncOrMethodNode,
+        array &$visited
+    ): ?string {
+        $innerKey = $this->getCalleeKey(
+            $innerCall,
+            $callerNamespace,
+            $callerUseMap,
+            $callerFuncOrMethodNode,
+            $visited
+        );
+
+        if ($innerKey === null || $innerKey === '') {
+            return null;
+        }
+
+        $innerNode     = GlobalCache::$astNodeMap[$innerKey] ?? null;
+        $innerFilePath = GlobalCache::$nodeKeyToFilePath[$innerKey] ?? null;
+
+        if (!$innerNode instanceof Node\Stmt\ClassMethod || !is_string($innerFilePath) || $innerFilePath === '') {
+            return null;
+        }
+
+        $innerNamespace = GlobalCache::$fileNamespaces[$innerFilePath] ?? '';
+        if ($innerNamespace === '') {
+            $innerNamespace = $this->getNamespaceForNode($innerNode);
+        }
+        $innerUseMap = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
+
+        $returnType = $innerNode->getReturnType();
+        if ($returnType instanceof Node\Name) {
+            $returnedFqcn = $this->resolveNameNodeToFqcn(
+                $returnType,
+                $innerNamespace,
+                $innerUseMap,
+                false
+            );
+            if ($returnedFqcn !== '') {
+                $methodName = $outerCall->name instanceof Node\Identifier ? $outerCall->name->toString() : '';
+                $decl       = $this->findDeclaringClassForMethod(ltrim($returnedFqcn, '\\'), $methodName);
+                $target     = $decl ?? ltrim($returnedFqcn, '\\');
+
+                return $target . '::' . $methodName;
+            }
+        } elseif ($returnType instanceof Node\NullableType && $returnType->type instanceof Node\Name) {
+            $returnedFqcn = $this->resolveNameNodeToFqcn(
+                $returnType->type,
+                $innerNamespace,
+                $innerUseMap,
+                false
+            );
+            if ($returnedFqcn !== '') {
+                $methodName = $outerCall->name instanceof Node\Identifier ? $outerCall->name->toString() : '';
+                $decl       = $this->findDeclaringClassForMethod(ltrim($returnedFqcn, '\\'), $methodName);
+                $target     = $decl ?? ltrim($returnedFqcn, '\\');
+
+                return $target . '::' . $methodName;
+            }
+        }
+
+        $finder  = new NodeFinder();
+        $returns = $finder->findInstanceOf($innerNode->getStmts() ?? [], Return_::class);
+
+        foreach ($returns as $returnStmt) {
+            if (
+                $returnStmt->expr instanceof Node\Expr\New_
+                && $returnStmt->expr->class instanceof Node\Name
+            ) {
+                $returnedFqcn = $this->resolveNameNodeToFqcn(
+                    $returnStmt->expr->class,
+                    $innerNamespace,
+                    $innerUseMap,
+                    false
+                );
+
+                if ($returnedFqcn !== '' && $returnedFqcn !== '0') {
+                    $methodName = $outerCall->name instanceof Node\Identifier ? $outerCall->name->toString() : '';
+                    $decl       = $this->findDeclaringClassForMethod(ltrim($returnedFqcn, '\\'), $methodName);
+                    $target     = $decl ?? ltrim($returnedFqcn, '\\');
+
+                    return $target . '::' . $methodName;
                 }
             }
         }

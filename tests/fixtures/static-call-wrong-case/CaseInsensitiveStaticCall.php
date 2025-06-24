@@ -28,10 +28,6 @@ class ArrayLogger
 {
 }
 
-use Pitfalls\StaticCallWrongCase\Configuration;
-use Pitfalls\StaticCallWrongCase\Module;
-use Pitfalls\StaticCallWrongCase\ArrayLogger;
-
 class UnusedTranslatableStringsCommand
 {
     protected function configure(): void
