@@ -362,7 +362,7 @@ class Application
         GlobalCache::$resolvedThrows = [];
         foreach (array_keys(GlobalCache::getAstNodeMap()) as $funcKey) {
             $direct    = GlobalCache::getDirectThrowsForKey($funcKey);
-            $annotated = GlobalCache::$annotatedThrows[$funcKey] ?? [];
+            $annotated = GlobalCache::getAnnotatedThrowsForKey($funcKey);
             $initial   = $direct;
             if (!$opt->ignoreAnnotatedThrows) {
                 $initial = array_values(array_unique(array_merge($initial, $annotated)));
@@ -397,7 +397,7 @@ class Application
                 if (!$opt->ignoreAnnotatedThrows) {
                     $baseThrows = array_values(array_unique(array_merge(
                         $baseThrows,
-                        GlobalCache::$annotatedThrows[$funcKey] ?? []
+                        GlobalCache::getAnnotatedThrowsForKey($funcKey)
                     )));
                 } else {
                     $baseThrows = array_values(array_unique($baseThrows));

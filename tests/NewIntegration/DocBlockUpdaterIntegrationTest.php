@@ -55,7 +55,7 @@ class DocBlockUpdaterIntegrationTest extends TestCase
         $directKeys = array_keys(GlobalCache::getAstNodeMap());
         foreach ($directKeys as $methodKey) {
             $direct    = GlobalCache::getDirectThrowsForKey($methodKey);
-            $annotated = GlobalCache::$annotatedThrows[$methodKey] ?? [];
+            $annotated = GlobalCache::getAnnotatedThrowsForKey($methodKey);
             $initial   = array_values(array_unique(array_merge($direct, $annotated)));
             sort($initial);
             GlobalCache::$resolvedThrows[$methodKey] = $initial;
@@ -68,7 +68,7 @@ class DocBlockUpdaterIntegrationTest extends TestCase
             foreach (GlobalCache::getAstNodeMap() as $methodKey => $node) {
                 $allBase = array_values(array_unique(array_merge(
                     GlobalCache::getDirectThrowsForKey($methodKey),
-                    GlobalCache::$annotatedThrows[$methodKey] ?? []
+                    GlobalCache::getAnnotatedThrowsForKey($methodKey)
                 )));
                 sort($allBase);
                 $throwsFromCallees = [];

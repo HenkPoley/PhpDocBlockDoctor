@@ -22,7 +22,7 @@ class GlobalCache
     /**
      * @var array<string, string[]>
      */
-    public static array $annotatedThrows = [];
+    private static array $annotatedThrows = [];
 
     /**
      * @var array<string, array<string, string>>
@@ -127,6 +127,39 @@ class GlobalCache
     public static function addDirectThrow(string $key, string $exception): void
     {
         self::$directThrows[$key][] = $exception;
+    }
+
+    /**
+     * @return array<string,string[]>
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public static function getAnnotatedThrows(): array
+    {
+        return self::$annotatedThrows;
+    }
+
+    /**
+     * @return string[]
+     */
+    public static function getAnnotatedThrowsForKey(string $key): array
+    {
+        return self::$annotatedThrows[$key] ?? [];
+    }
+
+    /**
+     * @param string[] $throws
+     */
+    public static function setAnnotatedThrowsForKey(string $key, array $throws): void
+    {
+        self::$annotatedThrows[$key] = $throws;
+    }
+
+    /**
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public static function addAnnotatedThrow(string $key, string $exception): void
+    {
+        self::$annotatedThrows[$key][] = $exception;
     }
 
     /**
