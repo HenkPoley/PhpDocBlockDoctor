@@ -57,14 +57,13 @@ class CallCatchPropagationTest extends TestCase
             $combined  = array_values(array_unique(array_merge($direct, $annotated)));
             sort($combined);
             GlobalCache::setResolvedThrowsForKey($key, $combined);
-            if (!isset(GlobalCache::$throwOrigins[$key])) {
-                GlobalCache::$throwOrigins[$key] = [];
-            }
+            $origins = GlobalCache::getThrowOriginsForKey($key);
             foreach ($combined as $ex) {
-                if (!isset(GlobalCache::$throwOrigins[$key][$ex])) {
-                    GlobalCache::$throwOrigins[$key][$ex] = [];
+                if (!isset($origins[$ex])) {
+                    $origins[$ex] = [];
                 }
             }
+            GlobalCache::setThrowOriginsForKey($key, $origins);
         }
 
         foreach (GlobalCache::getAstNodeMap() as $funcKey => $funcNode) {

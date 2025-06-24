@@ -78,7 +78,7 @@ class GlobalCache
      *     thrown. Example:
      *     "src/File.php:10 <- SomeClass::method <- Other::callee <- vendor/lib.php:5".
      */
-    public static array $throwOrigins = [];
+    private static array $throwOrigins = [];
 
     public static function clear(): void
     {
@@ -217,11 +217,41 @@ class GlobalCache
     }
 
     /**
+     * @return array<string, array<string,string[]>>
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public static function getThrowOrigins(): array
+    {
+        return self::$throwOrigins;
+    }
+
+    /**
      * @return array<string, string[]>
      */
     public static function getThrowOriginsForKey(string $key): array
     {
         return self::$throwOrigins[$key] ?? [];
+    }
+
+    /**
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public static function addThrowOrigin(string $key, string $exception, string $chain): void
+    {
+        if (!isset(self::$throwOrigins[$key][$exception])) {
+            self::$throwOrigins[$key][$exception] = [];
+        }
+        if (!in_array($chain, self::$throwOrigins[$key][$exception], true) && count(self::$throwOrigins[$key][$exception]) < self::MAX_ORIGIN_CHAINS) {
+            self::$throwOrigins[$key][$exception][] = $chain;
+        }
+    }
+
+    /**
+     * @param array<string,string[]> $origins
+     */
+    public static function setThrowOriginsForKey(string $key, array $origins): void
+    {
+        self::$throwOrigins[$key] = $origins;
     }
 
     /**

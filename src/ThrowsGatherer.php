@@ -268,9 +268,6 @@ class ThrowsGatherer extends NodeVisitorAbstract
             return [];
         }
         $throwNodes = $this->nodeFinder->findInstanceOf($funcOrMethodNode->stmts, Node\Expr\Throw_::class);
-        if (!isset(\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey])) {
-            \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey] = [];
-        }
         foreach ($throwNodes as $throwExpr) {
             // Skip throws that are unreachable due to a prior throw/return
             // statement in the current statement list.
@@ -355,13 +352,16 @@ class ThrowsGatherer extends NodeVisitorAbstract
             static fn(string $fqcn): bool => AstUtils::classOrInterfaceExistsNoAutoload($fqcn)
         );
 
-        foreach (\HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey] as $ex => $origins) {
+        $originsForKey = \HenkPoley\DocBlockDoctor\GlobalCache::getThrowOriginsForKey($funcKey);
+        foreach ($originsForKey as $ex => $origins) {
             $origins = array_values(array_unique($origins));
             if (count($origins) > \HenkPoley\DocBlockDoctor\GlobalCache::MAX_ORIGIN_CHAINS) {
                 $origins = array_slice($origins, 0, \HenkPoley\DocBlockDoctor\GlobalCache::MAX_ORIGIN_CHAINS);
             }
-            \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$ex] = $origins;
+            $originsForKey[$ex] = $origins;
         }
+
+        \HenkPoley\DocBlockDoctor\GlobalCache::setThrowOriginsForKey($funcKey, $originsForKey);
 
         return array_values(array_unique($filtered));
     }
@@ -498,11 +498,13 @@ class ThrowsGatherer extends NodeVisitorAbstract
         $fqcns[] = $fqcn;
         $loc = $this->filePath . ':' . $throwExpr->getStartLine();
         $chain = $funcKey . ' <- ' . $loc;
-        $origins = \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fqcn] ?? [];
+        $all = \HenkPoley\DocBlockDoctor\GlobalCache::getThrowOriginsForKey($funcKey);
+        $origins = $all[$fqcn] ?? [];
         if (!in_array($chain, $origins, true) && count($origins) < \HenkPoley\DocBlockDoctor\GlobalCache::MAX_ORIGIN_CHAINS) {
             $origins[] = $chain;
         }
-        \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fqcn] = $origins;
+        $all[$fqcn] = $origins;
+        \HenkPoley\DocBlockDoctor\GlobalCache::setThrowOriginsForKey($funcKey, $all);
     }
 
     /**
