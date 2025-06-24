@@ -88,17 +88,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
     public function enterNode(Node $node)
     {
         if ($node instanceof Node\Stmt\Class_) {
-            /** @var string $className */
-            $className = '';
-            if ($node->hasAttribute('namespacedName')) {
-                /** @var mixed $nsName */
-                $nsName = $node->getAttribute('namespacedName');
-                if ($nsName instanceof Node\Name) {
-                    $className = $nsName->toString();
-                }
-            } elseif ($node->name instanceof \PhpParser\Node\Identifier) {
-                $className = ($this->currentNamespace ? $this->currentNamespace . '\\' : '') . $node->name->toString();
-            }
+            $className = $this->getClassLikeFqcn($node);
             if ($className !== '') {
                 $parentFqcn = null;
                 if ($node->extends instanceof Node\Name) {
@@ -138,16 +128,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         }
 
         if ($node instanceof Node\Stmt\Interface_) {
-            $interfaceName = '';
-            if ($node->hasAttribute('namespacedName')) {
-                /** @var mixed $nsName */
-                $nsName = $node->getAttribute('namespacedName');
-                if ($nsName instanceof Node\Name) {
-                    $interfaceName = $nsName->toString();
-                }
-            } elseif ($node->name instanceof \PhpParser\Node\Identifier) {
-                $interfaceName = ($this->currentNamespace ? $this->currentNamespace . '\\' : '') . $node->name->toString();
-            }
+            $interfaceName = $this->getClassLikeFqcn($node);
             if ($interfaceName !== '') {
                 foreach ($node->extends as $iface) {
                     $parentIface = $this->astUtils->resolveNameNodeToFqcn($iface, $this->currentNamespace, $this->useMap, false);
@@ -497,5 +478,26 @@ class ThrowsGatherer extends NodeVisitorAbstract
             $origins[] = $chain;
         }
         \HenkPoley\DocBlockDoctor\GlobalCache::$throwOrigins[$funcKey][$fqcn] = $origins;
+    }
+
+    /**
+     * Build the fully qualified name for a class or interface node.
+     *
+     * @param Node\Stmt\ClassLike $node
+     * @return string
+     */
+    private function getClassLikeFqcn(Node\Stmt\ClassLike $node): string
+    {
+        if ($node->hasAttribute('namespacedName')) {
+            /** @var mixed $nsName */
+            $nsName = $node->getAttribute('namespacedName');
+            if ($nsName instanceof Node\Name) {
+                return $nsName->toString();
+            }
+        } elseif ($node->name instanceof \PhpParser\Node\Identifier) {
+            return ($this->currentNamespace ? $this->currentNamespace . '\\' : '') . $node->name->toString();
+        }
+
+        return '';
     }
 }
