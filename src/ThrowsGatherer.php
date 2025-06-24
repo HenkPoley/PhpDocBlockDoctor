@@ -76,7 +76,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                 }
             }
         }
-        \HenkPoley\DocBlockDoctor\GlobalCache::$fileUseMaps[$this->filePath] = $this->useMap;
+        \HenkPoley\DocBlockDoctor\GlobalCache::setFileUseMap($this->filePath, $this->useMap);
 
         return null;
     }

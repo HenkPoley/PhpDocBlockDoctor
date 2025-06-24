@@ -81,7 +81,7 @@ class DocBlockUpdaterIntegrationTest extends TestCase
                 );
                 $filePathOfFunc = GlobalCache::$nodeKeyToFilePath[$methodKey];
                 $callerNamespace = GlobalCache::getFileNamespace($filePathOfFunc);
-                $callerUseMap    = GlobalCache::$fileUseMaps[$filePathOfFunc]  ?? [];
+                $callerUseMap    = GlobalCache::getFileUseMap($filePathOfFunc);
                 foreach ($callNodes as $c) {
                     $calleeKey = $astUtils->getCalleeKey($c, $callerNamespace, $callerUseMap, $node);
                     if ($calleeKey && $calleeKey !== $methodKey) {

@@ -36,7 +36,7 @@ class GlobalCache
     /**
      * @var array<string, array<string, string>>
      */
-    public static array $fileUseMaps = [];
+    private static array $fileUseMaps = [];
 
     /**
      * @var array<string, Function_|ClassMethod>
@@ -136,5 +136,30 @@ class GlobalCache
     public static function setFileNamespace(string $path, string $namespace): void
     {
         self::$fileNamespaces[$path] = $namespace;
+    }
+
+    /**
+     * @return array<string, array<string,string>>
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public static function getFileUseMaps(): array
+    {
+        return self::$fileUseMaps;
+    }
+
+    /**
+     * @return array<string,string>
+     */
+    public static function getFileUseMap(string $path): array
+    {
+        return self::$fileUseMaps[$path] ?? [];
+    }
+
+    /**
+     * @param array<string,string> $map
+     */
+    public static function setFileUseMap(string $path, array $map): void
+    {
+        self::$fileUseMaps[$path] = $map;
     }
 }
