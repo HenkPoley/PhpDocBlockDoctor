@@ -67,7 +67,7 @@ class GlobalCache
     /**
      * @var array<string,string[]> Mapping of interface FQCN to implementing class FQCNs
      */
-    public static array $interfaceImplementations = [];
+    private static array $interfaceImplementations = [];
 
     /**
      * @var array<string, array<string, string[]>> Mapping of method key to
@@ -243,5 +243,28 @@ class GlobalCache
     public static function addTraitForClass(string $class, string $trait): void
     {
         self::$classTraits[$class][] = $trait;
+    }
+
+    /**
+     * @return array<string,string[]>
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public static function getInterfaceImplementations(): array
+    {
+        return self::$interfaceImplementations;
+    }
+
+    /**
+     * @return string[]
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public static function getImplementations(string $interface): array
+    {
+        return self::$interfaceImplementations[$interface] ?? [];
+    }
+
+    public static function addImplementation(string $interface, string $class): void
+    {
+        self::$interfaceImplementations[$interface][] = $class;
     }
 }

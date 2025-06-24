@@ -99,9 +99,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                 foreach ($node->implements as $iface) {
                     $ifaceFqcn = $this->astUtils->resolveNameNodeToFqcn($iface, $this->currentNamespace, $this->useMap, false);
                     if ($ifaceFqcn !== '') {
-                        $impls = \HenkPoley\DocBlockDoctor\GlobalCache::$interfaceImplementations[$ifaceFqcn] ?? [];
-                        $impls[] = $className;
-                        \HenkPoley\DocBlockDoctor\GlobalCache::$interfaceImplementations[$ifaceFqcn] = $impls;
+                        \HenkPoley\DocBlockDoctor\GlobalCache::addImplementation($ifaceFqcn, $className);
                     }
                 }
                 foreach ($node->stmts as $stmt) {
@@ -126,7 +124,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                     $parentIface = $this->astUtils->resolveNameNodeToFqcn($iface, $this->currentNamespace, $this->useMap, false);
                     if ($parentIface !== '') {
                         // treat extended interfaces as having this interface as implementer
-                        \HenkPoley\DocBlockDoctor\GlobalCache::$interfaceImplementations[$parentIface][] = $interfaceName;
+                        \HenkPoley\DocBlockDoctor\GlobalCache::addImplementation($parentIface, $interfaceName);
                     }
                 }
             }
