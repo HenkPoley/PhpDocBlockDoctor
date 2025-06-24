@@ -27,7 +27,7 @@ class GlobalCache
     /**
      * @var array<string, array<string, string>>
      */
-    public static array $originalDescriptions = [];
+    private static array $originalDescriptions = [];
 
     /**
      * @var array<string, string>
@@ -160,6 +160,28 @@ class GlobalCache
     public static function addAnnotatedThrow(string $key, string $exception): void
     {
         self::$annotatedThrows[$key][] = $exception;
+    }
+
+    /**
+     * @return array<string, array<string,string>>
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public static function getOriginalDescriptions(): array
+    {
+        return self::$originalDescriptions;
+    }
+
+    /**
+     * @return array<string,string>
+     */
+    public static function getOriginalDescriptionsForKey(string $key): array
+    {
+        return self::$originalDescriptions[$key] ?? [];
+    }
+
+    public static function setOriginalDescription(string $key, string $exception, string $text): void
+    {
+        self::$originalDescriptions[$key][$exception] = $text;
     }
 
     /**
