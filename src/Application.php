@@ -29,6 +29,7 @@ class Application
     /**
      * @param string[] $argv
      *
+     * @throws \InvalidArgumentException
      * @throws \LogicException
      * @throws \RangeException
      * @throws \RuntimeException
@@ -349,6 +350,7 @@ class Application
     }
 
     /**
+     * @throws \InvalidArgumentException
      * @throws \LogicException
      */
     private function resolveThrowsGlobally(NodeFinder $nodeFinder, AstUtils $astUtils, ApplicationOptions $opt): void

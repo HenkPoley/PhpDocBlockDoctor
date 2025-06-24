@@ -36,6 +36,7 @@ class AstUtils
      * @param Node\FunctionLike $func
      * @return array<string,array<int,array{pos:int,expr:Node\Expr}>>
      *
+     * @throws \InvalidArgumentException
      * @throws \LogicException
      */
     private function getAssignmentsForFunction(Node\FunctionLike $func): array
@@ -65,6 +66,7 @@ class AstUtils
     /**
      * Find the expression assigned to $varName before the given call position.
      *
+     * @throws \InvalidArgumentException
      * @throws \LogicException
      */
     private function findPriorAssignment(string $varName, Node $callNode, Node\FunctionLike $func): ?Node\Expr
@@ -231,6 +233,7 @@ class AstUtils
      * @param array<string, string> $callerUseMap
      * @param array<string, bool>   $visited
      *
+     * @throws \InvalidArgumentException
      * @throws \LogicException
      */
     public function getCalleeKey(

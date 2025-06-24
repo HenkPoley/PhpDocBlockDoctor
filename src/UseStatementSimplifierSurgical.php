@@ -33,6 +33,7 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
     }
 
     /**
+     * @throws \Exception
      * @throws \InvalidArgumentException
      */
     public function leaveNode(Node $node): ?int // Return type indicates no AST modification by traverser
