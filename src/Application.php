@@ -391,7 +391,7 @@ class Application
             foreach (GlobalCache::$astNodeMap as $funcKey => $funcNode) {
                 $filePathOfFunc  = GlobalCache::$nodeKeyToFilePath[$funcKey];
                 $callerNamespace = GlobalCache::getFileNamespace($filePathOfFunc);
-                $callerUseMap    = GlobalCache::$fileUseMaps[$filePathOfFunc] ?? [];
+                $callerUseMap    = GlobalCache::getFileUseMap($filePathOfFunc);
 
                 $baseThrows = GlobalCache::$directThrows[$funcKey] ?? [];
                 if (!$opt->ignoreAnnotatedThrows) {

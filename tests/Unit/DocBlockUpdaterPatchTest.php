@@ -117,7 +117,7 @@ class DocBlockUpdaterPatchTest extends TestCase
         GlobalCache::$astNodeMap['foo'] = $func;
         GlobalCache::$nodeKeyToFilePath['foo'] = 'dummy.php';
         GlobalCache::setFileNamespace('dummy.php', '');
-        GlobalCache::$fileUseMaps['dummy.php'] = [];
+        GlobalCache::setFileUseMap('dummy.php', []);
         GlobalCache::$resolvedThrows['foo'] = $throws;
         return $ast;
     }

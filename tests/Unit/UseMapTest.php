@@ -42,7 +42,7 @@ class UseMapTest extends TestCase
         $traverser->addVisitor(new ThrowsGatherer($this->finder, $this->utils, 'file.php'));
         $traverser->traverse($ast);
 
-        $map = GlobalCache::$fileUseMaps['file.php'] ?? [];
+        $map = GlobalCache::getFileUseMap('file.php');
         $this->assertSame(['AliasClass' => 'Some\\Thing'], $map);
     }
 
@@ -69,7 +69,7 @@ class UseMapTest extends TestCase
             'Baz' => 'Foo\\Bar\\Baz',
             'Quux' => 'Foo\\Bar\\Qux',
         ];
-        $map = GlobalCache::$fileUseMaps['file2.php'] ?? [];
+        $map = GlobalCache::getFileUseMap('file2.php');
         ksort($map);
         $this->assertSame($expected, $map);
     }
@@ -95,7 +95,7 @@ class UseMapTest extends TestCase
             'Baz' => 'Foo\\Bar\\Baz',
             'Qux' => 'Foo\\Bar\\Qux',
         ];
-        $map = GlobalCache::$fileUseMaps['file3.php'] ?? [];
+        $map = GlobalCache::getFileUseMap('file3.php');
         ksort($map);
         $this->assertSame($expected, $map);
     }
@@ -118,5 +118,27 @@ class UseMapTest extends TestCase
 
         $this->assertSame('NS', GlobalCache::getFileNamespace('nsfile.php'));
         $this->assertSame(['nsfile.php' => 'NS'], GlobalCache::getFileNamespaces());
+    }
+
+    /**
+     * @throws \LogicException
+     */
+    public function testThrowsGathererCachesUseMap(): void
+    {
+        $code = <<<'PHP'
+        <?php
+        namespace NS;
+        use Foo\Bar\Baz;
+        class Dummy {}
+        PHP;
+        $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast = $parser->parse($code) ?: [];
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new ThrowsGatherer($this->finder, $this->utils, 'umfile.php'));
+        $traverser->traverse($ast);
+
+        $expected = ['Baz' => 'Foo\\Bar\\Baz'];
+        $this->assertSame($expected, GlobalCache::getFileUseMap('umfile.php'));
+        $this->assertSame(['umfile.php' => $expected], GlobalCache::getFileUseMaps());
     }
 }

@@ -181,7 +181,7 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
             foreach (GlobalCache::$astNodeMap as $methodKey => $node) {
                 $filePath  = GlobalCache::$nodeKeyToFilePath[$methodKey];
                 $namespace = GlobalCache::getFileNamespace($filePath);
-                $useMap    = GlobalCache::$fileUseMaps[$filePath] ?? [];
+                $useMap    = GlobalCache::getFileUseMap($filePath);
 
                 $baseThrows = array_values(array_unique(array_merge(
                     GlobalCache::$directThrows[$methodKey] ?? [],
@@ -316,7 +316,7 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
                 $calleeNode = GlobalCache::$astNodeMap[$calleeKey];
                 $file = GlobalCache::$nodeKeyToFilePath[$calleeKey];
                 $ns   = GlobalCache::getFileNamespace($file);
-                $umap = GlobalCache::$fileUseMaps[$file] ?? [];
+                $umap = GlobalCache::getFileUseMap($file);
                 if ($calleeNode->returnType instanceof \PhpParser\Node\Name) {
                     return ltrim($utils->resolveNameNodeToFqcn($calleeNode->returnType, $ns, $umap, false), '\\');
                 }

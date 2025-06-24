@@ -473,7 +473,7 @@ class AstUtils
                         if ($innerNamespace === '') {
                             $innerNamespace = $this->getNamespaceForNode($innerNode);
                         }
-                        $innerUseMap    = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
+                        $innerUseMap    = GlobalCache::getFileUseMap($innerFilePath);
 
                         $returnType = $innerNode->getReturnType();
                         if ($returnType instanceof Name) {
@@ -1107,7 +1107,7 @@ class AstUtils
         if ($innerNamespace === '') {
             $innerNamespace = $this->getNamespaceForNode($innerNode);
         }
-        $innerUseMap = GlobalCache::$fileUseMaps[$innerFilePath] ?? [];
+        $innerUseMap = GlobalCache::getFileUseMap($innerFilePath);
 
         $returnType = $innerNode->getReturnType();
         if ($returnType instanceof Node\Name) {

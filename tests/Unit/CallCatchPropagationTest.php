@@ -70,7 +70,7 @@ class CallCatchPropagationTest extends TestCase
         foreach (GlobalCache::$astNodeMap as $funcKey => $funcNode) {
             $filePathOfFunc  = GlobalCache::$nodeKeyToFilePath[$funcKey];
             $callerNamespace = GlobalCache::getFileNamespace($filePathOfFunc);
-            $callerUseMap    = GlobalCache::$fileUseMaps[$filePathOfFunc] ?? [];
+            $callerUseMap    = GlobalCache::getFileUseMap($filePathOfFunc);
 
             $baseThrows = GlobalCache::$resolvedThrows[$funcKey] ?? [];
             $throwsFromCallees = [];
