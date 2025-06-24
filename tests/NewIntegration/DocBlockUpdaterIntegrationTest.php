@@ -58,7 +58,7 @@ class DocBlockUpdaterIntegrationTest extends TestCase
             $annotated = GlobalCache::getAnnotatedThrowsForKey($methodKey);
             $initial   = array_values(array_unique(array_merge($direct, $annotated)));
             sort($initial);
-            GlobalCache::$resolvedThrows[$methodKey] = $initial;
+            GlobalCache::setResolvedThrowsForKey($methodKey, $initial);
         }
         $maxIter = count($directKeys) + 1;
         $itCount = 0;
@@ -85,16 +85,16 @@ class DocBlockUpdaterIntegrationTest extends TestCase
                 foreach ($callNodes as $c) {
                     $calleeKey = $astUtils->getCalleeKey($c, $callerNamespace, $callerUseMap, $node);
                     if ($calleeKey && $calleeKey !== $methodKey) {
-                        foreach (GlobalCache::$resolvedThrows[$calleeKey] ?? [] as $ex) {
+                        foreach (GlobalCache::getResolvedThrowsForKey($calleeKey) as $ex) {
                             $throwsFromCallees[] = $ex;
                         }
                     }
                 }
                 $newCombined = array_values(array_unique(array_merge($allBase, $throwsFromCallees)));
                 sort($newCombined);
-                $old = GlobalCache::$resolvedThrows[$methodKey] ?? [];
+                $old = GlobalCache::getResolvedThrowsForKey($methodKey);
                 if ($newCombined !== $old) {
-                    GlobalCache::$resolvedThrows[$methodKey] = $newCombined;
+                    GlobalCache::setResolvedThrowsForKey($methodKey, $newCombined);
                     $changed = true;
                 }
             }

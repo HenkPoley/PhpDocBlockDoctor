@@ -155,7 +155,7 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
             $annotated = GlobalCache::getAnnotatedThrowsForKey($key);
             $combined  = array_values(array_unique(array_merge($direct, $annotated)));
             sort($combined);
-            GlobalCache::$resolvedThrows[$key] = $combined;
+            GlobalCache::setResolvedThrowsForKey($key, $combined);
         }
 
         foreach (GlobalCache::getDirectThrows() as $methodKey => $throws) {
@@ -168,12 +168,12 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
                 ))
             );
         }
-        foreach (GlobalCache::$resolvedThrows as $methodKey => $throws) {
-            GlobalCache::$resolvedThrows[$methodKey] = array_values(array_filter(
+        foreach (GlobalCache::getResolvedThrows() as $methodKey => $throws) {
+            GlobalCache::setResolvedThrowsForKey($methodKey, array_values(array_filter(
                 $throws,
                 static fn(string $fqcn): bool => AstUtils::classOrInterfaceExistsNoAutoload($fqcn)
                     || array_key_exists($fqcn, GlobalCache::getClassParents())
-            ));
+            )));
         }
 
         $maxIter = count(GlobalCache::getAstNodeMap()) + 5;
@@ -192,11 +192,11 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
                 )));
                 $throwsFromCallees = [];
                 if ($node->stmts === null) {
-                    $existing  = GlobalCache::$resolvedThrows[$methodKey] ?? [];
+                    $existing  = GlobalCache::getResolvedThrowsForKey($methodKey);
                     $newThrows = array_values(array_unique(array_merge($baseThrows, $existing)));
                     sort($newThrows);
-                    if ($newThrows !== (GlobalCache::$resolvedThrows[$methodKey] ?? [])) {
-                        GlobalCache::$resolvedThrows[$methodKey] = $newThrows;
+                    if ($newThrows !== (GlobalCache::getResolvedThrowsForKey($methodKey))) {
+                        GlobalCache::setResolvedThrowsForKey($methodKey, $newThrows);
                         $changed = true;
                     }
                     continue;
@@ -233,7 +233,7 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
                             $calleeKey = $utils->getCalleeKey($call, $namespace, $useMap, $node);
                         }
                         if ($calleeKey && $calleeKey !== $methodKey) {
-                            foreach (GlobalCache::$resolvedThrows[$calleeKey] ?? [] as $ex) {
+                            foreach (GlobalCache::getResolvedThrowsForKey($calleeKey) as $ex) {
                                 $throwsFromCallees[] = $ex;
                             }
                         }
@@ -241,8 +241,8 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
                 }
                 $newThrows = array_values(array_unique(array_merge($baseThrows, $throwsFromCallees)));
                 sort($newThrows);
-                if ($newThrows !== (GlobalCache::$resolvedThrows[$methodKey] ?? [])) {
-                    GlobalCache::$resolvedThrows[$methodKey] = $newThrows;
+                if ($newThrows !== (GlobalCache::getResolvedThrowsForKey($methodKey))) {
+                    GlobalCache::setResolvedThrowsForKey($methodKey, $newThrows);
                     $changed = true;
                 }
             }
@@ -258,7 +258,7 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
             }
         } while ($changed && $iteration < $maxIter);
 
-        return GlobalCache::getAllResolvedThrows();
+        return GlobalCache::getResolvedThrows();
     }
 
     private function isNodeWithinTry(\PhpParser\Node $node, \PhpParser\Node $boundary): bool

@@ -46,7 +46,7 @@ class DocBlockUpdaterPatchTest extends TestCase
         }
         GlobalCache::setFileNamespace($file, '');
         foreach ($resolved as $key => $vals) {
-            GlobalCache::$resolvedThrows[$key] = $vals;
+            GlobalCache::setResolvedThrowsForKey($key, $vals);
         }
         foreach ($throwOrigins as $fn => $exMap) {
             foreach ($exMap as $ex => $chains) {
@@ -120,7 +120,7 @@ class DocBlockUpdaterPatchTest extends TestCase
         GlobalCache::setFilePathForKey('foo', 'dummy.php');
         GlobalCache::setFileNamespace('dummy.php', '');
         GlobalCache::setFileUseMap('dummy.php', []);
-        GlobalCache::$resolvedThrows['foo'] = $throws;
+        GlobalCache::setResolvedThrowsForKey('foo', $throws);
         return $ast;
     }
 
