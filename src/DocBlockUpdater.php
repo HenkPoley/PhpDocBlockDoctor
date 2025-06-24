@@ -111,6 +111,31 @@ class DocBlockUpdater extends NodeVisitorAbstract
     }
 
     /**
+     * Split a DocBlock string into cleaned content-only lines.
+     *
+     * @return list<string>
+     */
+    private function splitDocLines(string $docText): array
+    {
+        $lines = preg_split('/\R/u', $docText) ?: [];
+        /** @var list<string> $result */
+        $result = [];
+        foreach ($lines as $i => $line) {
+            $isFirst = ($i === 0 && preg_match('/^\s*\/\*\*/', $line));
+            $isLast  = ($i === count($lines) - 1 && preg_match('/\*\/\s*$/', $line));
+            if ($isFirst) {
+                $line = preg_replace('/^\s*\/\*\*\s?/', '', $line) ?? '';
+            }
+            if ($isLast) {
+                $line = preg_replace('/\s*\*\/$/', '', $line) ?? '';
+            }
+            $result[] = preg_replace('/^\s*\*?\s?/', '', $line) ?? '';
+        }
+
+        return $result;
+    }
+
+    /**
      * @param \PhpParser\Node $node
      * @return null
      */
@@ -141,22 +166,12 @@ class DocBlockUpdater extends NodeVisitorAbstract
         $hasAnyContentForNewDocBlock = false;
 
         if ($docCommentNode instanceof \PhpParser\Comment\Doc) {
-            $originalLines = preg_split('/\R/u', $docCommentNode->getText()) ?: [];
+            $originalLines = $this->splitDocLines($docCommentNode->getText());
             /** @var list<string> $currentGenericTagLines */
             $currentGenericTagLines = [];
             $isInsideGenericTag = false;
 
-            foreach ($originalLines as $lineIdx => $lineIdxValue) {
-                $currentDocLine = $lineIdxValue;
-                $isFirst = ($lineIdx === 0 && preg_match('/^\s*\/\*\*/', $currentDocLine));
-                $isLast  = ($lineIdx === count($originalLines) - 1 && preg_match('/\*\/\s*$/', $currentDocLine));
-                if ($isFirst) {
-                    $currentDocLine = preg_replace('/^\s*\/\*\*\s?/', '', $currentDocLine) ?? '';
-                }
-                if ($isLast) {
-                    $currentDocLine = preg_replace('/\s*\*\/$/', '', $currentDocLine) ?? '';
-                }
-                $lineContent = preg_replace('/^\s*\*?\s?/', '', $currentDocLine) ?? '';
+            foreach ($originalLines as $lineIdx => $lineContent) {
                 $trimmedLineContent = trim($lineContent);
 
                 if (preg_match('/^@throws\s/i', $trimmedLineContent)) {
@@ -168,7 +183,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
                     }
                     $isInsideGenericTag = false;
                     while ($lineIdx + 1 < count($originalLines) - 1 &&
-                        !preg_match('/^@\w+/', trim((string) preg_replace('/^\s*\*?\s?/', '', $originalLines[$lineIdx + 1])))) {
+                        !preg_match('/^@\w+/', trim($originalLines[$lineIdx + 1]))) {
                         $lineIdx++;
                     }
 
@@ -284,23 +299,9 @@ class DocBlockUpdater extends NodeVisitorAbstract
 
         $originalNormalizedDocText = null;
         if ($docCommentNode instanceof \PhpParser\Comment\Doc) {
-            $originalDocText = $docCommentNode->getText();
-            $originalContentOnlyLines = [];
-            $lines = preg_split('/\R/u', $originalDocText) ?: [];
+            $lines = $this->splitDocLines($docCommentNode->getText());
             if ($lines !== []) {
-                foreach ($lines as $i => $line) {
-                    $isFirst = ($i === 0 && preg_match('/^\s*\/\*\*/', $line));
-                    $isLast  = ($i === count($lines) - 1 && preg_match('/\*\/\s*$/', $line));
-                    if ($isFirst) {
-                        $line = preg_replace('/^\s*\/\*\*\s?/', '', $line) ?? '';
-                    }
-                    if ($isLast) {
-                        $line = preg_replace('/\s*\*\/$/', '', $line) ?? '';
-                    }
-                    $line = preg_replace('/^\s*\*?\s?/', '', $line) ?? '';
-                    $originalContentOnlyLines[] = $line;
-                }
-                $originalTextToNormalize = implode("\n", $originalContentOnlyLines);
+                $originalTextToNormalize = implode("\n", $lines);
                 $originalNormalizedDocText = $this->normalizeDocBlockString($originalTextToNormalize);
             } else {
                 $originalNormalizedDocText = null;

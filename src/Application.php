@@ -405,15 +405,11 @@ class Application
                 $originsFromCallees = [];
                 if ($funcNode->stmts === null) {
                     // Interface or abstract method - preserve previously resolved throws
-                    $existing    = GlobalCache::$resolvedThrows[$funcKey] ?? [];
-                    $newThrows   = array_values(array_unique(array_merge($baseThrows, $existing)));
+                    $existing   = GlobalCache::$resolvedThrows[$funcKey] ?? [];
+                    $newThrows  = array_values(array_unique(array_merge($baseThrows, $existing)));
                     sort($newThrows);
-                    $newOrigins  = GlobalCache::$throwOrigins[$funcKey] ?? [];
-                    $oldThrows   = GlobalCache::$resolvedThrows[$funcKey] ?? [];
-                    $oldOrigins  = GlobalCache::$throwOrigins[$funcKey] ?? [];
-                    if ($newThrows !== $oldThrows || $newOrigins !== $oldOrigins) {
-                        GlobalCache::$resolvedThrows[$funcKey] = $newThrows;
-                        GlobalCache::$throwOrigins[$funcKey]   = $newOrigins;
+                    $newOrigins = GlobalCache::$throwOrigins[$funcKey] ?? [];
+                    if ($this->storeResolvedData($funcKey, $newThrows, $newOrigins)) {
                         $changedInThisGlobalIteration = true;
                     }
 
@@ -486,11 +482,7 @@ class Application
                     $newOrigins[$ex] = $list;
                 }
 
-                $oldThrows = GlobalCache::$resolvedThrows[$funcKey] ?? [];
-                $oldOrigins = GlobalCache::$throwOrigins[$funcKey] ?? [];
-                if ($newThrows !== $oldThrows || $newOrigins !== $oldOrigins) {
-                    GlobalCache::$resolvedThrows[$funcKey] = $newThrows;
-                    GlobalCache::$throwOrigins[$funcKey] = $newOrigins;
+                if ($this->storeResolvedData($funcKey, $newThrows, $newOrigins)) {
                     $changedInThisGlobalIteration = true;
                 }
             }
@@ -559,6 +551,28 @@ class Application
         }
 
         return $changed;
+    }
+
+    /**
+     * Store resolved throws and origins for a function key.
+     *
+     * @param string   $funcKey
+     * @param string[] $newThrows
+     * @param array    $newOrigins
+     *
+     * @return bool True when data changed.
+     */
+    private function storeResolvedData(string $funcKey, array $newThrows, array $newOrigins): bool
+    {
+        $oldThrows  = GlobalCache::$resolvedThrows[$funcKey] ?? [];
+        $oldOrigins = GlobalCache::$throwOrigins[$funcKey] ?? [];
+        if ($newThrows !== $oldThrows || $newOrigins !== $oldOrigins) {
+            GlobalCache::$resolvedThrows[$funcKey] = $newThrows;
+            GlobalCache::$throwOrigins[$funcKey]   = $newOrigins;
+            return true;
+        }
+
+        return false;
     }
 
     /**
