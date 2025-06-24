@@ -31,5 +31,5 @@ return RectorConfig::configure()
         // Couple of ones that seem to break Psalm 'perfect' (>99.8%) score.
         \Rector\DeadCode\Rector\Cast\RecastingRemovalRector::class,
         \Rector\DeadCode\Rector\Node\RemoveNonExistingVarAnnotationRector::class,
-        \Rector\CodeQuality\Rector\Foreach_\UnusedForeachValueToArrayKeysRector::class,
+        // \Rector\CodeQuality\Rector\Foreach_\UnusedForeachValueToArrayKeysRector::class,
     ]);

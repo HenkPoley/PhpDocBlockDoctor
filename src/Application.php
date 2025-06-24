@@ -513,7 +513,7 @@ class Application
         foreach (GlobalCache::$interfaceImplementations as $iface => $impls) {
             $impls = array_values(array_unique($impls));
             $ifacePrefix = ltrim($iface, '\\') . '::';
-            foreach (GlobalCache::$astNodeMap as $key => $_node) {
+            foreach (array_keys(GlobalCache::$astNodeMap) as $key) {
                 if (strncmp($key, $ifacePrefix, strlen($ifacePrefix)) !== 0) {
                     continue;
                 }
