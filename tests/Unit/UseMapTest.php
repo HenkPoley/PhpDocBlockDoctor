@@ -224,4 +224,35 @@ class UseMapTest extends TestCase
         ksort($expected);
         $this->assertSame($expected, $map);
     }
+
+    /**
+     * @throws \LogicException
+     */
+    public function testThrowsGathererCachesClassTraits(): void
+    {
+        $code = <<<'PHP'
+        <?php
+        namespace NS;
+        trait T1 {}
+        trait T2 {}
+        class A { use T1; }
+        class B { use T1; use T2; }
+        PHP;
+        $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast = $parser->parse($code) ?: [];
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new ThrowsGatherer($this->finder, $this->utils, 'ctfile.php'));
+        $traverser->traverse($ast);
+
+        $expected = [
+            'NS\\A' => ['NS\\T1'],
+            'NS\\B' => ['NS\\T1', 'NS\\T2'],
+        ];
+        $map = GlobalCache::getClassTraits();
+        ksort($map);
+        foreach ($map as $k => $v) { sort($v); $map[$k] = $v; }
+        ksort($expected);
+        foreach ($expected as $k => $v) { sort($v); $expected[$k] = $v; }
+        $this->assertSame($expected, $map);
+    }
 }
