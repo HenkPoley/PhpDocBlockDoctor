@@ -159,7 +159,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
         $analyzedThrowsFqcns = array_values($analyzedThrowsFqcns);
         sort($analyzedThrowsFqcns);
         $docCommentNode = $node->getDocComment();
-        $originalNodeDescriptions = \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$nodeKey] ?? [];
+        $originalNodeDescriptions = \HenkPoley\DocBlockDoctor\GlobalCache::getOriginalDescriptionsForKey($nodeKey);
 
         /** @var list<string> $newDocBlockContentLines */
         $newDocBlockContentLines = [];

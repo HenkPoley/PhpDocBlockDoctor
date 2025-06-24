@@ -142,7 +142,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
         \HenkPoley\DocBlockDoctor\GlobalCache::setAstNode($key, $node);
         \HenkPoley\DocBlockDoctor\GlobalCache::setFilePathForKey($key, $this->filePath);
         \HenkPoley\DocBlockDoctor\GlobalCache::setDirectThrowsForKey($key, []);
-        \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key] = [];
+        $originalDescriptionsForKey = \HenkPoley\DocBlockDoctor\GlobalCache::getOriginalDescriptionsForKey($key);
         $currentAnnotatedThrowsFqcns = [];
 
         $docComment = $node->getDocComment();
@@ -166,8 +166,18 @@ class ThrowsGatherer extends NodeVisitorAbstract
                 $contentLine = rtrim((string)$contentLine);
 
                 if (preg_match('/^@throws\s+([^\s]+)\s*(.*)/i', $contentLine, $matches)) {
-                    if ($currentThrowsFqcnForDesc !== null && $currentThrowsFqcnForDesc !== '' && !isset(\HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc]) && !in_array(trim($accumulatedDescription), ['', '0'], true)) {
-                        \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc] = trim($accumulatedDescription);
+                    if (
+                        $currentThrowsFqcnForDesc !== null &&
+                        $currentThrowsFqcnForDesc !== '' &&
+                        !isset($originalDescriptionsForKey[$currentThrowsFqcnForDesc]) &&
+                        !in_array(trim($accumulatedDescription), ['', '0'], true)
+                    ) {
+                        \HenkPoley\DocBlockDoctor\GlobalCache::setOriginalDescription(
+                            $key,
+                            $currentThrowsFqcnForDesc,
+                            trim($accumulatedDescription)
+                        );
+                        $originalDescriptionsForKey[$currentThrowsFqcnForDesc] = trim($accumulatedDescription);
                     }
                     $exceptionNameInAnnotation = trim($matches[1]);
                     $resolvedFqcnForAnnotation = $this->astUtils->resolveStringToFqcn($exceptionNameInAnnotation, $this->currentNamespace, $this->useMap);
@@ -180,15 +190,35 @@ class ThrowsGatherer extends NodeVisitorAbstract
                 } elseif ($currentThrowsFqcnForDesc !== null && $currentThrowsFqcnForDesc !== '' && !$isFirstLine && !$isLastLine && !preg_match('/^@\w+/', $contentLine)) {
                     $accumulatedDescription .= (in_array(trim($accumulatedDescription), ['', '0'], true) && $contentLine === '' ? '' : "\n") . $contentLine;
                 } elseif ($isLastLine || preg_match('/^@\w+/', $contentLine)) {
-                    if ($currentThrowsFqcnForDesc !== null && $currentThrowsFqcnForDesc !== '' && !in_array(trim($accumulatedDescription), ['', '0'], true) && !isset(\HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc])) {
-                        \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc] = trim($accumulatedDescription);
+                    if (
+                        $currentThrowsFqcnForDesc !== null &&
+                        $currentThrowsFqcnForDesc !== '' &&
+                        !in_array(trim($accumulatedDescription), ['', '0'], true) &&
+                        !isset($originalDescriptionsForKey[$currentThrowsFqcnForDesc])
+                    ) {
+                        \HenkPoley\DocBlockDoctor\GlobalCache::setOriginalDescription(
+                            $key,
+                            $currentThrowsFqcnForDesc,
+                            trim($accumulatedDescription)
+                        );
+                        $originalDescriptionsForKey[$currentThrowsFqcnForDesc] = trim($accumulatedDescription);
                     }
                     $currentThrowsFqcnForDesc = null;
                     $accumulatedDescription = '';
                 }
             }
-            if ($currentThrowsFqcnForDesc !== null && $currentThrowsFqcnForDesc !== '' && !in_array(trim($accumulatedDescription), ['', '0'], true) && !isset(\HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc])) {
-                \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc] = trim($accumulatedDescription);
+            if (
+                $currentThrowsFqcnForDesc !== null &&
+                $currentThrowsFqcnForDesc !== '' &&
+                !in_array(trim($accumulatedDescription), ['', '0'], true) &&
+                !isset($originalDescriptionsForKey[$currentThrowsFqcnForDesc])
+            ) {
+                \HenkPoley\DocBlockDoctor\GlobalCache::setOriginalDescription(
+                    $key,
+                    $currentThrowsFqcnForDesc,
+                    trim($accumulatedDescription)
+                );
+                $originalDescriptionsForKey[$currentThrowsFqcnForDesc] = trim($accumulatedDescription);
             }
         }
         \HenkPoley\DocBlockDoctor\GlobalCache::setAnnotatedThrowsForKey(
