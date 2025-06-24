@@ -2,6 +2,13 @@
 // tests/fixtures/throw-class-string/ThrowClassStrings.php
 namespace Pitfalls\ThrowClassString;
 
+/**
+ * Required to stop psalm from crashing
+ * @see https://github.com/vimeo/psalm/issues/10895#issuecomment-2999982386
+ */
+class DivisionByZeroError extends \Exception {
+}
+
 class ClassName
 {
     public static function staticDoubleDoubleColon(): void
