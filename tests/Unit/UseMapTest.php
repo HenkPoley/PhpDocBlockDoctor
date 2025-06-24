@@ -315,4 +315,38 @@ class UseMapTest extends TestCase
         foreach ($expected as $k => $v) { sort($v); $expected[$k] = $v; }
         $this->assertSame($expected, $map);
     }
+
+    /**
+     * @throws \LogicException
+     */
+    public function testThrowsGathererCachesAnnotatedThrows(): void
+    {
+        $code = <<<'PHP'
+        <?php
+        namespace NS;
+        /**
+         * @throws \RuntimeException
+         * @throws \InvalidArgumentException
+         */
+        function foo(){}
+        function bar(){}
+        PHP;
+
+        $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast = $parser->parse($code) ?: [];
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new ThrowsGatherer($this->finder, $this->utils, 'atfile.php'));
+        $traverser->traverse($ast);
+
+        $expected = [
+            'NS\\foo' => ['RuntimeException', 'InvalidArgumentException'],
+            'NS\\bar' => [],
+        ];
+        $map = GlobalCache::getAnnotatedThrows();
+        ksort($map);
+        foreach ($map as $k => $v) { sort($v); $map[$k] = $v; }
+        ksort($expected);
+        foreach ($expected as $k => $v) { sort($v); $expected[$k] = $v; }
+        $this->assertSame($expected, $map);
+    }
 }

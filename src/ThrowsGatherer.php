@@ -191,7 +191,10 @@ class ThrowsGatherer extends NodeVisitorAbstract
                 \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key][$currentThrowsFqcnForDesc] = trim($accumulatedDescription);
             }
         }
-        \HenkPoley\DocBlockDoctor\GlobalCache::$annotatedThrows[$key] = array_values(array_unique($currentAnnotatedThrowsFqcns));
+        \HenkPoley\DocBlockDoctor\GlobalCache::setAnnotatedThrowsForKey(
+            $key,
+            array_values(array_unique($currentAnnotatedThrowsFqcns))
+        );
 
         return null;
     }
