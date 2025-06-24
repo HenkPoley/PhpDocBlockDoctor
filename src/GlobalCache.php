@@ -31,7 +31,7 @@ class GlobalCache
     /**
      * @var array<string, string>
      */
-    public static array $fileNamespaces = [];
+    private static array $fileNamespaces = [];
 
     /**
      * @var array<string, array<string, string>>
@@ -117,5 +117,24 @@ class GlobalCache
     public static function getAllResolvedThrows(): array
     {
         return self::$resolvedThrows;
+    }
+
+    /**
+     * @return array<string,string>
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public static function getFileNamespaces(): array
+    {
+        return self::$fileNamespaces;
+    }
+
+    public static function getFileNamespace(string $path): string
+    {
+        return self::$fileNamespaces[$path] ?? '';
+    }
+
+    public static function setFileNamespace(string $path, string $namespace): void
+    {
+        self::$fileNamespaces[$path] = $namespace;
     }
 }

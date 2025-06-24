@@ -80,7 +80,7 @@ class DocBlockUpdaterIntegrationTest extends TestCase
                     $finder->findInstanceOf($node->stmts, \PhpParser\Node\Expr\New_::class)
                 );
                 $filePathOfFunc = GlobalCache::$nodeKeyToFilePath[$methodKey];
-                $callerNamespace = GlobalCache::$fileNamespaces[$filePathOfFunc] ?? '';
+                $callerNamespace = GlobalCache::getFileNamespace($filePathOfFunc);
                 $callerUseMap    = GlobalCache::$fileUseMaps[$filePathOfFunc]  ?? [];
                 foreach ($callNodes as $c) {
                     $calleeKey = $astUtils->getCalleeKey($c, $callerNamespace, $callerUseMap, $node);
