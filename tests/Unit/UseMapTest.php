@@ -197,4 +197,31 @@ class UseMapTest extends TestCase
         sort($expectedKeys);
         $this->assertSame($expectedKeys, $mapKeys);
     }
+
+    /**
+     * @throws \LogicException
+     */
+    public function testThrowsGathererCachesClassParents(): void
+    {
+        $code = <<<'PHP'
+        <?php
+        namespace NS;
+        class ParentClass {}
+        class ChildClass extends ParentClass {}
+        PHP;
+        $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast = $parser->parse($code) ?: [];
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new ThrowsGatherer($this->finder, $this->utils, 'cpfile.php'));
+        $traverser->traverse($ast);
+
+        $expected = [
+            'NS\\ChildClass' => 'NS\\ParentClass',
+            'NS\\ParentClass' => null,
+        ];
+        $map = GlobalCache::getClassParents();
+        ksort($map);
+        ksort($expected);
+        $this->assertSame($expected, $map);
+    }
 }

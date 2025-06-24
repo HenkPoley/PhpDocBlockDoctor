@@ -1483,7 +1483,7 @@ class AstUtilsTest extends TestCase
         });
         $traverser->traverse($ast);
 
-        GlobalCache::$classParents['SCI\\Child'] = 'SCI\\ParentClass';
+        GlobalCache::setClassParent('SCI\\Child', 'SCI\\ParentClass');
 
         $run = $this->finder->findFirst($ast, fn(Node $n) => $n instanceof Node\Stmt\ClassMethod && $n->name->toString() === 'run');
         $this->assertNotNull($run);

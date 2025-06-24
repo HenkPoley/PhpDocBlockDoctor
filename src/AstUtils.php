@@ -868,7 +868,7 @@ class AstUtils
         if (class_exists($fqcn, false) || interface_exists($fqcn, false)) {
             return true;
         }
-        if (isset(\HenkPoley\DocBlockDoctor\GlobalCache::$classParents[$fqcn])) {
+        if (\HenkPoley\DocBlockDoctor\GlobalCache::getClassParent($fqcn) !== null) {
             return true;
         }
         $autoloaders = spl_autoload_functions();
@@ -949,7 +949,7 @@ class AstUtils
                     break;
                 }
             }
-            $current = GlobalCache::$classParents[$current] ?? null;
+            $current = GlobalCache::getClassParent($current);
         }
 
         return null;
@@ -1181,7 +1181,7 @@ class AstUtils
                 return true;
             }
             $visited[] = $current;
-            $current = GlobalCache::$classParents[$current] ?? null;
+            $current = GlobalCache::getClassParent($current);
         }
 
         return false;
