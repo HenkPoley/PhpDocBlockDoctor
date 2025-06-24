@@ -46,7 +46,7 @@ class GlobalCache
     /**
      * @var array<string, string>
      */
-    public static array $nodeKeyToFilePath = [];
+    private static array $nodeKeyToFilePath = [];
 
     /**
      * @var array<string, string[]>
@@ -161,5 +161,24 @@ class GlobalCache
     public static function setFileUseMap(string $path, array $map): void
     {
         self::$fileUseMaps[$path] = $map;
+    }
+
+    /**
+     * @return array<string,string>
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public static function getNodeKeyToFilePath(): array
+    {
+        return self::$nodeKeyToFilePath;
+    }
+
+    public static function getFilePathForKey(string $key): ?string
+    {
+        return self::$nodeKeyToFilePath[$key] ?? null;
+    }
+
+    public static function setFilePathForKey(string $key, string $path): void
+    {
+        self::$nodeKeyToFilePath[$key] = $path;
     }
 }

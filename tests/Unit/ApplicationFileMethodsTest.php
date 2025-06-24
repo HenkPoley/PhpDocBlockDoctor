@@ -92,7 +92,7 @@ class ApplicationFileMethodsTest extends TestCase
         $tr->traverse($ast);
         $func = $ast[0];
         GlobalCache::$astNodeMap['foo'] = $func;
-        GlobalCache::$nodeKeyToFilePath['foo'] = $file;
+        GlobalCache::setFilePathForKey('foo', $file);
         GlobalCache::setFileNamespace($file, '');
         GlobalCache::setFileUseMap($file, []);
         GlobalCache::$resolvedThrows['foo'] = $resolvedThrows;
@@ -235,7 +235,7 @@ class ApplicationFileMethodsTest extends TestCase
 
         GlobalCache::clear();
         GlobalCache::$astNodeMap['foo'] = $func;
-        GlobalCache::$nodeKeyToFilePath['foo'] = 'dummy.php';
+        GlobalCache::setFilePathForKey('foo', 'dummy.php');
         GlobalCache::setFileNamespace('dummy.php', '');
         GlobalCache::setFileUseMap('dummy.php', []);
         GlobalCache::$directThrows['foo'] = ['RuntimeException'];

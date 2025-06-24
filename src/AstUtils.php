@@ -466,7 +466,7 @@ class AstUtils
                 );
                 if ($innerKey !== null && $innerKey !== '') {
                     $innerNode     = GlobalCache::$astNodeMap[$innerKey] ?? null;
-                    $innerFilePath = GlobalCache::$nodeKeyToFilePath[$innerKey] ?? null;
+                    $innerFilePath = GlobalCache::getFilePathForKey($innerKey);
 
                     if ($innerNode instanceof Node\FunctionLike && is_string($innerFilePath) && $innerFilePath !== '') {
                         $innerNamespace = GlobalCache::getFileNamespace($innerFilePath);
@@ -1097,7 +1097,7 @@ class AstUtils
         }
 
         $innerNode     = GlobalCache::$astNodeMap[$innerKey] ?? null;
-        $innerFilePath = GlobalCache::$nodeKeyToFilePath[$innerKey] ?? null;
+        $innerFilePath = GlobalCache::getFilePathForKey($innerKey);
 
         if (!$innerNode instanceof Node\Stmt\ClassMethod || !is_string($innerFilePath) || $innerFilePath === '') {
             return null;
