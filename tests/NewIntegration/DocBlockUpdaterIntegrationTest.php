@@ -79,7 +79,7 @@ class DocBlockUpdaterIntegrationTest extends TestCase
                     $finder->findInstanceOf($node->stmts, \PhpParser\Node\Expr\FuncCall::class),
                     $finder->findInstanceOf($node->stmts, \PhpParser\Node\Expr\New_::class)
                 );
-                $filePathOfFunc = GlobalCache::$nodeKeyToFilePath[$methodKey];
+                $filePathOfFunc = GlobalCache::getFilePathForKey($methodKey) ?? '';
                 $callerNamespace = GlobalCache::getFileNamespace($filePathOfFunc);
                 $callerUseMap    = GlobalCache::getFileUseMap($filePathOfFunc);
                 foreach ($callNodes as $c) {

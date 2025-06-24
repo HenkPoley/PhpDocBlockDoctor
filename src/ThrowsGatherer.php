@@ -150,7 +150,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
             return null;
         }
         \HenkPoley\DocBlockDoctor\GlobalCache::$astNodeMap[$key] = $node;
-        \HenkPoley\DocBlockDoctor\GlobalCache::$nodeKeyToFilePath[$key] = $this->filePath;
+        \HenkPoley\DocBlockDoctor\GlobalCache::setFilePathForKey($key, $this->filePath);
         \HenkPoley\DocBlockDoctor\GlobalCache::$directThrows[$key] = [];
         \HenkPoley\DocBlockDoctor\GlobalCache::$originalDescriptions[$key] = [];
         $currentAnnotatedThrowsFqcns = [];

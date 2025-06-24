@@ -8,6 +8,7 @@ use HenkPoley\DocBlockDoctor\GlobalCache;
 use PhpParser\ParserFactory;
 use PhpParser\PhpVersion;
 use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor\ParentConnectingVisitor;
 use PhpParser\NodeFinder;
 use PHPUnit\Framework\TestCase;
 
@@ -140,5 +141,32 @@ class UseMapTest extends TestCase
         $expected = ['Baz' => 'Foo\\Bar\\Baz'];
         $this->assertSame($expected, GlobalCache::getFileUseMap('umfile.php'));
         $this->assertSame(['umfile.php' => $expected], GlobalCache::getFileUseMaps());
+    }
+
+    /**
+     * @throws \LogicException
+     */
+    public function testThrowsGathererCachesNodeKeyToFilePath(): void
+    {
+        $code = <<<'PHP'
+        <?php
+        namespace NS;
+        function foo(){}
+        class C { public function bar(){} }
+        PHP;
+        $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast = $parser->parse($code) ?: [];
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new ParentConnectingVisitor());
+        $traverser->addVisitor(new ThrowsGatherer($this->finder, $this->utils, 'nkfile.php'));
+        $traverser->traverse($ast);
+
+        $expected = [
+            'NS\\C::bar' => 'nkfile.php',
+            'NS\\foo' => 'nkfile.php',
+        ];
+        $map = GlobalCache::getNodeKeyToFilePath();
+        ksort($map);
+        $this->assertSame($expected, $map);
     }
 }

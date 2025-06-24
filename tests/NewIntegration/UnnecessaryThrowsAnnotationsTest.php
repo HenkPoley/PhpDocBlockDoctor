@@ -179,7 +179,7 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
             $changed = false;
             $iteration++;
             foreach (GlobalCache::$astNodeMap as $methodKey => $node) {
-                $filePath  = GlobalCache::$nodeKeyToFilePath[$methodKey];
+                $filePath  = GlobalCache::getFilePathForKey($methodKey) ?? '';
                 $namespace = GlobalCache::getFileNamespace($filePath);
                 $useMap    = GlobalCache::getFileUseMap($filePath);
 
@@ -314,7 +314,7 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
             }
             if ($calleeKey && isset(GlobalCache::$astNodeMap[$calleeKey])) {
                 $calleeNode = GlobalCache::$astNodeMap[$calleeKey];
-                $file = GlobalCache::$nodeKeyToFilePath[$calleeKey];
+                $file = GlobalCache::getFilePathForKey($calleeKey) ?? '';
                 $ns   = GlobalCache::getFileNamespace($file);
                 $umap = GlobalCache::getFileUseMap($file);
                 if ($calleeNode->returnType instanceof \PhpParser\Node\Name) {
