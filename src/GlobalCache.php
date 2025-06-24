@@ -52,7 +52,7 @@ class GlobalCache
     /**
      * @var array<string, string[]>
      */
-    public static array $resolvedThrows = [];
+    private static array $resolvedThrows = [];
 
     /**
      * @var array<string, string|null> Mapping of class FQCN to its parent class FQCN
@@ -185,11 +185,35 @@ class GlobalCache
     }
 
     /**
+     * @return array<string,string[]>
+     */
+    public static function getResolvedThrows(): array
+    {
+        return self::$resolvedThrows;
+    }
+
+    /**
      * @return string[]
      */
     public static function getResolvedThrowsForKey(string $key): array
     {
         return self::$resolvedThrows[$key] ?? [];
+    }
+
+    /**
+     * @param string[] $throws
+     */
+    public static function setResolvedThrowsForKey(string $key, array $throws): void
+    {
+        self::$resolvedThrows[$key] = $throws;
+    }
+
+    /**
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public static function addResolvedThrow(string $key, string $exception): void
+    {
+        self::$resolvedThrows[$key][] = $exception;
     }
 
     /**
@@ -202,6 +226,9 @@ class GlobalCache
 
     /**
      * @return array<string, string[]>
+     */
+    /**
+     * @psalm-suppress PossiblyUnusedMethod
      */
     public static function getAllResolvedThrows(): array
     {

@@ -56,7 +56,7 @@ class CallCatchPropagationTest extends TestCase
             $annotated = GlobalCache::getAnnotatedThrowsForKey($key);
             $combined  = array_values(array_unique(array_merge($direct, $annotated)));
             sort($combined);
-            GlobalCache::$resolvedThrows[$key] = $combined;
+            GlobalCache::setResolvedThrowsForKey($key, $combined);
             if (!isset(GlobalCache::$throwOrigins[$key])) {
                 GlobalCache::$throwOrigins[$key] = [];
             }
@@ -72,7 +72,7 @@ class CallCatchPropagationTest extends TestCase
             $callerNamespace = GlobalCache::getFileNamespace($filePathOfFunc);
             $callerUseMap    = GlobalCache::getFileUseMap($filePathOfFunc);
 
-            $baseThrows = GlobalCache::$resolvedThrows[$funcKey] ?? [];
+            $baseThrows = GlobalCache::getResolvedThrowsForKey($funcKey);
             $throwsFromCallees = [];
             if (isset($funcNode->stmts) && is_array($funcNode->stmts)) {
                 $callNodes = array_merge(
@@ -87,7 +87,7 @@ class CallCatchPropagationTest extends TestCase
                     }
                     $calleeKey = $utils->getCalleeKey($callNode, $callerNamespace, $callerUseMap, $funcNode);
                     if ($calleeKey && $calleeKey !== $funcKey) {
-                        foreach (GlobalCache::$resolvedThrows[$calleeKey] ?? [] as $ex) {
+                        foreach (GlobalCache::getResolvedThrowsForKey($calleeKey) as $ex) {
                             if ($utils->isExceptionCaught($callNode, $ex, $funcNode, $callerNamespace, $callerUseMap)) {
                                 continue;
                             }
@@ -98,11 +98,11 @@ class CallCatchPropagationTest extends TestCase
             }
             $newThrows = array_values(array_unique(array_merge($baseThrows, $throwsFromCallees)));
             sort($newThrows);
-            GlobalCache::$resolvedThrows[$funcKey] = $newThrows;
+            GlobalCache::setResolvedThrowsForKey($funcKey, $newThrows);
         }
 
         $wrapperKey = 'TestNS\\Wrapper::handle';
-        $all = GlobalCache::getAllResolvedThrows();
+        $all = GlobalCache::getResolvedThrows();
         $this->assertArrayHasKey($wrapperKey, $all);
         $this->assertSame([], GlobalCache::getResolvedThrowsForKey($wrapperKey));
     }

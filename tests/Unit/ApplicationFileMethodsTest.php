@@ -95,7 +95,7 @@ class ApplicationFileMethodsTest extends TestCase
         GlobalCache::setFilePathForKey('foo', $file);
         GlobalCache::setFileNamespace($file, '');
         GlobalCache::setFileUseMap($file, []);
-        GlobalCache::$resolvedThrows['foo'] = $resolvedThrows;
+        GlobalCache::setResolvedThrowsForKey('foo', $resolvedThrows);
     }
 
     public function testUpdateFilesWritesPatchedContent(): void
@@ -239,7 +239,7 @@ class ApplicationFileMethodsTest extends TestCase
         GlobalCache::setFileNamespace('dummy.php', '');
         GlobalCache::setFileUseMap('dummy.php', []);
         GlobalCache::setDirectThrowsForKey('foo', ['RuntimeException']);
-        GlobalCache::$resolvedThrows['foo'] = [];
+        GlobalCache::setResolvedThrowsForKey('foo', []);
 
         $app = new Application();
         $method = new \ReflectionMethod(Application::class, 'resolveThrowsGlobally');
@@ -251,6 +251,6 @@ class ApplicationFileMethodsTest extends TestCase
         $method->invoke($app, $finder, $utils, $opt);
         ob_end_clean();
 
-        $this->assertSame(['RuntimeException'], GlobalCache::$resolvedThrows['foo']);
+        $this->assertSame(['RuntimeException'], GlobalCache::getResolvedThrowsForKey('foo'));
     }
 }

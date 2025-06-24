@@ -39,7 +39,7 @@ class TraceCallSitesTest extends TestCase
             $annotated = GlobalCache::getAnnotatedThrowsForKey($key);
             $combined  = array_values(array_unique(array_merge($direct, $annotated)));
             sort($combined);
-            GlobalCache::$resolvedThrows[$key] = $combined;
+            GlobalCache::setResolvedThrowsForKey($key, $combined);
         }
 
         $tr2 = new NodeTraverser();

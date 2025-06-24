@@ -54,7 +54,7 @@ class ThrowsResolutionIntegrationTest extends TestCase
             'Missing expected results file: ' . $expectedFile
         );
         $expectedData = json_decode(file_get_contents($expectedFile), true, 512, JSON_THROW_ON_ERROR);
-        $allResolved = GlobalCache::getAllResolvedThrows();
+        $allResolved = GlobalCache::getResolvedThrows();
         foreach ($expectedData['fullyQualifiedMethodKeys'] as $methodKey => $throws) {
             $this->assertArrayHasKey($methodKey, $allResolved, $methodKey . ' missing');
             $this->assertEqualsCanonicalizing($throws, GlobalCache::getResolvedThrowsForKey($methodKey), $methodKey);

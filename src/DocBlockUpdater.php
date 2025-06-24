@@ -150,7 +150,7 @@ class DocBlockUpdater extends NodeVisitorAbstract
         }
 
         /** @var list<class-string> $analyzedThrowsFqcns */
-        $analyzedThrowsFqcns = \HenkPoley\DocBlockDoctor\GlobalCache::$resolvedThrows[$nodeKey] ?? [];
+        $analyzedThrowsFqcns = \HenkPoley\DocBlockDoctor\GlobalCache::getResolvedThrowsForKey($nodeKey);
         // Filter out any classes or interfaces that don’t actually exist
         $analyzedThrowsFqcns = array_filter(
             $analyzedThrowsFqcns,

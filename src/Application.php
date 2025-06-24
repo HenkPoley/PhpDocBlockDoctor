@@ -73,8 +73,8 @@ class Application
             foreach ($filesFixed as $f) {
                 echo "  - $f\n";
             }
-            $resolvedCount = count(GlobalCache::getAllResolvedThrows());
-            $firstKey = array_key_first(GlobalCache::$resolvedThrows);
+            $resolvedCount = count(GlobalCache::getResolvedThrows());
+            $firstKey = array_key_first(GlobalCache::getResolvedThrows());
             if (is_string($firstKey)) {
                 $resolvedForKey = GlobalCache::getResolvedThrowsForKey($firstKey);
                 $originsForKey  = GlobalCache::getThrowOriginsForKey($firstKey);
@@ -359,7 +359,9 @@ class Application
             echo "\nIntermediate Phase: Globally resolving throws...\n";
         }
 
-        GlobalCache::$resolvedThrows = [];
+        foreach (array_keys(GlobalCache::getResolvedThrows()) as $key) {
+            GlobalCache::setResolvedThrowsForKey($key, []);
+        }
         foreach (array_keys(GlobalCache::getAstNodeMap()) as $funcKey) {
             $direct    = GlobalCache::getDirectThrowsForKey($funcKey);
             $annotated = GlobalCache::getAnnotatedThrowsForKey($funcKey);
@@ -370,7 +372,7 @@ class Application
                 $initial = array_values(array_unique($initial));
             }
             sort($initial);
-            GlobalCache::$resolvedThrows[$funcKey] = $initial;
+            GlobalCache::setResolvedThrowsForKey($funcKey, $initial);
             if (!isset(GlobalCache::$throwOrigins[$funcKey])) {
                 GlobalCache::$throwOrigins[$funcKey] = [];
             }
@@ -407,7 +409,7 @@ class Application
                 $originsFromCallees = [];
                 if ($funcNode->stmts === null) {
                     // Interface or abstract method - preserve previously resolved throws
-                    $existing   = GlobalCache::$resolvedThrows[$funcKey] ?? [];
+                    $existing   = GlobalCache::getResolvedThrowsForKey($funcKey);
                     $newThrows  = array_values(array_unique(array_merge($baseThrows, $existing)));
                     sort($newThrows);
                     $newOrigins = GlobalCache::$throwOrigins[$funcKey] ?? [];
@@ -430,7 +432,7 @@ class Application
                         }
                         $calleeKey = $astUtils->getCalleeKey($callNode, $callerNamespace, $callerUseMap, $funcNode);
                         if ($calleeKey !== null && $calleeKey !== $funcKey) {
-                            $exceptionsFromCallee = GlobalCache::$resolvedThrows[$calleeKey] ?? [];
+                            $exceptionsFromCallee = GlobalCache::getResolvedThrowsForKey($calleeKey);
                             foreach ($exceptionsFromCallee as $ex) {
                                 if ($astUtils->isExceptionCaught($callNode, $ex, $funcNode, $callerNamespace, $callerUseMap)) {
                                     continue;
@@ -518,11 +520,11 @@ class Application
                     continue;
                 }
                 $method = (string) substr($key, strlen($ifacePrefix));
-                $throws = GlobalCache::$resolvedThrows[$key] ?? [];
+                $throws = GlobalCache::getResolvedThrowsForKey($key);
                 $orig   = GlobalCache::$throwOrigins[$key] ?? [];
                 foreach ($impls as $class) {
                     $implKey = ltrim($class, '\\') . '::' . $method;
-                    foreach (GlobalCache::$resolvedThrows[$implKey] ?? [] as $ex) {
+                    foreach (GlobalCache::getResolvedThrowsForKey($implKey) as $ex) {
                         if (!in_array($ex, $throws, true)) {
                             $throws[] = $ex;
                         }
@@ -544,8 +546,8 @@ class Application
                     }
                     $orig[$ex] = $list;
                 }
-                if ($throws !== (GlobalCache::$resolvedThrows[$key] ?? []) || $orig !== (GlobalCache::$throwOrigins[$key] ?? [])) {
-                    GlobalCache::$resolvedThrows[$key] = $throws;
+                if ($throws !== (GlobalCache::getResolvedThrowsForKey($key)) || $orig !== (GlobalCache::$throwOrigins[$key] ?? [])) {
+                    GlobalCache::setResolvedThrowsForKey($key, $throws);
                     GlobalCache::$throwOrigins[$key] = $orig;
                     $changed = true;
                 }
@@ -566,10 +568,10 @@ class Application
      */
     private function storeResolvedData(string $funcKey, array $newThrows, array $newOrigins): bool
     {
-        $oldThrows  = GlobalCache::$resolvedThrows[$funcKey] ?? [];
+        $oldThrows  = GlobalCache::getResolvedThrowsForKey($funcKey);
         $oldOrigins = GlobalCache::$throwOrigins[$funcKey] ?? [];
         if ($newThrows !== $oldThrows || $newOrigins !== $oldOrigins) {
-            GlobalCache::$resolvedThrows[$funcKey] = $newThrows;
+            GlobalCache::setResolvedThrowsForKey($funcKey, $newThrows);
             GlobalCache::$throwOrigins[$funcKey]   = $newOrigins;
             return true;
         }
