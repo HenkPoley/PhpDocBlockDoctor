@@ -117,5 +117,6 @@ class UseMapTest extends TestCase
         $traverser->traverse($ast);
 
         $this->assertSame('NS', GlobalCache::getFileNamespace('nsfile.php'));
+        $this->assertSame(['nsfile.php' => 'NS'], GlobalCache::getFileNamespaces());
     }
 }
