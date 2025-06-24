@@ -57,7 +57,7 @@ class GlobalCache
     /**
      * @var array<string, string|null> Mapping of class FQCN to its parent class FQCN
      */
-    public static array $classParents = [];
+    private static array $classParents = [];
 
     /**
      * @var array<string,string[]> Mapping of class FQCN to the traits it uses
@@ -202,5 +202,24 @@ class GlobalCache
     public static function setFilePathForKey(string $key, string $path): void
     {
         self::$nodeKeyToFilePath[$key] = $path;
+    }
+
+    /**
+     * @return array<string,string|null>
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public static function getClassParents(): array
+    {
+        return self::$classParents;
+    }
+
+    public static function getClassParent(string $class): ?string
+    {
+        return self::$classParents[$class] ?? null;
+    }
+
+    public static function setClassParent(string $class, ?string $parent): void
+    {
+        self::$classParents[$class] = $parent;
     }
 }

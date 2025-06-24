@@ -162,14 +162,14 @@ class UnnecessaryThrowsAnnotationsTest extends TestCase
             GlobalCache::$directThrows[$methodKey] = array_values(array_filter(
                 $throws,
                 static fn(string $fqcn): bool => AstUtils::classOrInterfaceExistsNoAutoload($fqcn)
-                    || isset(GlobalCache::$classParents[$fqcn])
+                    || array_key_exists($fqcn, GlobalCache::getClassParents())
             ));
         }
         foreach (GlobalCache::$resolvedThrows as $methodKey => $throws) {
             GlobalCache::$resolvedThrows[$methodKey] = array_values(array_filter(
                 $throws,
                 static fn(string $fqcn): bool => AstUtils::classOrInterfaceExistsNoAutoload($fqcn)
-                    || isset(GlobalCache::$classParents[$fqcn])
+                    || array_key_exists($fqcn, GlobalCache::getClassParents())
             ));
         }
 
