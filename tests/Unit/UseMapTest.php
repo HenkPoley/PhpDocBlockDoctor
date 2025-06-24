@@ -419,4 +419,52 @@ class UseMapTest extends TestCase
         foreach ($expected as $k => $v) { sort($v); $expected[$k] = $v; }
         $this->assertSame($expected, $map);
     }
+
+    /**
+     * @throws \LogicException
+     */
+    public function testThrowOriginsCache(): void
+    {
+        $code = <<<'PHP'
+        <?php
+        namespace NS;
+        function foo(){ throw new \RuntimeException(); }
+        function bar(){}
+        PHP;
+
+        $parser = (new ParserFactory())->createForVersion(PhpVersion::fromComponents(8, 4));
+        $ast = $parser->parse($code) ?: [];
+        $traverser = new NodeTraverser();
+        $traverser->addVisitor(new ThrowsGatherer($this->finder, $this->utils, 'orig.php'));
+        $traverser->traverse($ast);
+
+        $expected = [
+            'NS\\foo' => [
+                'RuntimeException' => ['NS\\foo <- orig.php:3'],
+            ],
+            'NS\\bar' => [],
+        ];
+        $map = GlobalCache::getThrowOrigins();
+        ksort($map);
+        foreach ($map as $k => $exMap) {
+            ksort($exMap);
+            foreach ($exMap as $ex => $list) {
+                sort($list);
+                $exMap[$ex] = $list;
+            }
+            $map[$k] = $exMap;
+        }
+        ksort($expected);
+        foreach ($expected as $k => $exMap) {
+            if (is_array($exMap)) {
+                ksort($exMap);
+                foreach ($exMap as $ex => $list) {
+                    sort($list);
+                    $exMap[$ex] = $list;
+                }
+                $expected[$k] = $exMap;
+            }
+        }
+        $this->assertSame($expected, $map);
+    }
 }

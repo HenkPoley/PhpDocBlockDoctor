@@ -49,9 +49,11 @@ class DocBlockUpdaterPatchTest extends TestCase
             GlobalCache::setResolvedThrowsForKey($key, $vals);
         }
         foreach ($throwOrigins as $fn => $exMap) {
+            $map = [];
             foreach ($exMap as $ex => $chains) {
-                GlobalCache::$throwOrigins[$fn][$ex] = $chains;
+                $map[$ex] = $chains;
             }
+            GlobalCache::setThrowOriginsForKey($fn, $map);
         }
 
         $tr2 = new NodeTraverser();
