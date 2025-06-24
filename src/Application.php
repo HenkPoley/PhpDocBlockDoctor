@@ -510,7 +510,7 @@ class Application
     private function propagateInterfaceThrows(): bool
     {
         $changed = false;
-        foreach (GlobalCache::$interfaceImplementations as $iface => $impls) {
+        foreach (GlobalCache::getInterfaceImplementations() as $iface => $impls) {
             $impls = array_values(array_unique($impls));
             $ifacePrefix = ltrim($iface, '\\') . '::';
             foreach (array_keys(GlobalCache::getAstNodeMap()) as $key) {
