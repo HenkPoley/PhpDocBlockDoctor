@@ -929,7 +929,7 @@ class AstUtils
             if (GlobalCache::getAstNode($candidateKey) !== null) {
                 return ltrim($current, '\\');
             }
-            foreach (GlobalCache::$classTraits[$current] ?? [] as $traitFqcn) {
+            foreach (GlobalCache::getTraitsForClass($current) as $traitFqcn) {
                 $traitKey = ltrim($traitFqcn, '\\') . '::' . $method;
                 if (GlobalCache::getAstNode($traitKey) !== null) {
                     return ltrim($traitFqcn, '\\');

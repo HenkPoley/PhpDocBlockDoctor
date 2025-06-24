@@ -62,7 +62,7 @@ class GlobalCache
     /**
      * @var array<string,string[]> Mapping of class FQCN to the traits it uses
      */
-    public static array $classTraits = [];
+    private static array $classTraits = [];
 
     /**
      * @var array<string,string[]> Mapping of interface FQCN to implementing class FQCNs
@@ -221,5 +221,27 @@ class GlobalCache
     public static function setClassParent(string $class, ?string $parent): void
     {
         self::$classParents[$class] = $parent;
+    }
+
+    /**
+     * @return array<string, string[]>
+     * @psalm-suppress PossiblyUnusedMethod
+     */
+    public static function getClassTraits(): array
+    {
+        return self::$classTraits;
+    }
+
+    /**
+     * @return string[]
+     */
+    public static function getTraitsForClass(string $class): array
+    {
+        return self::$classTraits[$class] ?? [];
+    }
+
+    public static function addTraitForClass(string $class, string $trait): void
+    {
+        self::$classTraits[$class][] = $trait;
     }
 }

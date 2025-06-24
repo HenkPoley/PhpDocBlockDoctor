@@ -109,15 +109,7 @@ class ThrowsGatherer extends NodeVisitorAbstract
                         foreach ($stmt->traits as $traitName) {
                             $traitFqcn = $this->astUtils->resolveNameNodeToFqcn($traitName, $this->currentNamespace, $this->useMap, false);
                             if ($traitFqcn !== '') {
-                                /** @var string[] $traits */
-                                $classKey = $className;
-                                if (isset(\HenkPoley\DocBlockDoctor\GlobalCache::$classTraits[$classKey])) {
-                                    $traits = \HenkPoley\DocBlockDoctor\GlobalCache::$classTraits[$classKey];
-                                } else {
-                                    $traits = [];
-                                }
-                                $traits[] = $traitFqcn;
-                                \HenkPoley\DocBlockDoctor\GlobalCache::$classTraits[$classKey] = $traits;
+                                \HenkPoley\DocBlockDoctor\GlobalCache::addTraitForClass($className, $traitFqcn);
                             }
                         }
                     }
