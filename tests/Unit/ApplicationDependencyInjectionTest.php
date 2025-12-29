@@ -8,12 +8,52 @@ use HenkPoley\DocBlockDoctor\ApplicationOptions;
 use HenkPoley\DocBlockDoctor\AstParser;
 use HenkPoley\DocBlockDoctor\FileSystem;
 use HenkPoley\DocBlockDoctor\AstUtils;
+use HenkPoley\DocBlockDoctor\NativeFileSystem;
+use HenkPoley\DocBlockDoctor\PhpParserAstParser;
 use PhpParser\Error;
 use PhpParser\NodeFinder;
 use PHPUnit\Framework\TestCase;
 
 class ApplicationDependencyInjectionTest extends TestCase
 {
+    public function testConstructorUsesDefaultsWhenNoArguments(): void
+    {
+        $app = new Application();
+
+        $fsProp = new \ReflectionProperty(Application::class, 'fileSystem');
+        $fsProp->setAccessible(true);
+        $parserProp = new \ReflectionProperty(Application::class, 'astParser');
+        $parserProp->setAccessible(true);
+
+        $this->assertInstanceOf(NativeFileSystem::class, $fsProp->getValue($app));
+        $this->assertInstanceOf(PhpParserAstParser::class, $parserProp->getValue($app));
+    }
+
+    public function testConstructorAcceptsInjectedDependencies(): void
+    {
+        $fs = new class implements FileSystem {
+            public function getContents(string $path): string|false { return false; }
+            public function putContents(string $path, string $contents): bool { return false; }
+            public function isFile(string $path): bool { return false; }
+            public function isDir(string $path): bool { return false; }
+            public function realPath(string $path): string|false { return false; }
+            public function getCurrentWorkingDirectory(): string|false { return '/'; }
+        };
+        $parser = new class implements AstParser {
+            public function parse(string $code): ?array { return []; }
+            public function traverse(array $ast, array $visitors): void {}
+        };
+
+        $app = new Application($fs, $parser);
+
+        $fsProp = new \ReflectionProperty(Application::class, 'fileSystem');
+        $fsProp->setAccessible(true);
+        $parserProp = new \ReflectionProperty(Application::class, 'astParser');
+        $parserProp->setAccessible(true);
+
+        $this->assertSame($fs, $fsProp->getValue($app));
+        $this->assertSame($parser, $parserProp->getValue($app));
+    }
     public function testProcessFilesPass1HandlesParseError(): void
     {
         $fs = new class implements FileSystem {
