@@ -857,6 +857,9 @@ class Application
     /**
      * @param string[] $phpFilePaths
      * @return array<string, list<array{line: int, delta: int}>>
+     *
+     * @throws \LogicException
+     * @throws \RangeException
      */
     private function buildLineShiftMap(array $phpFilePaths, AstUtils $astUtils, bool $traceOrigins, bool $traceCallSites, bool $quiet): array
     {
