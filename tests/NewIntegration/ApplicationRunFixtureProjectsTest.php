@@ -56,6 +56,46 @@ class ApplicationRunFixtureProjectsTest extends TestCase
         ];
     }
 
+    public function testRunTraceCallSitesAdjustsLineNumbers(): void
+    {
+        $scenario = 'trace-call-sites-shift';
+        $files = ['Caller.php', 'Callee.php'];
+        $srcDir = __DIR__ . '/../fixtures/' . $scenario;
+        $tmpRoot = sys_get_temp_dir() . '/docblockdoctor-run-' . uniqid();
+        mkdir($tmpRoot);
+        foreach ($files as $file) {
+            copy($srcDir . '/' . $file, $tmpRoot . '/' . $file);
+        }
+
+        $app = new Application();
+        ob_start();
+        $app->run(['doc-block-doctor', '--verbose', '--trace-throw-call-sites', $tmpRoot]);
+        $output = ob_get_clean();
+        $this->assertStringContainsString('=== Summary ===', $output);
+
+        foreach ($files as $file) {
+            $expectedPath = $srcDir . '/expected_' . $file;
+            $expected     = file_get_contents($expectedPath);
+            $this->assertNotFalse(
+                $expected,
+                'Failed to read expected file: ' . $expectedPath
+            );
+            $actualPath = $tmpRoot . '/' . $file;
+            $actual     = file_get_contents($actualPath);
+            $this->assertNotFalse(
+                $actual,
+                'Failed to read temporary file: ' . $actualPath
+            );
+            $this->assertSame(
+                $expected,
+                $actual,
+                $actualPath . ' mismatch'
+            );
+            unlink($tmpRoot . '/' . $file);
+        }
+        rmdir($tmpRoot);
+    }
+
     public function testRunHandlesMissingFileGracefully(): void
     {
         $srcDir = __DIR__ . '/../fixtures/app-run-basic';

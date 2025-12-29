@@ -130,14 +130,14 @@ class Application
             }
 
             if (strncmp($arg, '--read-dirs=', strlen('--read-dirs=')) === 0) {
-                $dirs       = (string) substr($arg, 12);
+                $dirs       = substr($arg, 12);
                 $opt->readDirs = array_filter(array_map('trim', explode(',', $dirs)));
 
                 continue;
             }
 
             if (strncmp($arg, '--write-dirs=', strlen('--write-dirs=')) === 0) {
-                $dirs        = (string) substr($arg, 13);
+                $dirs        = substr($arg, 13);
                 $opt->writeDirs = array_filter(array_map('trim', explode(',', $dirs)));
 
                 continue;
@@ -239,7 +239,7 @@ class Application
             }
 
             try {
-                /** @var RecursiveIteratorIterator $rii */
+                /** @var RecursiveIteratorIterator<\RecursiveDirectoryIterator> $rii */
                 $rii = new RecursiveIteratorIterator(
                     new RecursiveCallbackFilterIterator(
                         new RecursiveDirectoryIterator(
@@ -519,7 +519,7 @@ class Application
                 if (strncmp($key, $ifacePrefix, strlen($ifacePrefix)) !== 0) {
                     continue;
                 }
-                $method = (string) substr($key, strlen($ifacePrefix));
+                $method = substr($key, strlen($ifacePrefix));
                 $throws = GlobalCache::getResolvedThrowsForKey($key);
                 $orig   = GlobalCache::getThrowOriginsForKey($key);
                 foreach ($impls as $class) {
@@ -593,6 +593,8 @@ class Application
         $traceOrigins  = $opt->traceOrigins;
         $traceCallSites = $opt->traceCallSites;
 
+        $lineShiftMap = [];
+
         $phpFilesForWriting = array_filter($phpFilePaths, function (string $path) use ($writeDirs): bool {
             $realPath = $this->fileSystem->realPath($path);
             if ($realPath === false) {
@@ -607,6 +609,10 @@ class Application
 
             return false;
         });
+
+        if ($traceCallSites) {
+            $lineShiftMap = $this->buildLineShiftMap($phpFilesForWriting, $astUtils, $traceOrigins, $traceCallSites, $opt->quiet);
+        }
 
         if (!$opt->quiet) {
             echo "\nPass 2: Updating files ...\n";
@@ -701,6 +707,9 @@ class Application
                 }
 
                 $docBlockUpdater   = new DocBlockUpdater($astUtils, $filePath, $traceOrigins, $traceCallSites, $opt->quiet);
+                if ($traceCallSites && $lineShiftMap !== []) {
+                    $docBlockUpdater->setLineShiftMap($lineShiftMap);
+                }
                 $this->astParser->traverse($currentAST, [$docBlockUpdater]);
 
                 if ($docBlockUpdater->pendingPatches !== []) {
@@ -752,14 +761,14 @@ class Application
                             if ($patch['type'] === 'add') {
                                 $replacementText = $indentedDocBlock . $lineEnding;
                                 $lineStartPos    = strrpos(
-                                    (string) substr($newFileContent, 0, $patch['patchStart']),
+                                    substr($newFileContent, 0, $patch['patchStart']),
                                     $newlineSearch
                                 );
                                 $currentAppliedPatchStartPos = ($lineStartPos !== false ? $lineStartPos + 1 : 0);
                                 $currentAppliedOriginalLength = 0;
                             } else {
                                 $lf      = $newlineSearch;
-                                $upToSlash = (string) substr($newFileContent, 0, $patch['patchStart']);
+                                $upToSlash = substr($newFileContent, 0, $patch['patchStart']);
                                 $lastNl  = strrpos($upToSlash, $lf);
                                 $lineStart = $lastNl === false ? 0 : $lastNl + 1;
 
@@ -774,7 +783,7 @@ class Application
 
                             if ($currentAppliedPatchStartPos > 0) {
                                 $startOfLine = strrpos(
-                                    (string) substr($newFileContent, 0, $currentAppliedPatchStartPos),
+                                    substr($newFileContent, 0, $currentAppliedPatchStartPos),
                                     $newlineSearch
                                 );
                                 $startOfLine = ($startOfLine === false) ? 0 : $startOfLine + 1;
@@ -783,7 +792,7 @@ class Application
                             }
 
                             $isDocBlockAlone = trim(
-                                    (string) substr(
+                                    substr(
                                         $newFileContent,
                                         $startOfLine,
                                         $currentAppliedPatchStartPos - $startOfLine
@@ -843,6 +852,175 @@ class Application
         }
 
         return $filesFixed;
+    }
+
+    /**
+     * @param string[] $phpFilePaths
+     * @return array<string, list<array{line: int, delta: int}>>
+     */
+    private function buildLineShiftMap(array $phpFilePaths, AstUtils $astUtils, bool $traceOrigins, bool $traceCallSites, bool $quiet): array
+    {
+        $lineShiftMap = [];
+
+        foreach ($phpFilePaths as $filePath) {
+            $codeAtStart = $this->fileSystem->getContents($filePath);
+            if ($codeAtStart === false) {
+                if (!$quiet) {
+                    echo "  ! Cannot read file for line shift map: {$filePath}\n";
+                }
+                continue;
+            }
+
+            $currentCode = $codeAtStart;
+            $currentAST = null;
+            $maxIterations = 3;
+            for ($iteration = 0; $iteration < $maxIterations; $iteration++) {
+                try {
+                    $currentAST = $this->astParser->parse($currentCode);
+                    if ($currentAST === null) {
+                        break;
+                    }
+                    $currentNameResolver    = new NameResolver();
+                    $currentParentConnector = new ParentConnectingVisitor();
+                    $this->astParser->traverse($currentAST, [
+                        $currentNameResolver,
+                        $currentParentConnector,
+                    ]);
+                } catch (Error $e) {
+                    $currentAST = null;
+                    break;
+                }
+
+                $useSimplifierSurgical = new UseStatementSimplifierSurgical();
+                $traverserUseSurgical  = new NodeTraverser();
+                $traverserUseSurgical->addVisitor($useSimplifierSurgical);
+                $traverserUseSurgical->traverse($currentAST);
+
+                if ($useSimplifierSurgical->pendingPatches === []) {
+                    break;
+                }
+
+                $newCode = $currentCode;
+                $patches = $useSimplifierSurgical->pendingPatches;
+                usort($patches, fn(array $a, array $b): int => $b['startPos'] <=> $a['startPos']);
+                foreach ($patches as $patch) {
+                    $newCode = substr_replace(
+                        $newCode,
+                        $patch['replacementText'],
+                        $patch['startPos'],
+                        $patch['length']
+                    );
+                }
+                if ($newCode === $currentCode) {
+                    break;
+                }
+                $currentCode = $newCode;
+                $currentAST = null;
+            }
+
+            if ($currentAST === null) {
+                continue;
+            }
+
+            $docBlockUpdater = new DocBlockUpdater($astUtils, $filePath, $traceOrigins, $traceCallSites, true);
+            $this->astParser->traverse($currentAST, [$docBlockUpdater]);
+            if ($docBlockUpdater->pendingPatches === []) {
+                continue;
+            }
+
+            $shifts = $this->calculateLineShifts($currentCode, $docBlockUpdater->pendingPatches);
+            if ($shifts !== []) {
+                $lineShiftMap[$filePath] = $shifts;
+            }
+        }
+
+        return $lineShiftMap;
+    }
+
+    /**
+     * @param list<array{type:string,node:\PhpParser\Node,newDocText:null|string,patchStart:int,patchEnd:int}> $patches
+     * @return list<array{line: int, delta: int}>
+     */
+    private function calculateLineShifts(string $content, array $patches): array
+    {
+        $lineEnding = $this->detectLineEnding($content);
+        $newlineSearch = $lineEnding === "\r\n" ? "\n" : $lineEnding;
+        $shifts = [];
+
+        foreach ($patches as $patch) {
+            $patchStart = $patch['patchStart'];
+            $patchEnd   = $patch['patchEnd'];
+            $startLine = $this->countLineBreaks(substr($content, 0, max(0, $patchStart))) + 1;
+
+            $oldSegment = '';
+            if ($patchEnd >= $patchStart && $patchEnd >= 0) {
+                $oldSegment = substr($content, $patchStart, $patchEnd - $patchStart + 1);
+            }
+
+            if ($patch['type'] === 'remove' && $patchEnd >= $patchStart && $patchEnd >= 0) {
+                $startOfLine = 0;
+                if ($patchStart > 0) {
+                    $linePrefix = substr($content, 0, $patchStart);
+                    $lineStartPos = strrpos($linePrefix, $newlineSearch);
+                    $startOfLine = ($lineStartPos === false) ? 0 : $lineStartPos + 1;
+                }
+                $isDocBlockAlone = trim(substr($content, $startOfLine, $patchStart - $startOfLine)) === '';
+                $newlineLenAfter = 0;
+                $afterPos = $patchEnd + 1;
+                if ($afterPos >= 0 && $afterPos + strlen($lineEnding) <= strlen($content)
+                    && substr($content, $afterPos, strlen($lineEnding)) === $lineEnding) {
+                    $newlineLenAfter = strlen($lineEnding);
+                }
+                if ($isDocBlockAlone && $newlineLenAfter > 0) {
+                    $length = ($patchEnd - $startOfLine + 1) + $newlineLenAfter;
+                    $oldSegment = substr($content, $startOfLine, $length);
+                }
+            }
+
+            $oldBreaks = $this->countLineBreaks($oldSegment);
+            $newBreaks = 0;
+            if ($patch['type'] === 'add' || $patch['type'] === 'update') {
+                $newDocText = $patch['newDocText'];
+                if ($newDocText !== null) {
+                    $newBreaks = $this->countLineBreaks($newDocText);
+                    if ($patch['type'] === 'add') {
+                        $newBreaks += 1;
+                    }
+                }
+            }
+
+            $delta = $newBreaks - $oldBreaks;
+            if ($delta !== 0) {
+                $shifts[] = ['line' => $startLine, 'delta' => $delta];
+            }
+        }
+
+        usort($shifts, fn(array $a, array $b): int => $a['line'] <=> $b['line']);
+
+        return $shifts;
+    }
+
+    private function countLineBreaks(string $text): int
+    {
+        if ($text === '') {
+            return 0;
+        }
+
+        $matches = preg_match_all('/\R/', $text);
+
+        return $matches === false ? 0 : $matches;
+    }
+
+    private function detectLineEnding(string $content): string
+    {
+        if (strpos($content, "\r\n") !== false) {
+            return "\r\n";
+        }
+        if (strpos($content, "\r") !== false) {
+            return "\r";
+        }
+
+        return "\n";
     }
 
     /**

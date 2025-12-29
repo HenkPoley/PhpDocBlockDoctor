@@ -1,0 +1,10 @@
+{
+  "fullyQualifiedMethodKeys": {
+    "Pitfalls\\TraceCallSitesShift\\Callee::explode": [
+      "RuntimeException"
+    ],
+    "Pitfalls\\TraceCallSitesShift\\Caller::run": [
+      "RuntimeException"
+    ]
+  }
+}

@@ -19,6 +19,9 @@ class DocBlockUpdater extends NodeVisitorAbstract
 
     private bool $quiet;
 
+    /** @var array<string, list<array{line: int, delta: int}>> */
+    private array $lineShiftMap = [];
+
     /**
      * @var list<array{type:string,node:\PhpParser\Node,newDocText:null|string,patchStart:int,patchEnd:int}>
      */
@@ -36,6 +39,14 @@ class DocBlockUpdater extends NodeVisitorAbstract
         $this->traceOrigins = $traceOrigins;
         $this->traceCallSites = $traceCallSites;
         $this->quiet = $quiet;
+    }
+
+    /**
+     * @param array<string, list<array{line: int, delta: int}>> $lineShiftMap
+     */
+    public function setLineShiftMap(array $lineShiftMap): void
+    {
+        $this->lineShiftMap = $lineShiftMap;
     }
 
     /**
@@ -255,10 +266,12 @@ class DocBlockUpdater extends NodeVisitorAbstract
                         } elseif (preg_match('/^(.*?:\d+) <- ' . preg_quote($nodeKey, '/') . ' <- (.*)$/', $ch, $m)) {
                             $ch = $m[1] . ' <- ' . $m[2];
                         }
-                        $parts = explode(' <- ', (string) $ch);
+                        $parts = explode(' <- ', $ch);
                         $first = $parts[0] ?? '';
-                        if (preg_match('/:(\d+)$/', $first, $m2)) {
-                            $lines[] = (int)$m2[1];
+                        if (preg_match('/^(.*?):(\d+)$/', $first, $m2)) {
+                            $path = $m2[1];
+                            $line = (int) $m2[2];
+                            $lines[] = $this->adjustLineNumber($path, $line);
                         }
                     }
                     sort($lines);
@@ -363,5 +376,31 @@ class DocBlockUpdater extends NodeVisitorAbstract
         }
 
         return ($key !== null && $key !== '') ? $key : 'unknown_node_type';
+    }
+
+    private function adjustLineNumber(string $path, int $line): int
+    {
+        $lineShift = $this->lineShiftMap[$path] ?? null;
+        if ($lineShift === null) {
+            $real = realpath($path);
+            if ($real !== false) {
+                $lineShift = $this->lineShiftMap[$real] ?? null;
+            }
+        }
+        if ($lineShift === null) {
+            return $line;
+        }
+
+        $adjusted = $line;
+        foreach ($lineShift as $shift) {
+            if ($shift['line'] <= $line) {
+                $adjusted += $shift['delta'];
+                continue;
+            }
+
+            break;
+        }
+
+        return $adjusted;
     }
 }
