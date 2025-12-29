@@ -13,6 +13,7 @@
 - `composer doctor-heal-thyself`: run the tool against this repo with read/write scopes.
 - `vendor/bin/phpunit`: run unit + integration tests (`--testsuite Unit|Integration` for subsets).
 - `vendor/bin/psalm`: run static analysis as configured in `psalm.xml`.
+  - If sandboxed, use `env XDG_CACHE_HOME=.cache vendor/bin/psalm --threads=1` to avoid cache/IPC permission issues.
 - `vendor/bin/rector process`: apply automated refactors using `rector.php`.
 
 ## Coding Style & Naming Conventions
