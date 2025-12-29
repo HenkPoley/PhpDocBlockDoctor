@@ -7,11 +7,16 @@
         xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
         findUnusedBaselineEntry="true"
         findUnusedCode="true"
+        allowStringToStandInForClass="false"
+        phpVersion="8.0"
 >
     <projectFiles>
         <file name="bin/doc-block-doctor"/>
         <directory name="src"/>
+        <directory name="tests"/>
         <ignoreFiles>
+            <directory name="tests/fixtures"/>
+            <directory name="tests/unit_fixtures"/>
             <directory name="vendor"/>
         </ignoreFiles>
     </projectFiles>
