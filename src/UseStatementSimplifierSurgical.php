@@ -47,7 +47,7 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
             $aliasNode = $originalUse->alias instanceof Identifier
                 ? clone $originalUse->alias
                 : null;
-            $newUseUse = new Node\Stmt\UseUse(
+            $newUseUse = new Node\UseItem(
                 $newUseName,
                 $aliasNode,
                 $originalUse->type,
@@ -71,11 +71,11 @@ class UseStatementSimplifierSurgical extends NodeVisitorAbstract
             $phpPrefixSpaceNewline = "<?php \n";
 
             if (strncmp($replacementCode, $phpPrefixSpaceNewline, strlen($phpPrefixSpaceNewline)) === 0) {
-                $replacementCode = (string) substr($replacementCode, strlen($phpPrefixSpaceNewline));
+                $replacementCode = substr($replacementCode, strlen($phpPrefixSpaceNewline));
             } elseif (strncmp($replacementCode, $phpPrefixNewline, strlen($phpPrefixNewline)) === 0) {
-                $replacementCode = (string) substr($replacementCode, strlen($phpPrefixNewline));
+                $replacementCode = substr($replacementCode, strlen($phpPrefixNewline));
             } elseif (strncmp($replacementCode, $phpPrefixSpace, strlen($phpPrefixSpace)) === 0) {
-                $replacementCode = (string) substr($replacementCode, strlen($phpPrefixSpace));
+                $replacementCode = substr($replacementCode, strlen($phpPrefixSpace));
             }
 
             // Ensure it ends with a newline, as use statements are typically on their own line.

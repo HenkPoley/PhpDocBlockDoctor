@@ -605,7 +605,7 @@ class AstUtils
                     if (strtolower($k) === $lowerKey) {
                         $key = $k;
                         $pos = strrpos($k, '::');
-                        $methodName = (string) substr($k, ($pos === false ? 0 : $pos + 2));
+                        $methodName = substr($k, ($pos === false ? 0 : $pos + 2));
                         $exists = true;
                         break;
                     }
@@ -871,10 +871,7 @@ class AstUtils
         if (\HenkPoley\DocBlockDoctor\GlobalCache::getClassParent($fqcn) !== null) {
             return true;
         }
-        $autoloaders = spl_autoload_functions();
-        if ($autoloaders === false) {
-            $autoloaders = [];
-        }
+        $autoloaders = spl_autoload_functions() ?: [];
         foreach ($autoloaders as $fn) {
             if (is_array($fn) && $fn[0] instanceof ClassLoader) {
                 $loader = $fn[0];
@@ -893,10 +890,7 @@ class AstUtils
      */
     public static function classFileIsInVendor(string $fqcn): bool
     {
-        $autoloaders = spl_autoload_functions();
-        if ($autoloaders === false) {
-            $autoloaders = [];
-        }
+        $autoloaders = spl_autoload_functions() ?: [];
         foreach ($autoloaders as $fn) {
             if (is_array($fn) && $fn[0] instanceof ClassLoader) {
                 $loader = $fn[0];
