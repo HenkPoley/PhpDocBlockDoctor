@@ -19,6 +19,8 @@ class ApplicationOptions
 
     public bool $ignoreAnnotatedThrows = false;
 
+    public bool $simplifyUseStatements = true;
+
     public string $rootDir = '';
 
     /** @var string[]|null */

@@ -46,6 +46,8 @@ Options:
   --trace-throw-origins  Replace @throws descriptions with origin locations and call chain
   --trace-throw-call-sites  Replace @throws descriptions with call site line numbers
   --ignore-annotated-throws Ignore existing @throws annotations when analyzing
+  --simplify-use-statements Enable `use Foo\Bar\{Baz}` simplification (default)
+  --no-simplify-use-statements Disable `use` statement simplification
 ```
 
 ## Result
@@ -78,7 +80,6 @@ Had a crashing "single"-sign-on system that uses costomisations of [SimpleSAMLph
 ## TODO
 
 * Handle PHP 'magic' such as Laravel Facades. We already handle a bit of __callStatic(), just not all the runtime injection that Laravel must be doing.
-* Maybe put the `use` statement cleaning behind some commandline option.
 * Propagate (full function-wide) `catch(\Specific\Exception $e)` through the call chain. We can be fairly sure that part of the code won't emit that exception. So you have at least some basic way to clean up the `@throws` annotations.
 * Follow proper ordering of PhpDoc tags. If there is one? @return comes before @throws. @see comes after @throws?
 * Somehow handle PHP's built-in functionality? Possibly stash `jetbrains/phpstorm-stubs` somewhere outside of vendor? (Should `composer` have a stubs section?) Make a derived version that only keeps the @throws tags? Even though to warn not to trust it, since they don't test exceptions are actually thrown, SOML.

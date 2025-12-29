@@ -35,6 +35,7 @@ class ApplicationParseOptionsTest extends TestCase
 
         $this->assertSame(realpath($tmp), $opt->rootDir);
         $this->assertFalse($opt->verbose);
+        $this->assertTrue($opt->simplifyUseStatements);
         $this->assertNull($opt->readDirs);
         $this->assertNull($opt->writeDirs);
 
@@ -49,6 +50,7 @@ class ApplicationParseOptionsTest extends TestCase
             '--trace-throw-origins',
             '--trace-throw-call-sites',
             '--ignore-annotated-throws',
+            '--no-simplify-use-statements',
             '--read-dirs=src,tests',
             '--write-dirs=src,generated',
             '/my/project/',
@@ -58,6 +60,7 @@ class ApplicationParseOptionsTest extends TestCase
         $this->assertTrue($opt->traceOrigins);
         $this->assertTrue($opt->traceCallSites);
         $this->assertTrue($opt->ignoreAnnotatedThrows);
+        $this->assertFalse($opt->simplifyUseStatements);
         $this->assertSame('/my/project', $opt->rootDir);
         $this->assertSame(['src', 'tests'], $opt->readDirs);
         $this->assertSame(['src', 'generated'], $opt->writeDirs);

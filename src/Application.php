@@ -129,6 +129,18 @@ class Application
                 continue;
             }
 
+            if ($arg === '--no-simplify-use-statements') {
+                $opt->simplifyUseStatements = false;
+
+                continue;
+            }
+
+            if ($arg === '--simplify-use-statements') {
+                $opt->simplifyUseStatements = true;
+
+                continue;
+            }
+
             if (strncmp($arg, '--read-dirs=', strlen('--read-dirs=')) === 0) {
                 $dirs       = substr($arg, 12);
                 $opt->readDirs = array_filter(array_map('trim', explode(',', $dirs)));
@@ -611,7 +623,14 @@ class Application
         });
 
         if ($traceCallSites) {
-            $lineShiftMap = $this->buildLineShiftMap($phpFilesForWriting, $astUtils, $traceOrigins, $traceCallSites, $opt->quiet);
+            $lineShiftMap = $this->buildLineShiftMap(
+                $phpFilesForWriting,
+                $astUtils,
+                $traceOrigins,
+                $traceCallSites,
+                $opt->simplifyUseStatements,
+                $opt->quiet
+            );
         }
 
         if (!$opt->quiet) {
@@ -673,36 +692,38 @@ class Application
                     break;
                 }
 
-                $useSimplifierSurgical = new UseStatementSimplifierSurgical();
-                $traverserUseSurgical  = new NodeTraverser();
-                $traverserUseSurgical->addVisitor($useSimplifierSurgical);
-                $traverserUseSurgical->traverse($currentAST);
+                if ($opt->simplifyUseStatements) {
+                    $useSimplifierSurgical = new UseStatementSimplifierSurgical();
+                    $traverserUseSurgical  = new NodeTraverser();
+                    $traverserUseSurgical->addVisitor($useSimplifierSurgical);
+                    $traverserUseSurgical->traverse($currentAST);
 
-                if ($useSimplifierSurgical->pendingPatches !== []) {
-                    $newCode = $codeAtStart;
-                    $patches = $useSimplifierSurgical->pendingPatches;
-                    usort($patches, fn(array $a, array $b): int => $b['startPos'] <=> $a['startPos']);
+                    if ($useSimplifierSurgical->pendingPatches !== []) {
+                        $newCode = $codeAtStart;
+                        $patches = $useSimplifierSurgical->pendingPatches;
+                        usort($patches, fn(array $a, array $b): int => $b['startPos'] <=> $a['startPos']);
 
-                    foreach ($patches as $patch) {
-                        $newCode = substr_replace(
-                            $newCode,
-                            $patch['replacementText'],
-                            $patch['startPos'],
-                            $patch['length']
-                        );
-                    }
-
-                    if ($newCode !== $codeAtStart) {
-                    $writeOk = $this->fileSystem->putContents($filePath, $newCode);
-                    if (!$writeOk && !$opt->quiet) {
-                        echo "  ! Unable to write file: {$filePath}\n";
-                    }
-                        if ($verbose && !$opt->quiet) {
-                            echo "    → Surgically simplified use statements in {$filePath}\n";
+                        foreach ($patches as $patch) {
+                            $newCode = substr_replace(
+                                $newCode,
+                                $patch['replacementText'],
+                                $patch['startPos'],
+                                $patch['length']
+                            );
                         }
-                        $fileOverallModified = true;
 
-                        continue; // Re‐parse from scratch after a surgical change
+                        if ($newCode !== $codeAtStart) {
+                            $writeOk = $this->fileSystem->putContents($filePath, $newCode);
+                            if (!$writeOk && !$opt->quiet) {
+                                echo "  ! Unable to write file: {$filePath}\n";
+                            }
+                            if ($verbose && !$opt->quiet) {
+                                echo "    → Surgically simplified use statements in {$filePath}\n";
+                            }
+                            $fileOverallModified = true;
+
+                            continue; // Re‐parse from scratch after a surgical change
+                        }
                     }
                 }
 
@@ -861,7 +882,7 @@ class Application
      * @throws \LogicException
      * @throws \RangeException
      */
-    private function buildLineShiftMap(array $phpFilePaths, AstUtils $astUtils, bool $traceOrigins, bool $traceCallSites, bool $quiet): array
+    private function buildLineShiftMap(array $phpFilePaths, AstUtils $astUtils, bool $traceOrigins, bool $traceCallSites, bool $simplifyUseStatements, bool $quiet): array
     {
         $lineShiftMap = [];
 
@@ -891,6 +912,10 @@ class Application
                     ]);
                 } catch (Error $e) {
                     $currentAST = null;
+                    break;
+                }
+
+                if (!$simplifyUseStatements) {
                     break;
                 }
 
@@ -1044,14 +1069,16 @@ Options:
   --trace-throw-origins     Replace @throws descriptions with origin locations and call chain
   --trace-throw-call-sites  Replace @throws descriptions with call site line numbers
   --ignore-annotated-throws Ignore existing @throws annotations when analyzing
+  --simplify-use-statements Enable `use Foo\Bar\{Baz}` simplification (default)
+  --no-simplify-use-statements Disable `use` statement simplification
 
 Arguments:
   <path>           Path to a file or directory to process.
                    If omitted, defaults to the current working directory.
 
 Description:
-  DocBlockDoctor cleans up `@throws` annotations and simplifies `use …{…}` statements
-  in your PHP codebase. It statically analyzes each PHP file, gathers thrown exceptions
+  DocBlockDoctor cleans up `@throws` annotations and optionally simplifies `use …{…}`
+  statements in your PHP codebase. It statically analyzes each PHP file, gathers thrown exceptions
   (including those bubbled up from called methods/functions), and writes updated DocBlocks.
 
 Examples:
